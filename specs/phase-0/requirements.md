@@ -60,7 +60,7 @@ see a welcome LiveView, and CI is green on push.
 | 0.8 | WelcomeLive + gettext for Phase 0 strings | 1.5h | 0.7 | ready |
 | 0.9 | GitHub Actions CI workflow | 1h | 0.1 | ready |
 | 0.10 | README quick-start verification + CHANGELOG Phase 0 update | 1h | 0.6, 0.8, 0.9 | ready |
-| 0.11 | Phase 0 E2E magic-link integration test | 2h | 0.6, 0.8 | ready |
+| 0.11 | Phase 0 E2E magic-link integration test | 2h | 0.6, 0.8, 0.9, 0.10 | ready |
 
 Total: 11 stories, ~16.5h of new work after 0.1 (~18.5h including 0.1).
 

@@ -19,7 +19,8 @@ Largest story in Phase 0 because the resource pair, auth strategy, and policies 
 
 - `/specs/phase-0/architecture.md` §3 (attributes, actions, policies, sensitive markers)
 - `/specs/phase-0/architecture.md` §9 (security — hash salt from runtime env)
-- `/AGENTS.md` §6 (intent-verb actions, policies required, AshPaperTrail decision rule)
+- `/AGENTS.md` §6 (intent-verb actions, policies required, sensitive-record audit mandatory)
+- `/specs/phase-0/architecture.md` §9 (Audit) and §10 (Audit trail coverage) — User audit is mandatory in Phase 0
 
 ## Acceptance criteria
 
@@ -27,7 +28,7 @@ Largest story in Phase 0 because the resource pair, auth strategy, and policies 
 - [ ] AC2: `User` has attributes `email` (sensitive? true), `email_hash` (SHA-256 of normalized email, salted by `IDENTIFIER_HASH_SALT` from runtime env), `role` (`:admin | :operator`), `confirmed_at`, `last_signed_in_at`. Verify: `mix test test/ashy_walnut_desk/accounts/user_test.exs` includes attribute introspection and a hash-determinism test.
 - [ ] AC3: `User` policies match architecture §3 (unauthenticated may request/complete magic-link; `:self` reads own; `:admin` reads all and assigns roles; `:operator` reads own; system performs auth-flow updates). Verify: `mix test test/ashy_walnut_desk/accounts/user_test.exs` includes one policy assertion per actor row.
 - [ ] AC4: `Token` resource uses `AshAuthentication.TokenResource` defaults; token-material is sensitive; tokens are not retrievable via any UI-facing read. Verify: `mix test test/ashy_walnut_desk/accounts/token_test.exs` includes a sensitive-introspection check and a "Public actor cannot read tokens" test.
-- [ ] AC5: AshPaperTrail-on-User opt-in decision is **introspection-evidenced** in `lib/ashy_walnut_desk/accounts/user.ex` — either (a) the resource declares `extensions: [..., AshPaperTrail.Resource, ...]` AND has a `paper_trail do ... end` block, **or** (b) the file contains a single-line code comment `# audit: deferred to phase 1 — see specs/phase-0/architecture.md §10` immediately above the `use Ash.Resource` line. Verify: `grep -qE 'AshPaperTrail\.Resource|# audit: deferred to phase 1' lib/ashy_walnut_desk/accounts/user.ex`.
+- [ ] AC5: `User` opts in to AshPaperTrail per AGENTS.md §6 ("ALL sensitive-record changes audited via AshPaperTrail"). The resource declares `extensions: [..., AshPaperTrail.Resource, ...]` AND has a `paper_trail do ... end` block in `lib/ashy_walnut_desk/accounts/user.ex`. A unit test in `user_test.exs` performs an `update` action on a fixture user and asserts a new version row exists. Verify: `grep -q 'AshPaperTrail.Resource' lib/ashy_walnut_desk/accounts/user.ex && mix test test/ashy_walnut_desk/accounts/user_test.exs` passes the audit-version assertion. If the AshAuthentication-generated `User` shape resists a clean opt-in, the story is **blocked** pending an ADR amendment; do not silently defer.
 
 ## Files to create
 
@@ -58,7 +59,7 @@ config/runtime.exs   — read IDENTIFIER_HASH_SALT and feed to the hashing logic
 - Sensitive records touched? **Yes** — `User.email`, `User.email_hash`, `Token.token`. All marked sensitive.
 - AI output to end user possible? **No** — no AI in Phase 0.
 - Guardrails applied? Ash policies per §3; raw token never logged; email normalized then hashed.
-- Audit trail covered? Framework AshPaperTrail installed in 0.4; per-resource opt-in decided in AC5.
+- Audit trail covered? Yes — `User` opts in to AshPaperTrail in AC5 (mandatory, not deferrable). Framework-level install came in 0.4.
 
 ## Out of scope
 
