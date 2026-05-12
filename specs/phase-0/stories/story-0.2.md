@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1h
 **Depends on**: 0.1
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ Phase 0 requirements §2 require both extensions to be enabled. Architecture §7
 
 ## Acceptance criteria
 
-- [ ] AC1: A migration `priv/repo/migrations/<ts>_enable_extensions.exs` runs `CREATE EXTENSION IF NOT EXISTS vector` and `CREATE EXTENSION IF NOT EXISTS pg_trgm`. Verify: `mix ecto.migrate` succeeds, then `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -tAc "SELECT extname FROM pg_extension WHERE extname IN ('vector','pg_trgm') ORDER BY extname;"` outputs exactly the two lines `pg_trgm` and `vector`.
-- [ ] AC2: Migration `down/0` is a documented no-op for extension drops. Verify: `mix ecto.rollback --step 1` exits 0 and the migration file contains a `# down: intentional no-op` comment.
-- [ ] AC3: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: A migration `priv/repo/migrations/<ts>_enable_extensions.exs` runs `CREATE EXTENSION IF NOT EXISTS vector` and `CREATE EXTENSION IF NOT EXISTS pg_trgm`. Verify: `mix ecto.migrate` succeeds, then `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -tAc "SELECT extname FROM pg_extension WHERE extname IN ('vector','pg_trgm') ORDER BY extname;"` outputs exactly the two lines `pg_trgm` and `vector`.
+- [x] AC2: Migration `down/0` is a documented no-op for extension drops. Verify: `mix ecto.rollback --step 1` exits 0 and the migration file contains a `# down: intentional no-op` comment.
+- [x] AC3: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -68,5 +68,9 @@ docker compose exec db psql -U postgres -d ashy_walnut_desk_dev \
 (AI fills this in during execution.)
 
 - Decisions made:
+- Added a hand-written setup migration `20260512150000_enable_extensions.exs` so extension enablement is explicit and independent of future resource generation.
+- Kept `down/0` as an intentional no-op to avoid unsafe extension drops in shared clusters.
 - Spec drift noticed:
+- None.
 - Gotchas to add to AGENTS.md §10:
+- None.
