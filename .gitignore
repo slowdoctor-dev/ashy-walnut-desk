@@ -1,0 +1,111 @@
+# ─────────────────────────────────────────────────────────
+# Elixir / Phoenix
+# ─────────────────────────────────────────────────────────
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+*.beam
+/config/*.secret.exs
+/priv/static/assets/
+/priv/static/cache_manifest.json
+/assets/node_modules/
+npm-debug.log
+
+# ─────────────────────────────────────────────────────────
+# Secrets — CRITICAL
+# ─────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets/
+.secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*
+*api_keys*
+*service_account*
+
+# Deployment-specific config (deployer keeps in private repo)
+config/deployment.exs
+config/prod.secret.exs
+ANTHROPIC_API_KEY*
+
+# ─────────────────────────────────────────────────────────
+# Database dumps / backups
+# ─────────────────────────────────────────────────────────
+*.sql
+*.dump
+*.backup
+db_backup/
+backups/
+
+# ─────────────────────────────────────────────────────────
+# Real customer/client data — never commit
+# ─────────────────────────────────────────────────────────
+data/real/
+data/production/
+customer_data/
+client_data/
+*_real_data.*
+priv/uploads/
+priv/static/uploads/
+
+# ─────────────────────────────────────────────────────────
+# Local-only files
+# ─────────────────────────────────────────────────────────
+.local/
+local_*/
+TODO.local.md
+NOTES.local.md
+SCRATCH.local.md
+
+# ─────────────────────────────────────────────────────────
+# OS / Editor
+# ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~
+.vscode/settings.json
+.vscode/launch.json
+
+# ─────────────────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─────────────────────────────────────────────────────────
+# Build / release artifacts
+# ─────────────────────────────────────────────────────────
+*.tar.gz
+release/
+_releases/
+
+# ─────────────────────────────────────────────────────────
+# Test / coverage
+# ─────────────────────────────────────────────────────────
+test/.snapshots/
+coverage/
+
+# ─────────────────────────────────────────────────────────
+# Git worktrees (kept outside main checkout)
+# ─────────────────────────────────────────────────────────
+.worktrees/
+
+# ─────────────────────────────────────────────────────────
+# AI agent local config (each developer's choice)
+# ─────────────────────────────────────────────────────────
+.codex/config.toml
+!.codex/config.toml.example
+.claude/.session/
+.claude/.cache/
+.claude/conversations/

@@ -1,0 +1,120 @@
+# ashy-walnut-desk — task runner
+#
+# Install just: brew install just (or apt install just)
+# Usage: just <command>
+# List all: just
+
+# Default: show available recipes
+default:
+    @just --list
+
+# === Setup ===
+
+# First-time setup
+setup:
+    @if [ ! -f .env ]; then cp .env.example .env && echo "✓ .env created — fill in API keys"; fi
+    mix deps.get
+    @echo ""
+    @echo "Next: docker compose up -d && mix ecto.setup"
+    @echo "Then: just dev"
+
+# === Dev ===
+
+# Start dev server
+dev:
+    iex -S mix phx.server
+
+# Start dev server (non-interactive)
+dev-bg:
+    mix phx.server
+
+# === Verification gates (MUST pass before commit) ===
+
+# Run all verification gates
+verify: format-check credo test spec-check
+    @echo "✓ All verification gates passed"
+
+# Format check
+format-check:
+    mix format --check
+
+# Format (auto-fix)
+format:
+    mix format
+
+# Credo lint
+credo:
+    mix credo --strict
+
+# All tests
+test:
+    mix test
+
+# Test specific file
+test-file FILE:
+    mix test {{FILE}}
+
+# Verify code matches /specs
+spec-check:
+    @./scripts/spec-check.sh
+
+# Security scan
+security:
+    mix sobelow
+
+# Type check (slow)
+dialyzer:
+    mix dialyzer
+
+# === Project status ===
+
+# Show current phase, story, and blockers
+status:
+    @./scripts/status.sh
+
+# === DB (Ash-managed) ===
+
+# Generate migration from Ash resources
+migrate-gen NAME:
+    mix ash_postgres.generate_migrations --name {{NAME}}
+
+# Run migrations
+migrate:
+    mix ecto.migrate
+
+# Reset DB (drop, create, migrate, seed)
+db-reset:
+    mix ecto.reset
+
+# === Story workflow ===
+
+# Print prompt to start a new story execution session
+story-prompt:
+    @cat prompts/gsd-execute-story.md
+
+# Print prompt to start phase planning (BMAD Analyst)
+analyst-prompt:
+    @cat prompts/bmad-analyst.md
+
+# Print prompt to start architecture design (BMAD Architect)
+architect-prompt:
+    @cat prompts/bmad-architect.md
+
+# Print prompt to start story breakdown (BMAD PM)
+pm-prompt:
+    @cat prompts/bmad-pm.md
+
+# Print prompt for code review
+review-prompt:
+    @cat prompts/code-review.md
+
+# === Cleanup ===
+
+# Remove all containers, volumes (DESTRUCTIVE)
+clean:
+    docker compose down -v
+    rm -rf _build deps node_modules
+
+# Remove build artifacts only
+clean-soft:
+    rm -rf _build cover

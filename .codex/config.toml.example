@@ -1,0 +1,56 @@
+# Codex CLI configuration for ashy-walnut-desk
+#
+# Copy to .codex/config.toml (not committed) if you want project-level
+# Codex CLI defaults. Global config goes in ~/.codex/config.toml.
+
+[model]
+# Default model for this project
+# Codex will prompt to use one of these aliases
+default = "gpt-5-codex"
+
+[approval]
+# When to ask for user approval
+# Options: untrusted, on-failure, on-request, never
+# Default: on-failure
+mode = "on-failure"
+
+[sandbox]
+# Sandbox mode for command execution
+# Options: read-only, workspace-write, danger-full-access
+# Recommended for SDD: workspace-write (Codex can edit project files)
+mode = "workspace-write"
+
+[project]
+# Path to context files (Codex reads AGENTS.md by default)
+context_files = ["AGENTS.md", "BASELINE.md"]
+
+# Maximum bytes to load from project docs (Codex silently truncates beyond this)
+project_doc_max_bytes = 65536
+
+[shell]
+# Allowed commands (Codex will prompt for others)
+allowed_commands = [
+    "git",
+    "mix",
+    "iex",
+    "just",
+    "docker",
+    "docker compose",
+    "psql",
+    "ls",
+    "cat",
+    "grep",
+    "find",
+    "rg",
+    "head",
+    "tail",
+    "wc",
+    "echo",
+]
+
+# Always blocked commands (Codex will refuse even with approval)
+blocked_commands = [
+    "rm -rf /",
+    "sudo rm",
+    "dd if=",
+]
