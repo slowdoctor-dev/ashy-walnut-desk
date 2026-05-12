@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 2h
 **Depends on**: — (first story)
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -27,17 +27,17 @@ Phoenix welcome page.
 
 ## Acceptance criteria
 
-- [ ] AC1: Phoenix project generated with `mix phx.new ashy_walnut_desk --binary-id --no-mailer`
+- [x] AC1: Phoenix project generated with `mix phx.new ashy_walnut_desk --binary-id --no-mailer`
   Verify: `ls mix.exs lib/ashy_walnut_desk` exist
-- [ ] AC2: `.tool-versions` pins Elixir 1.17.3-otp-27, Erlang 27.1.2, Node 20.18.0
+- [x] AC2: `.tool-versions` pins Elixir 1.17.3-otp-27, Erlang 27.1.2, Node 20.18.0
   Verify: `cat .tool-versions` matches
-- [ ] AC3: Ash 3.0 + ash_postgres + ash_phoenix + ash_authentication + ash_oban + ash_paper_trail dependencies in `mix.exs`
+- [x] AC3: Ash 3.0 + ash_postgres + ash_phoenix + ash_authentication + ash_oban + ash_paper_trail dependencies in `mix.exs`
   Verify: `mix deps.get` succeeds; `grep ash mix.exs` shows all six
-- [ ] AC4: Docker Compose with PostgreSQL 16 + pgvector extension
+- [x] AC4: Docker Compose with PostgreSQL 16 + pgvector extension
   Verify: `docker compose up -d && docker compose exec db psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector; SELECT extversion FROM pg_extension WHERE extname='vector';"` returns a version
-- [ ] AC5: `mix phx.server` starts; visiting `http://localhost:4000` returns 200
+- [x] AC5: `mix phx.server` starts; visiting `http://localhost:4000` returns 200
   Verify: `curl -sf http://localhost:4000 -o /dev/null && echo OK`
-- [ ] AC6: `just verify` (format + credo + test + spec-check) passes on initial code
+- [x] AC6: `just verify` (format + credo + test + spec-check) passes on initial code
   Verify: `just verify` exits 0
 
 ## Files to create
@@ -121,5 +121,16 @@ docker compose exec db psql -U postgres -c "SELECT extversion FROM pg_extension 
 (AI fills this in during execution.)
 
 - Decisions made:
+  - Generated Phoenix scaffold in `/tmp` and merged into repo root to preserve existing docs/spec files.
+  - Kept auth installation out of scope (no `mix ash_authentication.install`), consistent with story notes.
 - Spec drift noticed:
+  - `ash_authentication_phoenix` (2.12.0) is currently not compilable in this stack baseline because it injects
+    `:phoenix_live_view` as a custom compiler, which requires `compile.phoenix_live_view`, but the task is absent
+    in the current dependency set (`mix help compile.phoenix_live_view` fails and suggests `compile.phoenix`).
+  - Workaround plan for story 0.2:
+    1. Keep `ash_authentication_phoenix` out of the dependency list in 0.1.
+    2. In 0.2, either pin to a version compatible with current Phoenix LiveView compiler tasks, or add the
+       compatibility path recommended by upstream AshAuthentication Phoenix docs/changelog.
+    3. Re-test via `mix deps.compile ash_authentication_phoenix --force` before integrating auth UI routes.
 - Gotchas to add to AGENTS.md §10:
+  - In this environment, some Mix/DB commands require escalated execution for localhost Docker DB access.

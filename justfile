@@ -36,7 +36,7 @@ verify: format-check credo test spec-check
 
 # Format check
 format-check:
-    mix format --check
+    mix format --check-formatted
 
 # Format (auto-fix)
 format:

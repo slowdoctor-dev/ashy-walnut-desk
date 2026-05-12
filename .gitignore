@@ -89,6 +89,12 @@ logs/
 *.tar.gz
 release/
 _releases/
+ashy_walnut_desk-*.tar
+
+# ─────────────────────────────────────────────────────────
+# Local tmp scratch dir (Mix tasks, scaffold staging, etc.)
+# ─────────────────────────────────────────────────────────
+/tmp/
 
 # ─────────────────────────────────────────────────────────
 # Test / coverage
@@ -109,3 +115,4 @@ coverage/
 .claude/.session/
 .claude/.cache/
 .claude/conversations/
+.claude/scheduled_tasks.lock
