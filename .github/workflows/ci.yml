@@ -55,6 +55,12 @@ jobs:
       - name: Gate 3 — mix ash_postgres.generate_migrations --check
         run: mix ash_postgres.generate_migrations --check
 
+      - name: Gate 3b — gettext .po files match source
+        run: |
+          mix gettext.extract
+          git diff --exit-code priv/gettext/ \
+            || (echo "✗ gettext drift — run 'mix gettext.extract' locally and commit"; exit 1)
+
       - name: Prepare test database
         run: |
           mix ecto.create
