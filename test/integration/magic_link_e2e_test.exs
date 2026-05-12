@@ -30,18 +30,20 @@ defmodule AshyWalnutDesk.Integration.MagicLinkE2ETest do
     |> form("form", %{"user" => %{"email" => email}})
     |> render_submit()
 
-    token = nil
+    parent = self()
 
     assert_email_sent(fn message ->
-      url = extract_magic_link_url(message)
-      send(self(), {:token, token_from_url(url)})
-      to_email_matches?(message, email)
+      if to_email_matches?(message, email) do
+        token = message |> extract_magic_link_url() |> token_from_url()
+        send(parent, {:magic_link_token, token})
+        true
+      end
     end)
 
     receive do
-      {:token, token} -> %{token: token || raise("no token captured for #{email}")}
+      {:magic_link_token, token} -> %{token: token}
     after
-      0 -> %{token: token || raise("no token captured for #{email}")}
+      0 -> raise "magic-link token never delivered for #{email}"
     end
   end
 
