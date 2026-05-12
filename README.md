@@ -114,7 +114,7 @@ This separation ensures:
 - Deployment-specific decisions stay private
 - The framework remains domain-agnostic
 
-See ADR-007 and ADR-010 in [`specs/decisions/`](specs/decisions/).
+See ADR-010 in [`specs/decisions/`](specs/decisions/).
 
 ## License
 

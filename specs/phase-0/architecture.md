@@ -173,10 +173,9 @@ requires tests to lock the first-user behavior.
 - `scripts/spec-check.sh` and `scripts/status.sh` — lightweight spec/status
   checks used by `just`.
 
-Resolution: CI uses GitHub-hosted runners. That matches the public OSS repo,
-keeps maintainer infrastructure minimal, and is sufficient for Phase 0. A
-self-hosted runner can be reconsidered only if later phases introduce private
-services or runner-specific constraints.
+Resolution: CI uses GitHub-hosted runners. It keeps maintainer infrastructure
+minimal and is sufficient for Phase 0. A self-hosted runner can be reconsidered
+only if later phases introduce private services or runner-specific constraints.
 
 ### Assets
 

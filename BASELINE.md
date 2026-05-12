@@ -66,7 +66,7 @@ See `specs/architecture.md` for full structural details.
 | Container | Docker for local development |
 | CI | GitHub Actions |
 
-## 6. Key ADRs (18 total)
+## 6. Key ADRs (17 total)
 
 | ADR | Title | Status |
 |---|---|---|
@@ -76,7 +76,6 @@ See `specs/architecture.md` for full structural details.
 | ADR-004 | Anthropic direct, no Python service | Accepted |
 | ADR-005 | Human approval required for all sends | Accepted |
 | ADR-006 | Domain as configuration, not fork | Accepted |
-| ADR-007 | Public OSS from day one | Accepted |
 | ADR-008 | LiveView only, no separate SPA | Accepted |
 | ADR-009 | Phoenix.PubSub + Oban for messaging | Accepted |
 | ADR-010 | Deployment instance as private repo | Accepted |
@@ -150,9 +149,9 @@ legal review.
 
 ## 10. Repo strategy
 
-Per ADR-007 and ADR-010:
+Per ADR-010:
 
-- **This repo** (public): the framework. No real customer data, no
+- **This repo**: the framework. No real customer data, no
   jurisdiction-specific content, no deployment configuration.
 - **Deployment instance** (private, separate repo): jurisdiction-specific
   compliance, real customer ontology, channel credentials, deployment

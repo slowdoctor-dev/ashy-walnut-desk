@@ -20,7 +20,6 @@ Format: `ADR-NNN-kebab-name.md` (e.g., `ADR-001-elixir-and-ash.md`).
 | 004 | Anthropic direct, no Python service | Accepted | 2026-05 |
 | 005 | Human approval required for all sends | Accepted | 2026-05 |
 | 006 | Domain as configuration, not fork | Accepted | 2026-05 |
-| 007 | Public OSS from day one | Accepted | 2026-05 |
 | 008 | LiveView only, no separate SPA | Accepted | 2026-05 |
 | 009 | Phoenix.PubSub + Oban for messaging | Accepted | 2026-05 |
 | 010 | Deployment instance as private repo | Accepted | 2026-05 |

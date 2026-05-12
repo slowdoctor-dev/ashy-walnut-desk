@@ -16,7 +16,7 @@ specs/
 ├── architecture.md       — project-level architecture
 ├── 02-domain/            — resource specs (filled per phase)
 ├── phase-0/              — Foundation: requirements + Story 0.1
-├── decisions/            — 18 ADRs (architectural decisions)
+├── decisions/            — 17 ADRs (architectural decisions)
 └── compliance/           — deployment-specific compliance (deployer fills)
 ```
 
@@ -36,7 +36,7 @@ the opposite of what SDD wants.
 
 1. `BASELINE.md` (repo root) — what awd is, all decisions
 2. `architecture.md` — three-axis structure
-3. `decisions/README.md` — the 18 ADRs index
+3. `decisions/README.md` — the 17 ADRs index
 4. `phase-0/requirements.md` — current phase scope
 5. `phase-0/stories/story-0.1.md` — exemplar story
 
@@ -77,7 +77,7 @@ the opposite of what SDD wants.
 ```
 At project start (now):
   AGENTS.md + BASELINE.md + architecture.md + Phase 0 are drafted.
-  18 ADRs are in `decisions/` (some skeleton).
+  17 ADRs are in `decisions/` (some skeleton).
 
 At each phase start:
   Run BMAD Analyst → write specs/phase-N/requirements.md

@@ -49,7 +49,7 @@ See `docs/methodology.md`.
 3. `specs/architecture.md` — system structure
 4. For the current phase: `specs/phase-N/requirements.md`
    (phases beyond 0 are created when reached — see methodology)
-5. For decisions: `specs/decisions/ADR-NNN-*.md` (18 ADRs)
+5. For decisions: `specs/decisions/ADR-NNN-*.md` (17 ADRs)
 6. For domain models: `specs/02-domain/` (accumulated through phases)
 7. For deployment-specific compliance: `specs/compliance/` (deployer fills)
 

@@ -14,11 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.0] — 2026-05-12
 
 ### Added
-- Project decision: ashy-walnut-desk identity, MIT, public OSS
+- Project decision: ashy-walnut-desk identity, MIT licensed
 - Stack: Elixir + Phoenix + Ash + LiveView + PostgreSQL/pgvector
 - Methodology: SDD with BMAD + GSD
 - Three-axis architecture (Identity + Interaction + Knowledge)
-- 18 foundational ADRs accepted (skeleton form for ADR-002 through ADR-015)
+- 17 foundational ADRs accepted (skeleton form for ADR-002 through ADR-015)
 - Phase 0 requirements with first story drafted
 - LLM-agnostic agent config (AGENTS.md universal, CLAUDE.md wrapper)
 
