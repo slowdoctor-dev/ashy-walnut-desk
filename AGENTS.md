@@ -205,6 +205,19 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
 - Non-ASCII text in tests: UTF-8 strings, not unicode escapes
 - AshPaperTrail must be enabled BEFORE inserting data
 - Anthropic prompt caching requires specific cache_control markers
+- `mix phx.new` overwrites the project's `.gitignore` with its minimal
+  default — preserve the existing entries (`.env`, secrets,
+  customer-data globs) when scaffolding or restore them immediately
+- `mix ash_authentication.install` and `mix igniter.install <pkg>` hang
+  on interactive prompts in non-tty environments even with `--yes` —
+  hand-author resources from upstream docs (AC1-style "or generated
+  directly" clauses are intentional escape hatches) rather than fight
+  the generator in CI/sandboxed pipelines
+- AshPostgres auto-generated migrations assume any referenced Postgres
+  extension is already enabled (e.g., `citext`, `vector`, `pg_trgm`) —
+  put each extension's `CREATE EXTENSION IF NOT EXISTS …` in its own
+  timestamp-earlier hand-authored setup migration, not inline in the
+  resource migration (which gets regenerated)
 
 ## 11. When in Doubt
 
