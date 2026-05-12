@@ -54,6 +54,9 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
     {:ok, target} =
       Ash.create(User, %{email: "target-admin@example.com"}, action: :register, authorize?: false)
 
+    {:ok, _demoted} =
+      Ash.update(admin, %{role: :operator}, action: :assign_role, actor: admin)
+
     assert {:ok, _updated} =
              Ash.update(target, %{role: :admin}, action: :assign_role, actor: admin)
   end
@@ -67,6 +70,9 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
 
     {:ok, user} =
       Ash.create(User, %{email: "audit-user@example.com"}, action: :register, authorize?: false)
+
+    {:ok, _demoted} =
+      Ash.update(admin, %{role: :operator}, action: :assign_role, actor: admin)
 
     {:ok, _updated} = Ash.update(user, %{role: :admin}, action: :assign_role, actor: admin)
 

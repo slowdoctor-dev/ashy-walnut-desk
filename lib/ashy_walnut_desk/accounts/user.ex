@@ -9,10 +9,15 @@ defmodule AshyWalnutDesk.Accounts.User do
     extensions: [AshAuthentication, AshPaperTrail.Resource]
 
   alias Ash.Changeset
+  alias AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdmin
 
   postgres do
     table("users")
     repo(AshyWalnutDesk.Repo)
+
+    custom_indexes do
+      index([:role], unique: true, name: "users_one_admin_idx", where: "role = 'admin'")
+    end
   end
 
   paper_trail do
@@ -50,6 +55,7 @@ defmodule AshyWalnutDesk.Accounts.User do
       upsert_fields([:email])
 
       change(AshAuthentication.Strategy.MagicLink.SignInChange)
+      change(AssignFirstUserAdmin)
 
       change(
         {AshAuthentication.Strategy.RememberMe.MaybeGenerateTokenChange,
@@ -190,7 +196,7 @@ defmodule AshyWalnutDesk.Accounts.User do
 
     @impl true
     def secret_for([:authentication, :tokens, :signing_secret], _resource, _opts, _context) do
-      System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"
+      {:ok, System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"}
     end
   end
 end

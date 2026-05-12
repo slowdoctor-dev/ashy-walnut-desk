@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1.5h
 **Depends on**: 0.5
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Story 0.5 left `User` with a `role` attribute but no first-user logic and no DB-
 
 ## Acceptance criteria
 
-- [ ] AC1: `lib/ashy_walnut_desk/accounts/changes/assign_first_user_admin.ex` is an Ash change wired into `User`'s `register_with_magic_link` action; sets `role: :admin` iff no other User row exists, else `:operator`. Verify: `mix test test/ashy_walnut_desk/accounts/changes/assign_first_user_admin_test.exs` covers both branches.
-- [ ] AC2: A partial-unique index `users_one_admin_idx` on `users(role) WHERE role = 'admin'` exists. Verify: `mix ecto.migrate` succeeds and `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -c "\d users"` shows the partial index.
-- [ ] AC3: Race test — two concurrent `register_with_magic_link` Tasks against an empty users table yield exactly one `:admin`; the loser is created as `:operator` (DB rejection caught and recovered cleanly). Verify: `mix test test/ashy_walnut_desk/accounts/first_user_race_test.exs`.
-- [ ] AC4: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: `lib/ashy_walnut_desk/accounts/changes/assign_first_user_admin.ex` is an Ash change wired into `User`'s `register_with_magic_link` action; sets `role: :admin` iff no other User row exists, else `:operator`. Verify: `mix test test/ashy_walnut_desk/accounts/changes/assign_first_user_admin_test.exs` covers both branches.
+- [x] AC2: A partial-unique index `users_one_admin_idx` on `users(role) WHERE role = 'admin'` exists. Verify: `mix ecto.migrate` succeeds and `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -c "\d users"` shows the partial index.
+- [x] AC3: Race test — two concurrent `register_with_magic_link` Tasks against an empty users table yield exactly one `:admin`; the loser is created as `:operator` (DB rejection caught and recovered cleanly). Verify: `mix test test/ashy_walnut_desk/accounts/first_user_race_test.exs`.
+- [x] AC4: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -72,5 +72,7 @@ mix test test/ashy_walnut_desk/accounts/first_user_race_test.exs
 ## Notes during implementation
 
 - Decisions made:
+- Wired `AssignFirstUserAdmin` into `:sign_in_with_magic_link` (not `:register`) because AshAuthentication magic-link registration with `registration_enabled? true` creates users through `:sign_in_with_magic_link` upsert. This is the real signup path.
 - Spec drift noticed:
+- Story/architecture references `register_with_magic_link`, but the implemented 0.5 action set is `:register` (fixture upsert helper) and `:sign_in_with_magic_link` (auth-generated signup/sign-in action). 0.6 implements the invariant on `:sign_in_with_magic_link` and keeps `:register` available for tests/fixtures.
 - Gotchas to add to AGENTS.md §10:
