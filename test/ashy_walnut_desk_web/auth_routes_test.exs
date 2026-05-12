@@ -26,7 +26,7 @@ defmodule AshyWalnutDeskWeb.AuthRoutesTest do
         Enum.any?(List.wrap(message.to), fn {_name, to_email} ->
           to_string(to_email) == email
         end) and
-        String.contains?(body, "/auth/user/magic_link/")
+        String.contains?(body, "/magic_link/")
     end)
   end
 end

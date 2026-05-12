@@ -195,10 +195,12 @@ defmodule AshyWalnutDesk.Accounts.User do
 
     @impl true
     def send(user_or_email, token, _opts) do
-      Emails.deliver_magic_link(
-        user_or_email,
-        url(~p"/auth/user/magic_link/?token=#{token}")
-      )
+      # Link to the MagicSignInLive page (from magic_sign_in_route), not the
+      # /auth/user/magic_link callback. The LiveView renders a Phoenix.HTML
+      # form with the CSRF token. Pointing the email at the callback URL
+      # served `AshAuthentication.Strategy.MagicLink`'s upstream EEx fallback
+      # form which omits `_csrf_token`, breaking sign-in in the browser.
+      Emails.deliver_magic_link(user_or_email, url(~p"/magic_link/#{token}"))
     end
   end
 

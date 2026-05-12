@@ -1,0 +1,6 @@
+- generic [active] [ref=e1]:
+  - paragraph [ref=e2]: Hello demo-user@example.com,
+  - paragraph [ref=e3]:
+    - link "Click here to sign in" [ref=e4] [cursor=pointer]:
+      - /url: http://localhost:4000/auth/user/magic_link/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3QiOiJzaWduX2luX3dpdGhfbWFnaWNfbGluayIsImF1ZCI6In4-IDQuMTMiLCJleHAiOjE3Nzg2MTk5NzEsImlhdCI6MTc3ODYxOTM3MSwiaWRlbnRpdHkiOiJkZW1vLXVzZXJAZXhhbXBsZS5jb20iLCJpc3MiOiJBc2hBdXRoZW50aWNhdGlvbiB2NC4xMy43IiwianRpIjoiMzJuZXBwMXRiMXR1cWwzMDY0MDAwNWMxIiwibmJmIjoxNzc4NjE5MzcxLCJzdWIiOiJ1c2VyIn0.-eJLkru6HxYAmUw6ddm-MSHZ1Kj1xaKlOrxNlCPDnbY
+    - text: .

@@ -1,0 +1,53 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Mailbox" [level=1] [ref=e6]
+      - paragraph [ref=e7]: 1 message(s)
+    - generic [ref=e8]:
+      - link "Ashy Walnut Desk Magic sign-in link" [ref=e9] [cursor=pointer]:
+        - /url: /dev/mailbox/b5e82ddc821efd35acfff700d4abd22e
+        - generic [ref=e10]: Ashy Walnut Desk
+        - paragraph [ref=e11]: Magic sign-in link
+      - button "Empty mailbox" [ref=e15]
+  - generic [ref=e16]:
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - term [ref=e20]: From
+        - definition [ref=e21]: "\"Ashy Walnut Desk\" <noreply@example.test>"
+      - generic [ref=e22]:
+        - term [ref=e23]: To
+        - definition [ref=e24]: demo@example.com
+      - generic [ref=e25]:
+        - term [ref=e26]: Subject
+        - definition [ref=e27]: Magic sign-in link
+      - generic [ref=e28]:
+        - term [ref=e29]: Cc
+        - definition [ref=e30]: n/a
+      - generic [ref=e31]:
+        - term [ref=e32]: Bcc
+        - definition [ref=e33]: n/a
+      - generic [ref=e34]:
+        - term [ref=e35]: Reply-to
+        - definition [ref=e36]: n/a
+      - generic [ref=e37]:
+        - term [ref=e38]: Message-ID
+        - definition [ref=e39]: b5e82ddc821efd35acfff700d4abd22e
+      - generic [ref=e40]:
+        - term [ref=e41]: Sent at
+        - definition [ref=e42]: 5/13/2026, 5:54:23 AM
+    - button "Text body" [ref=e44] [cursor=pointer]:
+      - text: Text body
+      - img [ref=e45]
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - paragraph [ref=e49]: HTML body
+        - link [ref=e50] [cursor=pointer]:
+          - /url: /dev/mailbox/b5e82ddc821efd35acfff700d4abd22e/html
+          - img [ref=e51]
+      - iframe [ref=e54]:
+        - generic [active] [ref=f3e1]:
+          - paragraph [ref=f3e2]: Hello demo@example.com,
+          - paragraph [ref=f3e3]:
+            - link "Click here to sign in" [ref=f3e4] [cursor=pointer]:
+              - /url: http://localhost:4000/auth/user/magic_link/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY3QiOiJzaWduX2luX3dpdGhfbWFnaWNfbGluayIsImF1ZCI6In4-IDQuMTMiLCJleHAiOjE3Nzg2MTk4NjMsImlhdCI6MTc3ODYxOTI2MywiaWRlbnRpdHkiOiJkZW1vQGV4YW1wbGUuY29tIiwiaXNzIjoiQXNoQXV0aGVudGljYXRpb24gdjQuMTMuNyIsImp0aSI6IjMybmVwaXVzNDl2OWJiMDU2bzAwMDE5MiIsIm5iZiI6MTc3ODYxOTI2Mywic3ViIjoidXNlciJ9.rczkYVRrpKWv-Ibirca2oBAza95WcmCAsfscSJwD7tk
+            - text: .

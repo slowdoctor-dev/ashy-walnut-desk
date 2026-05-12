@@ -78,19 +78,23 @@ defmodule AshyWalnutDesk.Integration.MagicLinkE2ETest do
   defp extract_magic_link_url(message) do
     body = (message.html_body || "") <> "\n" <> (message.text_body || "")
 
-    Regex.run(~r{https?://[^\s"<>]+/auth/user/magic_link[^\s"<>]*}, body)
+    # The email must link to the MagicSignInLive route (`/magic_link/<token>`),
+    # not the `/auth/user/magic_link` callback. Pointing at the callback
+    # served an upstream EEx form with no CSRF token, breaking browser
+    # sign-in. This regex enforces the correct destination.
+    Regex.run(~r{https?://[^\s"<>]+/magic_link/[^\s"<>]+}, body)
     |> case do
       [url] -> url
-      _ -> raise "no magic-link URL in email body: #{body}"
+      _ -> raise "no /magic_link/<token> URL in email body: #{body}"
     end
   end
 
   defp token_from_url(url) do
-    %URI{query: query} = URI.parse(url)
+    %URI{path: path} = URI.parse(url)
 
-    case query && URI.decode_query(query) do
-      %{"token" => token} -> token
-      _ -> raise "magic-link URL has no token query param: #{url}"
+    case path |> String.split("/magic_link/", parts: 2) do
+      [_, token] when token != "" -> token
+      _ -> raise "magic-link URL missing token segment: #{url}"
     end
   end
 
