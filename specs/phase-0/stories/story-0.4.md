@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1h
 **Depends on**: 0.1
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Phase 0 requirements §2 require "AshPaperTrail enabled (no resources to audit y
 
 ## Acceptance criteria
 
-- [ ] AC1: `mix deps` resolves `:ash_paper_trail` (already declared in 0.1's `mix.exs`). Verify: `mix deps | grep ash_paper_trail` shows it as `ok`.
-- [ ] AC2: AshPaperTrail configuration block in `config/config.exs` references the project Repo and follows AshPaperTrail's documented setup. Verify: `grep -q AshPaperTrail config/config.exs`.
-- [ ] AC3: Any AshPaperTrail support tables generated and migrated cleanly. Verify: `mix ash_postgres.generate_migrations --name install_paper_trail` followed by `mix ecto.migrate` exits 0.
-- [ ] AC4: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: `mix deps` resolves `:ash_paper_trail` (already declared in 0.1's `mix.exs`). Verify: `mix deps | grep ash_paper_trail` shows it as `ok`.
+- [x] AC2: AshPaperTrail configuration block in `config/config.exs` references the project Repo and follows AshPaperTrail's documented setup. Verify: `grep -q AshPaperTrail config/config.exs`.
+- [x] AC3: Any AshPaperTrail support tables generated and migrated cleanly. Verify: `mix ash_postgres.generate_migrations --name install_paper_trail` followed by `mix ecto.migrate` exits 0.
+- [x] AC4: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -66,6 +66,6 @@ mix ecto.migrations | grep paper_trail
 
 ## Notes during implementation
 
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: Added app-level `config :ash_paper_trail, repo: AshyWalnutDesk.Repo` plus an explicit `# AshPaperTrail` marker comment to satisfy literal AC2 verification.
+- Spec drift noticed: None.
+- Gotchas to add to AGENTS.md §10: None for this story.

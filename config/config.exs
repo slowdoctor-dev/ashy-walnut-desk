@@ -17,6 +17,10 @@ config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
+# AshPaperTrail app-level setup for later per-resource opt-in.
+config :ash_paper_trail,
+  repo: AshyWalnutDesk.Repo
+
 # Configures the endpoint
 config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   url: [host: "localhost"],
