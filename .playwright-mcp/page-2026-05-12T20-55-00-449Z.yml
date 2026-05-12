@@ -1,3 +1,0 @@
-- generic [active] [ref=e1]:
-  - heading "Sign in" [level=1] [ref=e2]
-  - button "Sign in" [ref=e4]
