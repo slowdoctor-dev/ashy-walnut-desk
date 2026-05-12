@@ -7,6 +7,7 @@ const path = require("path")
 
 module.exports = {
   content: [
+    "../deps/ash_authentication_phoenix/**/*.*ex",
     "./js/**/*.js",
     "../lib/ashy_walnut_desk_web.ex",
     "../lib/ashy_walnut_desk_web/**/*.*ex"

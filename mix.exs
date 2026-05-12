@@ -37,19 +37,22 @@ defmodule AshyWalnutDesk.MixProject do
       {:ash_postgres, "~> 2.0"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_authentication, "== 4.13.7"},
+      {:ash_authentication_phoenix, "~> 2.16"},
       {:igniter, "~> 0.6", only: [:dev, :test], runtime: false},
       {:ash_oban, "~> 0.2"},
       {:ash_paper_trail, "~> 0.4"},
       {:oban, "~> 2.18"},
       {:req, "~> 0.5"},
+      {:swoosh, "~> 1.16"},
       {:phoenix, "~> 1.7.18"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 1.0.0"},
+      {:phoenix_live_view, "~> 1.1"},
       {:floki, ">= 0.30.0", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
@@ -88,7 +91,8 @@ defmodule AshyWalnutDesk.MixProject do
         "tailwind ashy_walnut_desk --minify",
         "esbuild ashy_walnut_desk --minify",
         "phx.digest"
-      ]
+      ],
+      "phx.routes": ["phx.routes", "ash_authentication.phoenix.routes"]
     ]
   end
 end

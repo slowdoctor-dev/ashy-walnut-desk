@@ -218,6 +218,10 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   put each extension's `CREATE EXTENSION IF NOT EXISTS …` in its own
   timestamp-earlier hand-authored setup migration, not inline in the
   resource migration (which gets regenerated)
+- `ash_authentication_phoenix` 2.12.1+ assumes
+  `phoenix_live_view >= 1.1` (uses `compile.phoenix_live_view`) — if
+  your stack is still on LiveView 1.0.x, upgrade LV or pin
+  `ash_authentication_phoenix` accordingly before running installers
 
 ## 11. When in Doubt
 

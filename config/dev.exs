@@ -65,6 +65,8 @@ config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :ashy_walnut_desk, dev_routes: true
 
+config :ashy_walnut_desk, AshyWalnutDesk.Mailer, adapter: Swoosh.Adapters.Local
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 

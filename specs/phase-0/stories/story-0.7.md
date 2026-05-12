@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1.5h
 **Depends on**: 0.5
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -22,10 +22,10 @@ Story 0.5 created `User`/`Token` and the magic-link strategy at the resource lev
 
 ## Acceptance criteria
 
-- [ ] AC1: `mix ash_authentication_phoenix.install` runs and adds the `AshAuthentication.Phoenix.Router` macro plus auth route scopes to `router.ex`. Verify: `grep -q 'AshAuthentication.Phoenix.Router' lib/ashy_walnut_desk_web/router.ex` and `grep -q sign_in_route lib/ashy_walnut_desk_web/router.ex`.
-- [ ] AC2: `GET /sign-in` returns 200 with the magic-link request form (English msgids visible). Verify: a `Phoenix.ConnTest` test in `auth_routes_test.exs` asserts the response status is 200 and the response body contains an `<input type="email"` element.
-- [ ] AC3: Submitting a valid email through the sign-in form captures one Swoosh email containing a magic-link URL pointing at the project. Verify: integration test using `Phoenix.LiveViewTest` + `Swoosh.TestAssertions.assert_email_sent/1`.
-- [ ] AC4: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: `mix ash_authentication_phoenix.install` runs and adds the `AshAuthentication.Phoenix.Router` macro plus auth route scopes to `router.ex`. Verify: `grep -q 'AshAuthentication.Phoenix.Router' lib/ashy_walnut_desk_web/router.ex` and `grep -q sign_in_route lib/ashy_walnut_desk_web/router.ex`.
+- [x] AC2: `GET /sign-in` returns 200 with the magic-link request form (English msgids visible). Verify: a `Phoenix.ConnTest` test in `auth_routes_test.exs` asserts the response status is 200 and the response body contains an `<input type="email"` element.
+- [x] AC3: Submitting a valid email through the sign-in form captures one Swoosh email containing a magic-link URL pointing at the project. Verify: integration test using `Phoenix.LiveViewTest` + `Swoosh.TestAssertions.assert_email_sent/1`.
+- [x] AC4: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -73,5 +73,10 @@ just dev
 ## Notes during implementation
 
 - Decisions made:
+  - Used `ash_authentication_phoenix` `~> 2.16` with `phoenix_live_view` `~> 1.1` to satisfy the upstream `compile.phoenix_live_view` requirement.
+  - Ran `mix ash_authentication_phoenix.install --yes` and kept generated auth router/controller/live-auth wiring.
+  - Added Swoosh (`Local` in dev, `Test` in test) and a concrete magic-link sender so AC3 is verifiable in tests.
 - Spec drift noticed:
+  - `ash_authentication_phoenix` 2.12.0 is incompatible with `phoenix_live_view` 1.0.x in this stack; story required dependency adjustment before route mounting.
 - Gotchas to add to AGENTS.md §10:
+  - `ash_authentication_phoenix` 2.12.1+ expects `phoenix_live_view >= 1.1` because it relies on `compile.phoenix_live_view`.

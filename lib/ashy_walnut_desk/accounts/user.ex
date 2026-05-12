@@ -184,9 +184,16 @@ defmodule AshyWalnutDesk.Accounts.User do
     @moduledoc false
 
     use AshAuthentication.Sender
+    use AshyWalnutDeskWeb, :verified_routes
+    alias AshyWalnutDesk.Accounts.Emails
 
     @impl true
-    def send(_user_or_email, _token, _opts), do: :ok
+    def send(user_or_email, token, _opts) do
+      Emails.deliver_magic_link(
+        user_or_email,
+        url(~p"/auth/user/magic_link/?token=#{token}")
+      )
+    end
   end
 
   defmodule JwtSecret do
