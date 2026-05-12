@@ -127,6 +127,10 @@ lib/ashy_walnut_desk_web/
 - One story per PR, one PR per commit (squash-merge)
 - Format: `[<phase>.<story>] description` — e.g. `[0.3] Add Identity resource skeleton`
 - `just verify` must pass
+- Include a `Co-Authored-By` trailer for every AI tool that contributed,
+  one per line at the end of the commit body. Examples:
+  `Co-Authored-By: Codex (gpt-5.3-codex) <noreply@openai.com>`,
+  `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`.
 
 ## 7. Safety Rules (INVIOLABLE)
 
