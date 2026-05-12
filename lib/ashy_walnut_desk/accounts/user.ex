@@ -23,6 +23,9 @@ defmodule AshyWalnutDesk.Accounts.User do
   paper_trail do
     change_tracking_mode(:changes_only)
     store_action_name?(true)
+    sensitive_attributes(:redact)
+    version_extensions(authorizers: [Ash.Policy.Authorizer])
+    mixin(AshyWalnutDesk.Accounts.User.VersionPolicies)
   end
 
   actions do

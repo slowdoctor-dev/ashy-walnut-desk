@@ -83,4 +83,43 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
 
     assert versions != []
   end
+
+  test "sensitive attributes are redacted in version rows" do
+    email = "redact-target@example.com"
+
+    {:ok, user} =
+      Ash.create(User, %{email: email}, action: :register, authorize?: false)
+
+    versions =
+      Version
+      |> Ash.read!(authorize?: false)
+      |> Enum.filter(&(&1.version_source_id == user.id))
+
+    assert versions != []
+
+    for v <- versions do
+      assert v.changes["email"] in [nil, "REDACTED"]
+      assert v.changes["email_hash"] in [nil, "REDACTED"]
+      refute v.changes["email"] == email
+      refute v.changes["email_hash"] == user.email_hash
+    end
+  end
+
+  test "Version reads require an admin actor" do
+    {:ok, admin} =
+      Ash.create(User, %{email: "version-admin@example.com", role: :admin},
+        action: :register,
+        authorize?: false
+      )
+
+    {:ok, operator} =
+      Ash.create(User, %{email: "version-operator@example.com"},
+        action: :register,
+        authorize?: false
+      )
+
+    assert {:ok, _versions} = Ash.read(Version, actor: admin)
+    assert {:error, %Ash.Error.Forbidden{}} = Ash.read(Version, actor: operator)
+    assert {:error, %Ash.Error.Forbidden{}} = Ash.read(Version, actor: nil)
+  end
 end
