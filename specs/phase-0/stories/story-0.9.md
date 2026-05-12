@@ -1,0 +1,69 @@
+# Story 0.9: GitHub Actions CI workflow
+
+**Phase**: 0
+**Estimate**: 1h
+**Depends on**: 0.1
+**Status**: ready
+
+---
+
+## Goal
+
+Add a GitHub Actions workflow that runs the Phase 0 verification gates on every push to `main` and on every pull request.
+
+## Context
+
+Phase 0 requirements §2 require "GitHub Actions CI green on push to `main`". Architecture §11 (Testing strategy — CI gates) specifies the gate order: `mix format --check` → `mix credo --strict` → `mix ash_postgres.generate_migrations --check` → `mix test` → `scripts/spec-check.sh`. Architecture §2 (Developer workflow and CI) commits to GitHub-hosted runners.
+
+## Reference specs
+
+- `/specs/phase-0/architecture.md` §11 (CI gates ordered list)
+- `/specs/phase-0/architecture.md` §2 (Developer workflow and CI)
+
+## Acceptance criteria
+
+- [ ] AC1: `.github/workflows/ci.yml` exists; triggers on `push: branches: [main]` and `pull_request:`. Verify: `cat .github/workflows/ci.yml | head -10` shows both triggers.
+- [ ] AC2: Workflow runs, in this order: `mix format --check`, `mix credo --strict`, `mix ash_postgres.generate_migrations --check`, `mix test`, `bash scripts/spec-check.sh`. Verify: reading the YAML, the five steps appear in that order.
+- [ ] AC3: Job uses Elixir + Erlang versions matching `.tool-versions` and a `pgvector/pgvector:pg16` PostgreSQL service container. Verify: workflow YAML references the versions and service image.
+- [ ] AC4: A push to a feature branch with a clean local `just verify` results in a green CI run. Verify: `gh run list --branch <feature> --limit 1 --json conclusion -q '.[0].conclusion'` returns `success`.
+
+## Files to create
+
+```
+.github/workflows/ci.yml   — the CI workflow
+```
+
+## Files to modify
+
+— (none)
+
+## Implementation notes
+
+- Use `erlef/setup-beam` (or `actions/setup-elixir` if more current) for installing the BEAM toolchain; pin to `.tool-versions`.
+- The `pgvector/pgvector:pg16` service container is needed because `mix ash_postgres.generate_migrations --check` and `mix test` both require the database to be up and the `vector` extension available.
+- `IDENTIFIER_HASH_SALT` and `SECRET_KEY_BASE` for CI come from a dummy value set in the workflow `env:` (never from a real secret). Test fixtures don't need a strong salt; the salt only needs to be present and stable across the run.
+
+## Safety review
+
+N/A — CI configuration; no sensitive data flows. The dummy CI hash salt is non-production; document this in the workflow YAML so no operator confuses it with real config.
+
+## Out of scope
+
+- Deployment pipeline — Phase 5.
+- Dependency vulnerability scanning (`mix sobelow`, `dialyzer`) — exists as `just security` / `just dialyzer` recipes but not gated in Phase 0 CI to keep the gate fast. Promote later if useful.
+- Caching of `_build`/`deps` across runs — micro-optimization; revisit only if CI duration becomes a friction point.
+
+## Verification
+
+```bash
+just verify   # local
+git push origin <feature-branch>
+gh run list --branch <feature-branch> --limit 1
+gh run watch
+```
+
+## Notes during implementation
+
+- Decisions made:
+- Spec drift noticed:
+- Gotchas to add to AGENTS.md §10:
