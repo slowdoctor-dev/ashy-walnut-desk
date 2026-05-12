@@ -30,6 +30,17 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
              Ash.can({User, :request_magic_link, %{email: "test@example.com"}}, actor: nil)
   end
 
+  test ":register is forbidden by default and only callable with authorize?: false" do
+    assert {:error, %Ash.Error.Forbidden{}} =
+             Ash.create(User, %{email: "blocked@example.com"}, action: :register)
+
+    assert {:ok, _} =
+             Ash.create(User, %{email: "allowed@example.com"},
+               action: :register,
+               authorize?: false
+             )
+  end
+
   test "operator cannot assign role" do
     {:ok, operator} =
       Ash.create(User, %{email: "op@example.com", role: :operator},

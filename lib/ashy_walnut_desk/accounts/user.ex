@@ -49,21 +49,12 @@ defmodule AshyWalnutDesk.Accounts.User do
         allow_nil?(false)
       end
 
-      argument :remember_me, :boolean do
-        allow_nil?(true)
-      end
-
       upsert?(true)
       upsert_identity(:unique_email)
       upsert_fields([:email])
 
       change(AshAuthentication.Strategy.MagicLink.SignInChange)
       change(AssignFirstUserAdmin)
-
-      change(
-        {AshAuthentication.Strategy.RememberMe.MaybeGenerateTokenChange,
-         strategy_name: :remember_me}
-      )
 
       metadata :token, :string do
         allow_nil?(false)
@@ -102,6 +93,16 @@ defmodule AshyWalnutDesk.Accounts.User do
 
     policy action(:assign_role) do
       authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    # :register is a test-only fixture action. Production registration
+    # flows through :sign_in_with_magic_link, which runs
+    # AssignFirstUserAdmin to set the role server-side. Forbidding
+    # :register prevents the :role attribute (still accepted for test
+    # fixtures) from becoming an elevation vector if a future caller
+    # forgets to pass authorize?: false.
+    policy action(:register) do
+      forbid_if(always())
     end
 
     policy action(:request_magic_link) do
