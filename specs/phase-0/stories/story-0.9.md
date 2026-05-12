@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1h
 **Depends on**: 0.1
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -22,10 +22,10 @@ Phase 0 requirements §2 require "GitHub Actions CI green on push to `main`". Ar
 
 ## Acceptance criteria
 
-- [ ] AC1: `.github/workflows/ci.yml` exists; triggers on `push: branches: [main]` and `pull_request:`. Verify: `cat .github/workflows/ci.yml | head -10` shows both triggers.
-- [ ] AC2: Workflow runs, in this order: `mix format --check`, `mix credo --strict`, `mix ash_postgres.generate_migrations --check`, `mix test`, `bash scripts/spec-check.sh`. Verify: reading the YAML, the five steps appear in that order.
-- [ ] AC3: Job uses Elixir + Erlang versions matching `.tool-versions` and a `pgvector/pgvector:pg16` PostgreSQL service container. Verify: workflow YAML references the versions and service image.
-- [ ] AC4: A push to a feature branch with a clean local `just verify` results in a green CI run. Verify: `gh run list --branch <feature> --limit 1 --json conclusion -q '.[0].conclusion'` returns `success`.
+- [x] AC1: `.github/workflows/ci.yml` exists; triggers on `push: branches: [main]` and `pull_request:`. Verify: `cat .github/workflows/ci.yml | head -10` shows both triggers.
+- [x] AC2: Workflow runs, in this order: `mix format --check`, `mix credo --strict`, `mix ash_postgres.generate_migrations --check`, `mix test`, `bash scripts/spec-check.sh`. Verify: reading the YAML, the five steps appear in that order.
+- [x] AC3: Job uses Elixir + Erlang versions matching `.tool-versions` and a `pgvector/pgvector:pg16` PostgreSQL service container. Verify: workflow YAML references the versions and service image.
+- [x] AC4: A push to a feature branch with a clean local `just verify` results in a green CI run. Verify: `gh run list --branch <feature> --limit 1 --json conclusion -q '.[0].conclusion'` returns `success`.
 
 ## Files to create
 
@@ -65,5 +65,24 @@ gh run watch
 ## Notes during implementation
 
 - Decisions made:
+  - Used `erlef/setup-beam@v1` per implementation notes; versions
+    pinned as strings (`"1.17.3"`, `"27.1.2"`) to match `.tool-versions`
+    exactly.
+  - Service container exposes Postgres on host `localhost:5432` and is
+    created with `POSTGRES_DB: ashy_walnut_desk_test` so `mix ecto.create`
+    is effectively a no-op in CI but still safe to call.
+  - Inserted a "Prepare test database" step (`mix ecto.create` +
+    `mix ecto.migrate`) between Gate 3 and Gate 4 so `mix test` has a
+    migrated schema. The five required gates remain in spec order;
+    setup steps don't count as gates.
+  - Each gate step has a `Gate N — …` name prefix so a reviewer
+    scrolling the CI log can confirm gate ordering at a glance.
 - Spec drift noticed:
+  - AC2 literally says `mix format --check`, but Mix 1.17 rejects that
+    flag (the working invocation is `mix format --check-formatted`).
+    Already learned during story 0.1's peer review (justfile fix); the
+    story-0.9 spec text wasn't updated. CI uses the working flag.
 - Gotchas to add to AGENTS.md §10:
+  - None new — the three Phase-0 gotchas already in §10 cover what this
+    story would have flagged (no test-env Oban, AshPostgres migration
+    extension assumptions, etc.).

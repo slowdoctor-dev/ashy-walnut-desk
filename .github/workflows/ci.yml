@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-24.04
+
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ashy_walnut_desk_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Dummy CI values — never used in production. Real deployments
+      # configure these via the operator's secret store.
+      MIX_ENV: test
+      IDENTIFIER_HASH_SALT: ci-dummy-identifier-hash-salt-not-for-production
+      SECRET_KEY_BASE: ci-dummy-secret-key-base-not-for-production-padded-to-meet-minimum-length-aaaaaa
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up BEAM (Elixir + Erlang/OTP per .tool-versions)
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.1.2"
+
+      - name: Install Mix dependencies
+        run: mix deps.get
+
+      # ─── Verification gates (architecture.md §11) ───────────────────
+
+      - name: Gate 1 — mix format --check-formatted
+        run: mix format --check-formatted
+
+      - name: Gate 2 — mix credo --strict
+        run: mix credo --strict
+
+      - name: Gate 3 — mix ash_postgres.generate_migrations --check
+        run: mix ash_postgres.generate_migrations --check
+
+      - name: Prepare test database
+        run: |
+          mix ecto.create
+          mix ecto.migrate
+
+      - name: Gate 4 — mix test
+        run: mix test
+
+      - name: Gate 5 — scripts/spec-check.sh
+        run: bash scripts/spec-check.sh
