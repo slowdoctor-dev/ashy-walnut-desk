@@ -2,7 +2,7 @@
 
 **Phase**: 0
 **Estimate**: 1h
-**Depends on**: 0.8, 0.9
+**Depends on**: 0.6, 0.8, 0.9
 **Status**: ready
 
 ---

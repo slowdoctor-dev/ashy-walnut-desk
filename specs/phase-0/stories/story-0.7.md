@@ -23,7 +23,7 @@ Story 0.5 created `User`/`Token` and the magic-link strategy at the resource lev
 ## Acceptance criteria
 
 - [ ] AC1: `mix ash_authentication_phoenix.install` runs and adds the `AshAuthentication.Phoenix.Router` macro plus auth route scopes to `router.ex`. Verify: `grep -q 'AshAuthentication.Phoenix.Router' lib/ashy_walnut_desk_web/router.ex` and `grep -q sign_in_route lib/ashy_walnut_desk_web/router.ex`.
-- [ ] AC2: `GET /sign-in` returns 200 with the magic-link request form (English msgids visible). Verify: connection test in `auth_routes_test.exs` asserts 200 and the presence of an email input.
+- [ ] AC2: `GET /sign-in` returns 200 with the magic-link request form (English msgids visible). Verify: a `Phoenix.ConnTest` test in `auth_routes_test.exs` asserts the response status is 200 and the response body contains an `<input type="email"` element.
 - [ ] AC3: Submitting a valid email through the sign-in form captures one Swoosh email containing a magic-link URL pointing at the project. Verify: integration test using `Phoenix.LiveViewTest` + `Swoosh.TestAssertions.assert_email_sent/1`.
 - [ ] AC4: `just verify` passes. Verify: `just verify` exits 0.
 

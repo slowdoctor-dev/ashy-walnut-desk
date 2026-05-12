@@ -23,7 +23,7 @@ Phase 0 requirements §2 require both extensions to be enabled. Architecture §7
 
 ## Acceptance criteria
 
-- [ ] AC1: A migration `priv/repo/migrations/<ts>_enable_extensions.exs` runs `CREATE EXTENSION IF NOT EXISTS vector` and `CREATE EXTENSION IF NOT EXISTS pg_trgm`. Verify: `mix ecto.migrate && docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -c "SELECT extname FROM pg_extension WHERE extname IN ('vector','pg_trgm');" | grep -q vector && ... | grep -q pg_trgm`
+- [ ] AC1: A migration `priv/repo/migrations/<ts>_enable_extensions.exs` runs `CREATE EXTENSION IF NOT EXISTS vector` and `CREATE EXTENSION IF NOT EXISTS pg_trgm`. Verify: `mix ecto.migrate` succeeds, then `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -tAc "SELECT extname FROM pg_extension WHERE extname IN ('vector','pg_trgm') ORDER BY extname;"` outputs exactly the two lines `pg_trgm` and `vector`.
 - [ ] AC2: Migration `down/0` is a documented no-op for extension drops. Verify: `mix ecto.rollback --step 1` exits 0 and the migration file contains a `# down: intentional no-op` comment.
 - [ ] AC3: `just verify` passes. Verify: `just verify` exits 0.
 

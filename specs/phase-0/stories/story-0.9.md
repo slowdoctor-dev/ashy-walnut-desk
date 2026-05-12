@@ -39,7 +39,7 @@ Phase 0 requirements §2 require "GitHub Actions CI green on push to `main`". Ar
 
 ## Implementation notes
 
-- Use `erlef/setup-beam` (or `actions/setup-elixir` if more current) for installing the BEAM toolchain; pin to `.tool-versions`.
+- Use `erlef/setup-beam@v1` for the BEAM toolchain; pin `elixir-version` and `otp-version` to the values in `.tool-versions`.
 - The `pgvector/pgvector:pg16` service container is needed because `mix ash_postgres.generate_migrations --check` and `mix test` both require the database to be up and the `vector` extension available.
 - `IDENTIFIER_HASH_SALT` and `SECRET_KEY_BASE` for CI come from a dummy value set in the workflow `env:` (never from a real secret). Test fixtures don't need a strong salt; the salt only needs to be present and stable across the run.
 
