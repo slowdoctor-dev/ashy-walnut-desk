@@ -222,6 +222,15 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   `phoenix_live_view >= 1.1` (uses `compile.phoenix_live_view`) — if
   your stack is still on LiveView 1.0.x, upgrade LV or pin
   `ash_authentication_phoenix` accordingly before running installers
+- `ash_authentication_phoenix` `LiveSession.generate_session/3`
+  rebuilds the live_session session from `conn.assigns.current_user`
+  via `AshAuthentication.user_to_subject/1`, which drops the `<jti>:`
+  prefix. For resources with `session_identifier(:jti)` the LV
+  `on_mount(:default)` then can't recover the user (its
+  `split_identifier/2` requires the prefix). Workarounds: use
+  `session_identifier(:unsafe)` and accept losing per-session
+  revocation, or wrap `ash_authentication_live_session` with a custom
+  on_mount that loads from the cookie session directly.
 
 ## 11. When in Doubt
 
