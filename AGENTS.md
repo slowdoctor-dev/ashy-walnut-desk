@@ -231,6 +231,12 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   `session_identifier(:unsafe)` and accept losing per-session
   revocation, or wrap `ash_authentication_live_session` with a custom
   on_mount that loads from the cookie session directly.
+- Resources may carry test-only fixture actions guarded by
+  `policy action(:name) do forbid_if always() end` (e.g.
+  `Accounts.User.:register`). Production code goes through other
+  actions (e.g. `:sign_in_with_magic_link`). When writing test
+  fixtures call them with `Ash.create(..., authorize?: false)`;
+  never invoke them from `lib/` code.
 
 ## 11. When in Doubt
 

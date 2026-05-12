@@ -26,6 +26,23 @@ end
 config :ashy_walnut_desk, Oban, queues: [default: 10, messages: 10, ai: 5, reindex: 5]
 
 if config_env() == :prod do
+  identifier_hash_salt =
+    System.get_env("IDENTIFIER_HASH_SALT") ||
+      raise """
+      environment variable IDENTIFIER_HASH_SALT is missing.
+      Generate one with: openssl rand -hex 32
+      """
+
+  config :ashy_walnut_desk, identifier_hash_salt: identifier_hash_salt
+
+  System.get_env("ASH_AUTHENTICATION_SECRET") ||
+    raise """
+    environment variable ASH_AUTHENTICATION_SECRET is missing.
+    The Accounts.User.JwtSecret module reads it at runtime; without it,
+    all JWTs would be signed with the dev-only fallback constant.
+    Generate one with: mix phx.gen.secret
+    """
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
