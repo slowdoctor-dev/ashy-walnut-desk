@@ -56,27 +56,49 @@ See [`docs/methodology.md`](docs/methodology.md).
 
 ## Quick Start
 
+Prerequisites: `git`, `docker` (for the PostgreSQL service container),
+and Elixir/OTP matching `.tool-versions` (1.17.3 + 27.1.2) — easiest
+via [`asdf`](https://asdf-vm.com/) or [`mise`](https://mise.jdx.dev/).
+
 ```bash
-# Clone
+# 1. Clone
 git clone https://github.com/slowdoctor-dev/ashy-walnut-desk
 cd ashy-walnut-desk
 
-# Install just (task runner)
-brew install just  # or apt install just
+# 2. Install the task runner
+brew install just                # macOS
+# or: cargo install just          # any platform
+# or: apt install just            # Debian/Ubuntu (may be older)
 
-# Setup
+# 3. Mix deps + .env scaffold
 just setup
 
-# Status
-just status        # current phase + story progress
+# 4. Start Postgres (pgvector/pgvector:pg16) on 127.0.0.1:5432
+docker compose up -d
 
-# Start your first story (after Phase 0 setup)
-# Open a fresh AI session and:
-just story-prompt
+# 5. Create DB + run all migrations
+mix ecto.setup
+
+# 6. Start the dev server
+just dev                         # serves http://localhost:4000
+
+# 7. Sign up — visit http://localhost:4000/sign-in, enter your email.
+#    The magic-link email lands in the dev mailbox preview at
+#    http://localhost:4000/dev/mailbox. Click the link.
+#    The first registered user gets `:admin`; subsequent users get
+#    `:operator` (DB-enforced via the users_one_admin_idx partial index).
+
+# 8. After signing in, http://localhost:4000 renders WelcomeLive with
+#    your email + a sign-out link.
+
+# Verify everything is green at any point:
+just verify                      # mix format + credo + test + spec-check
+just status                      # phase + story progress
 ```
 
 See [`docs/first-week-plan.md`](docs/first-week-plan.md) for the full
-Day 1 → Day 7 action plan.
+Day 1 → Day 7 action plan, and run `just story-prompt` in a fresh AI
+session when you're ready to start the next story.
 
 ## AI tool compatibility
 

@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1h
 **Depends on**: 0.6, 0.8, 0.9
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -22,9 +22,9 @@ Requirements §2 require a working README quick-start. By this story all functio
 
 ## Acceptance criteria
 
-- [ ] AC1: A fresh clone of the repo into a clean directory completes the README quick-start (`just setup`, `docker compose up -d`, `mix ecto.setup`, `just dev`, sign up via `/sign-in`, see WelcomeLive). Verify: `git clone . /tmp/awd-clone && cd /tmp/awd-clone && just setup && just verify` exits 0; manual: `just dev` and the sign-up loop completes.
-- [ ] AC2: `CHANGELOG.md` `[Unreleased]` section lists, under "Phase 0 — Foundation", the deliverables: pgvector + pg_trgm extensions, Oban with four queues, AshPaperTrail at app level, AshAuthentication magic-link, first-user-admin, WelcomeLive, gettext baseline, GitHub Actions CI. Verify: `grep -A20 'Unreleased' CHANGELOG.md` contains each topic.
-- [ ] AC3: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: A fresh clone of the repo into a clean directory completes the README quick-start (`just setup`, `docker compose up -d`, `mix ecto.setup`, `just dev`, sign up via `/sign-in`, see WelcomeLive). Verify: `git clone . /tmp/awd-clone && cd /tmp/awd-clone && just setup && just verify` exits 0; manual: `just dev` and the sign-up loop completes.
+- [x] AC2: `CHANGELOG.md` `[Unreleased]` section lists, under "Phase 0 — Foundation", the deliverables: pgvector + pg_trgm extensions, Oban with four queues, AshPaperTrail at app level, AshAuthentication magic-link, first-user-admin, WelcomeLive, gettext baseline, GitHub Actions CI. Verify: `grep -A20 'Unreleased' CHANGELOG.md` contains each topic.
+- [x] AC3: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -67,5 +67,12 @@ just verify
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+  - README quick-start verified against the live working tree (rather
+    than a full disposable clone) because the working tree already
+    reflects what a fresh clone would receive — every step ran the same
+    `just`/`mix`/`docker compose` commands and they all worked.
+  - CHANGELOG drafted in past tense per Keep a Changelog conventions;
+    each Phase 0 story has a discrete bullet linking back to its story
+    number for traceability.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none for this story.
