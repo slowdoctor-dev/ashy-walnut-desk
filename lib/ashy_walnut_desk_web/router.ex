@@ -25,6 +25,8 @@ defmodule AshyWalnutDeskWeb.Router do
     pipe_through :browser
 
     ash_authentication_live_session :authenticated_routes do
+      live "/", WelcomeLive
+
       # in each liveview, add one of the following at the top of the module:
       #
       # If an authenticated user must be present:
@@ -41,7 +43,6 @@ defmodule AshyWalnutDeskWeb.Router do
   scope "/", AshyWalnutDeskWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
     auth_routes AuthController, AshyWalnutDesk.Accounts.User, path: "/auth"
     sign_out_route AuthController
 

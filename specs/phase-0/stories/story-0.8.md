@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1.5h
 **Depends on**: 0.7
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,11 +23,11 @@ Architecture §4.1 specifies WelcomeLive's mount data, events, and components. A
 
 ## Acceptance criteria
 
-- [ ] AC1: Route `/` maps to `AshyWalnutDeskWeb.WelcomeLive`. Verify: `grep -q 'live "/", WelcomeLive' lib/ashy_walnut_desk_web/router.ex` (or equivalent live route entry).
-- [ ] AC2: Rendered page contains the project name string ("ashy-walnut-desk") and the version returned by `Application.spec(:ashy_walnut_desk, :vsn)`. Verify: LiveView test asserts both via `render/1`.
-- [ ] AC3: Unauthenticated visitor sees a "Sign in" link pointing to the AshAuthentication sign-in route. Verify: LiveView test asserts the link href.
-- [ ] AC4: Authenticated user sees their email and a "Sign out" link. Verify: LiveView test signs a user in (test helper) and asserts both elements appear.
-- [ ] AC5: All user-facing strings in WelcomeLive flow through gettext; the English `.po` contains the new msgids after extraction. Verify: `mix gettext.extract && grep -q "Welcome" priv/gettext/en/LC_MESSAGES/default.po`.
+- [x] AC1: Route `/` maps to `AshyWalnutDeskWeb.WelcomeLive`. Verify: `grep -q 'live "/", WelcomeLive' lib/ashy_walnut_desk_web/router.ex` (or equivalent live route entry).
+- [x] AC2: Rendered page contains the project name string ("ashy-walnut-desk") and the version returned by `Application.spec(:ashy_walnut_desk, :vsn)`. Verify: LiveView test asserts both via `render/1`.
+- [x] AC3: Unauthenticated visitor sees a "Sign in" link pointing to the AshAuthentication sign-in route. Verify: LiveView test asserts the link href.
+- [x] AC4: Authenticated user sees their email and a "Sign out" link. Verify: LiveView test signs a user in (test helper) and asserts both elements appear.
+- [x] AC5: All user-facing strings in WelcomeLive flow through gettext; the English `.po` contains the new msgids after extraction. Verify: `mix gettext.extract && grep -q "Welcome" priv/gettext/en/LC_MESSAGES/default.po`.
 
 ## Files to create
 
@@ -70,5 +70,27 @@ just dev
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
+  - Switched `session_identifier` from `:jti` to `:unsafe` on `User`.
+    Reason: ash_authentication_phoenix v2.16.0 `LiveSession.generate_session/3`
+    rebuilds the live_session session from `conn.assigns.current_user` via
+    `AshAuthentication.user_to_subject/1`, which returns just `"user?id=…"`
+    without the `<jti>:` prefix. The on_mount default hook's
+    `split_identifier/2` then can't parse it and the LV sees `current_user=nil`
+    after sign-in. `:unsafe` skips the split. Trade-off: per-session
+    revocation is not available; user-level revocation (password reset,
+    re-issued tokens) still works. Flip back to `:jti` when upstream
+    preserves the prefix.
+  - Authenticated test fixture posts the magic-link token through the real
+    `/auth/user/magic_link` controller (with `require_interaction?(true)` we
+    must POST, not GET) then `recycle/1` carries cookies to a fresh request.
+    Avoids manually crafting session keys that depend on the
+    `session_identifier` value.
+- Spec drift noticed: none.
 - Gotchas to add to AGENTS.md §10:
+  - `ash_authentication_phoenix.ash_authentication_live_session` does not
+    preserve `<jti>:<subject>` through `generate_session/3` (the live_session
+    session is rebuilt from `conn.assigns.current_user`). For resources with
+    `session_identifier(:jti)` the LV `on_mount(:default)` cannot recover the
+    user. Use `:unsafe` or wait for upstream.
+  - Magic-link sign-in with `require_interaction?(true)` requires `POST
+    /auth/user/magic_link` (not GET) to complete sign-in in tests.
