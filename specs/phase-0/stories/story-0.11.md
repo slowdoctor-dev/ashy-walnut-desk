@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 2h
 **Depends on**: 0.6, 0.8, 0.9, 0.10
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ Per `prompts/bmad-pm.md`, the last story of each phase is an integration test th
 
 ## Acceptance criteria
 
-- [ ] AC1: A single Phoenix.LiveViewTest scenario in `test/integration/magic_link_e2e_test.exs` walks: visit `/sign-in` → submit a fresh email → Swoosh captures one email → extract token URL → visit the token URL → session is established → redirect lands on `/` → WelcomeLive renders the authenticated UI containing the user's email. Verify: `mix test test/integration/magic_link_e2e_test.exs` passes.
-- [ ] AC2: The same test asserts role assignment: first registered user has `role: :admin`, a second user registered immediately after gets `role: :operator`. Verify: same test file asserts both roles via `Accounts.read!` after each registration.
-- [ ] AC3: `specs/phase-0/requirements.md §2` checklist is updated — every box flips from `[ ]` to `[x]` because each AC is now demonstrably satisfied by the codebase. Verify: `grep -c "^- \[x\]" specs/phase-0/requirements.md` equals 12 (the count of AC bullets in §2).
+- [x] AC1: A single Phoenix.LiveViewTest scenario in `test/integration/magic_link_e2e_test.exs` walks: visit `/sign-in` → submit a fresh email → Swoosh captures one email → extract token URL → visit the token URL → session is established → redirect lands on `/` → WelcomeLive renders the authenticated UI containing the user's email. Verify: `mix test test/integration/magic_link_e2e_test.exs` passes.
+- [x] AC2: The same test asserts role assignment: first registered user has `role: :admin`, a second user registered immediately after gets `role: :operator`. Verify: same test file asserts both roles via `Accounts.read!` after each registration.
+- [x] AC3: `specs/phase-0/requirements.md §2` checklist is updated — every box flips from `[ ]` to `[x]` because each AC is now demonstrably satisfied by the codebase. Verify: `grep -c "^- \[x\]" specs/phase-0/requirements.md` equals 12 (the count of AC bullets in §2).
 
 ## Files to create
 
@@ -69,5 +69,20 @@ grep -c "^- \[x\]" specs/phase-0/requirements.md   # expect 12
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+  - Each registration step uses its own `build_conn()` rather than
+    sharing one session. This mirrors two different browsers signing
+    up (the real failure mode for the admin-vs-operator distinction)
+    and avoids the previous-user's session leaking into the second
+    registration.
+  - The token URL is extracted from the email body via a regex that
+    captures the `/auth/user/magic_link` callback URL with its
+    `?token=…` query string. The test then POSTs to that endpoint
+    (required by `require_interaction?(true)` on the magic-link
+    strategy) instead of clicking through the interactive
+    `MagicSignInLive` page — same code path, less plumbing.
+  - `Ash.read(User, action: :read, authorize?: false)` is used to
+    assert role assignments because the test does not have an
+    authenticated actor with the `:assign_role` permission. The
+    bypass is test-only.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none beyond those captured in 0.8.

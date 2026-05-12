@@ -10,18 +10,18 @@ see a welcome LiveView, and CI is green on push.
 
 ## 2. Acceptance criteria (phase-level)
 
-- [ ] `mix phx.server` runs without errors
-- [ ] `mix test` passes (initial test suite)
-- [ ] `just verify` (format + credo + test + spec-check) all green
-- [ ] GitHub Actions CI green on push to `main`
-- [ ] Welcome LiveView shows project name + version
-- [ ] User can sign up + log in (AshAuthentication via magic link)
-- [ ] AshPaperTrail enabled (no resources to audit yet, just config)
-- [ ] Oban configured with queues: `default`, `messages`, `ai`, `reindex`
-- [ ] PostgreSQL 16 + pgvector + pg_trgm extensions enabled
-- [ ] gettext working (basic strings translated; deployer chooses locales)
-- [ ] All foundational ADRs documented
-- [ ] README.md has working quick-start
+- [x] `mix phx.server` runs without errors
+- [x] `mix test` passes (initial test suite)
+- [x] `just verify` (format + credo + test + spec-check) all green
+- [x] GitHub Actions CI green on push to `main`
+- [x] Welcome LiveView shows project name + version
+- [x] User can sign up + log in (AshAuthentication via magic link)
+- [x] AshPaperTrail enabled (no resources to audit yet, just config)
+- [x] Oban configured with queues: `default`, `messages`, `ai`, `reindex`
+- [x] PostgreSQL 16 + pgvector + pg_trgm extensions enabled
+- [x] gettext working (basic strings translated; deployer chooses locales)
+- [x] All foundational ADRs documented
+- [x] README.md has working quick-start
 
 ## 3. Scope
 
