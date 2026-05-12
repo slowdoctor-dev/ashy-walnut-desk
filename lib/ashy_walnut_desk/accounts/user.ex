@@ -115,9 +115,8 @@ defmodule AshyWalnutDesk.Accounts.User do
   end
 
   authentication do
-    # :unsafe avoids ash_authentication_phoenix's generate_session/3 stripping
-    # the jti prefix that on_mount(:default) requires for :jti resources.
-    # Revisit (and switch back to :jti) when upstream preserves the prefix.
+    # Phase 0 trade-off — see specs/security/known-trade-offs.md TO-1
+    # for the upstream bug, what we lose, and the revisit trigger.
     session_identifier(:unsafe)
 
     tokens do
