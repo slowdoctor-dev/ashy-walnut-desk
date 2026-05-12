@@ -1,0 +1,7 @@
+{
+  "installed": [
+    "vector",
+    "pg_trgm",
+    "citext"
+  ]
+}
