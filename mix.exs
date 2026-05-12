@@ -32,10 +32,12 @@ defmodule AshyWalnutDesk.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:picosat_elixir, "~> 0.2"},
       {:ash, "~> 3.0"},
       {:ash_postgres, "~> 2.0"},
       {:ash_phoenix, "~> 2.0"},
-      {:ash_authentication, "~> 4.0"},
+      {:ash_authentication, "== 4.13.7"},
+      {:igniter, "~> 0.6", only: [:dev, :test], runtime: false},
       {:ash_oban, "~> 0.2"},
       {:ash_paper_trail, "~> 0.4"},
       {:oban, "~> 2.18"},

@@ -15,7 +15,8 @@ config :ashy_walnut_desk, Oban,
 
 config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
-  generators: [timestamp_type: :utc_datetime, binary_id: true]
+  generators: [timestamp_type: :utc_datetime, binary_id: true],
+  ash_domains: [AshyWalnutDesk.Accounts]
 
 # AshPaperTrail app-level setup for later per-resource opt-in.
 config :ash_paper_trail,
