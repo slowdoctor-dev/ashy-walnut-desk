@@ -12,6 +12,7 @@ defmodule AshyWalnutDesk.Application do
       AshyWalnutDesk.Repo,
       {DNSCluster, query: Application.get_env(:ashy_walnut_desk, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: AshyWalnutDesk.PubSub},
+      {Oban, Application.fetch_env!(:ashy_walnut_desk, Oban)},
       # Start a worker by calling: AshyWalnutDesk.Worker.start_link(arg)
       # {AshyWalnutDesk.Worker, arg},
       # Start to serve requests, typically the last entry

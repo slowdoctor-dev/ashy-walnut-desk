@@ -7,6 +7,12 @@
 # General application configuration
 import Config
 
+config :ashy_walnut_desk, Oban,
+  name: Oban,
+  repo: AshyWalnutDesk.Repo,
+  plugins: [Oban.Plugins.Pruner],
+  queues: []
+
 config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]

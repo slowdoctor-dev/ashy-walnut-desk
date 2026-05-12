@@ -3,7 +3,7 @@
 **Phase**: 0
 **Estimate**: 1.5h
 **Depends on**: 0.1
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -22,10 +22,10 @@ Phase 0 requirements §2 require Oban with these four queues. Architecture §1 (
 
 ## Acceptance criteria
 
-- [ ] AC1: Oban migration `priv/repo/migrations/<ts>_oban_setup.exs` runs `Oban.Migration.up/0`. Verify: `mix ecto.migrate` succeeds and `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -c "\d oban_jobs"` returns the table.
-- [ ] AC2: `AshyWalnutDesk.Application` starts `Oban` as a supervised child. Verify: in `iex -S mix phx.server`, `Process.whereis(Oban)` returns a pid.
-- [ ] AC3: Runtime queue config in `config/runtime.exs` declares all four queues with sensible defaults. Verify: `iex` → `Oban.config().queues` returns a keyword list containing `default`, `messages`, `ai`, `reindex`.
-- [ ] AC4: `just verify` passes. Verify: `just verify` exits 0.
+- [x] AC1: Oban migration `priv/repo/migrations/<ts>_oban_setup.exs` runs `Oban.Migration.up/0`. Verify: `mix ecto.migrate` succeeds and `docker compose exec db psql -U postgres -d ashy_walnut_desk_dev -c "\d oban_jobs"` returns the table.
+- [x] AC2: `AshyWalnutDesk.Application` starts `Oban` as a supervised child. Verify: in `iex -S mix phx.server`, `Process.whereis(Oban)` returns a pid.
+- [x] AC3: Runtime queue config in `config/runtime.exs` declares all four queues with sensible defaults. Verify: `iex` → `Oban.config().queues` returns a keyword list containing `default`, `messages`, `ai`, `reindex`.
+- [x] AC4: `just verify` passes. Verify: `just verify` exits 0.
 
 ## Files to create
 
@@ -69,5 +69,9 @@ iex -S mix phx.server
 ## Notes during implementation
 
 - Decisions made:
+- Added Oban base config in `config/config.exs` and runtime queue limits in `config/runtime.exs`.
+- Added `{Oban, Application.fetch_env!(:ashy_walnut_desk, Oban)}` to app supervision tree.
+- Added Oban schema migration using `Oban.Migrations.up/0` / `down/0`.
 - Spec drift noticed:
+- None.
 - Gotchas to add to AGENTS.md §10:
