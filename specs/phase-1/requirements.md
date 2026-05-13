@@ -11,11 +11,14 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 - [ ] Every Identity-axis resource has explicit authorization policies; unauthenticated callers are denied by default for non-public actions.
 - [ ] Sensitive customer fields are marked and handled as sensitive, and raw sensitive values are not persisted in audit payloads in plaintext.
 - [ ] The project-level invariant "raw primary identifiers are never stored when hashing is required" is enforced for the Identity resource.
-- [ ] Consent is modeled as a first-class record with auditable create/update lifecycle and effective-state visibility for operators.
+- [ ] Consent is modeled as a first-class **immutable append-only ledger**: each consent change creates a new row with an `effective_at` timestamp; old rows are never modified; "current consent" is a query, not a column. Test coverage proves both append-only behavior and current-state resolution.
 - [ ] Identity timeline behavior is observable: operators can view a customer's linked events, appointments, follow-ups, notes, and consent history in chronological order.
 - [ ] Cross-resource ownership constraints are enforced: event/appointment/follow-up/note/consent records cannot exist without an owning identity context.
 - [ ] Audit trail coverage is active for Identity-axis sensitive-record changes, with tests asserting that key state transitions produce version/audit entries.
-- [ ] LiveView coverage exists for at least one authenticated end-to-end Identity flow (create or update customer identity + related record + verification of visible result).
+- [ ] **Soft-delete only** on every Identity-axis resource: each resource has a `deleted_at` timestamp; reads filter deleted rows by default; admin can recover. No hard-delete action ships in Phase 1.
+- [ ] A new `:viewer` role is added to the role enum alongside `:admin` and `:operator`. Identity-axis read policies admit `:viewer`; write policies do not.
+- [ ] Appointment and follow-up records carry a `scheduled_for` timestamp and are observable to operators, but Phase 1 does **not** ship a sending/reminder pipeline (record-only — deferred to Phase 4).
+- [ ] Identity-timeline UX evidence: an automated `Phoenix.LiveViewTest` E2E flow exercises create → link → view-timeline, **plus** committed Playwright-driven screenshots of the timeline UI showing create + linked records (one screenshot per major UX state). The screenshots live under a tracked path (e.g. `docs/phase-1-screenshots/`) and the script that produces them is reproducible from `just`.
 - [ ] TO-3 from `specs/security/known-trade-offs.md` is resolved in this phase: expired authentication tokens are expunged on a recurring schedule and verified by tests.
 
 ## 3. Scope
@@ -23,10 +26,13 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 ### In scope
 - Identity-axis domain capability requirements for:
   - Customer identity records (Who)
-  - Events/encounters, appointments, and follow-ups (When)
+  - Events/encounters, appointments, and follow-ups (When) — record-only, no reminder/send pipeline
   - Operator notes and consent records linked to identity context
 - Phase-level authorization, sensitive-data handling, and audit requirements for all Identity resources.
-- Identity-oriented operator UX requirements in LiveView sufficient to prove authenticated use of the new domain records.
+- `:viewer` role added to the role enum; read-only access pattern for Identity resources.
+- Soft-delete pattern (`deleted_at` + default-filtered reads + admin recovery) on every Identity resource.
+- Immutable append-only consent ledger with `effective_at` timestamps and a "current consent" query.
+- Identity-oriented operator UX requirements in LiveView sufficient to prove authenticated use of the new domain records, with Playwright screenshot evidence of the timeline UX.
 - Resolution of TO-3 (expired token expunge) as Phase 1 security hygiene tied to active operator usage growth.
 
 ### Out of scope (deferred)
@@ -34,6 +40,10 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 - External channel adapters and webhook integrations (Phase 3).
 - AI draft generation, validator semantics, and send countdown flows (Phase 4).
 - Knowledge-axis resources and retrieval behavior (Phase 5).
+- Reminder/notification sending for appointments and follow-ups — deferred to Phase 4 when the send pipeline ships.
+- Hard-delete of Identity records — deferred to a later governance phase if ever; the audit chain (ADR-016) and inviolable rule §7.4 make hard-delete a deliberate decision, not a default.
+- Operator role partitioning beyond `:admin`/`:operator`/`:viewer` — deferred to first deployer onboarding (per ADR-006: domain as configuration).
+- Per-record operator assignment (`assigned_operator_id` etc.) — deferred; revisit when a deployer needs work allocation.
 - Deployment-specific legal/compliance wording, retention windows, and jurisdictional policy documents (deployer repo per ADR-010).
 - Full cross-axis overview dashboard behavior (later phase when multiple axes are populated).
 
@@ -64,13 +74,15 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 | TO-3 remains deferred and accumulates stale auth token rows | Treat TO-3 as in-scope phase hygiene and require a recurring expunge proof in tests before phase completion. |
 | Timeline usability degrades with fragmented records | Require observable linked chronological view behavior as an acceptance criterion, not an optional UX refinement. |
 
-## 7. Open questions
+## 7. Open questions (resolved)
 
-- [ ] Should Identity record lifecycle include soft-delete/archive requirements in Phase 1, or is hard-delete prohibition deferred to a later governance phase?
-- [ ] Is consent versioning required as immutable append-only history in Phase 1, or is update-in-place with audit trail acceptable for now?
-- [ ] What minimum operator roles beyond `admin`/`operator` are required for Identity access partitioning in Phase 1 (if any)?
-- [ ] Should appointment/follow-up scheduling in Phase 1 include reminder/notification behavior, or remain record-only until Phase 2/3 integrations?
-- [ ] What Phase 1 completion evidence is required for identity timeline UX: automated test-only proof, or test + manual acceptance checklist?
+- [x] **Soft-delete/archive in Phase 1?** — Yes, soft-delete only (`deleted_at` + default-filtered reads + admin recovery). Hard-delete is forbidden in Phase 1; revisit only if a future governance phase explicitly authorizes it.
+- [x] **Consent versioning model?** — Immutable append-only ledger with `effective_at` timestamps. "Current consent" is a query, not a column. Maps to ADR-016's four-stage record chain spirit.
+- [x] **Additional operator roles?** — Add `:viewer` (read-only) alongside `:admin`/`:operator`. Further partitioning (per-record assignment, additional roles) deferred until a real deployer onboards (per ADR-006).
+- [x] **Reminders/notifications for appointments and follow-ups?** — Record-only in Phase 1. Sending pipeline lands in Phase 4 (AI Drafts + send) where the send infrastructure exists.
+- [x] **Identity-timeline UX evidence?** — `Phoenix.LiveViewTest` E2E flow **plus** committed Playwright screenshots of the timeline UI under a tracked path. Screenshots are reproducible via `just`.
+
+Each answer is settled here; the Architect persona can proceed without further user input on scope.
 
 ---
 *Requirements drafted by BMAD Analyst persona. When approved, activate the Architect persona for technical design.*
