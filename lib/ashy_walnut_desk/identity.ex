@@ -9,5 +9,7 @@ defmodule AshyWalnutDesk.Identity do
     resource(AshyWalnutDesk.Identity.Identity.Version)
     resource(AshyWalnutDesk.Identity.Event)
     resource(AshyWalnutDesk.Identity.Event.Version)
+    resource(AshyWalnutDesk.Identity.Appointment)
+    resource(AshyWalnutDesk.Identity.Appointment.Version)
   end
 end

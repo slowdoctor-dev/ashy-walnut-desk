@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 3h
 **Depends on**: 1.2, 1.3
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Phase 1 uses one Appointment resource for initial/follow-up/recurring records. T
 
 ## Acceptance criteria
 
-- [ ] AC1: `Appointment` resource exists with `appointment_type`, `scheduled_for`, status transitions (`schedule_appointment`, `reschedule`, `cancel`, `complete`), and Identity ownership link. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
-- [ ] AC2: Validation enforces `originating_event_id` semantics for follow-up appointments (`required when type is :follow_up`; otherwise nil). — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
-- [ ] AC3: Appointment write policies deny `:viewer` and unauthenticated actors; read is allowed to `:viewer`. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
-- [ ] AC4: Appointment supports soft-delete/recover and redacted audited versions with admin-only Version reads. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
+- [x] AC1: `Appointment` resource exists with `appointment_type`, `scheduled_for`, status transitions (`schedule_appointment`, `reschedule`, `cancel`, `complete`), and Identity ownership link. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
+- [x] AC2: Validation enforces `originating_event_id` semantics for follow-up appointments (`required when type is :follow_up`; otherwise nil). — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
+- [x] AC3: Appointment write policies deny `:viewer` and unauthenticated actors; read is allowed to `:viewer`. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
+- [x] AC4: Appointment supports soft-delete/recover and redacted audited versions with admin-only Version reads. — Verify: `mix test test/ashy_walnut_desk/identity/appointment_test.exs`
 
 ## Files to create
 
@@ -70,5 +70,16 @@ mix test test/ashy_walnut_desk/identity/appointment_test.exs
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+  - The `originating_event_id` rule is implemented as a global resource
+    validation (`Identity.Validations.OriginatingEventLink`) running on
+    both `:create` and `:update`. Architecture §3.3 phrased it as
+    "originating_event_id is nil unless type == :follow_up"; the prompt
+    framed it as "required when type == :follow_up". The validation
+    enforces both directions (required for follow_up, must be nil for
+    initial/recurring) — a single function covers the contract.
+  - `:reschedule` is `require_atomic? false` because the global
+    validation can't be done atomically. All status-transition update
+    actions stay non-atomic for the same reason (and to match the
+    Identity/Event archive pattern).
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none.
