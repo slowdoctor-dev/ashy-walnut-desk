@@ -113,6 +113,18 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
       assert v.changes["email_hash"] in [nil, "REDACTED"]
       refute v.changes["email"] == email
       refute v.changes["email_hash"] == user.email_hash
+
+      # Also assert no sensitive plaintext bleeds into other persisted
+      # payload columns. `version_action_inputs` is only present when
+      # `store_action_inputs?(true)` is configured; this fence catches any
+      # future flip-to-true that forgets to scrub the same way `changes` does.
+      if Map.has_key?(v, :version_action_inputs) do
+        for {_k, value} <- v.version_action_inputs || %{} do
+          rendered = inspect(value)
+          refute rendered =~ email
+          refute rendered =~ user.email_hash
+        end
+      end
     end
   end
 

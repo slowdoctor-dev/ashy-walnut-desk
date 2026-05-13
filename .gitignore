@@ -116,3 +116,7 @@ coverage/
 .claude/.cache/
 .claude/conversations/
 .claude/scheduled_tasks.lock
+
+# Playwright + demo screenshot artifacts (not committed to repo)
+.playwright-mcp/
+demo-*.png
