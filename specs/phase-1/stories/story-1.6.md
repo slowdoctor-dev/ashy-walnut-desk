@@ -1,0 +1,78 @@
+# Story 1.6: Identity LiveViews + timeline UI
+
+**Phase**: 1
+**Estimate**: 3h
+**Depends on**: 1.2, 1.3, 1.4, 1.5
+**Status**: ready
+
+---
+
+## Goal
+
+Implement Identity LiveView pages and timeline rendering so operators/viewers can observe linked records and role-based UI behavior.
+
+## Context
+
+Resource-level correctness is insufficient without observable operator UX. This story delivers the primary Identity UI contract in Phase 1.
+
+## Reference specs
+
+- `/AGENTS.md` §6 (LiveView layout and standards)
+- `/specs/phase-1/requirements.md` §2 (AC7, AC10, AC11, AC13)
+- `/specs/phase-1/architecture.md` §4 (IdentityLive components)
+
+## Acceptance criteria
+
+- [ ] AC1: `IdentityLive.Index` and `IdentityLive.Show` routes render for authenticated actors and list non-archived identities by default. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
+- [ ] AC2: Timeline view shows linked Event/Appointment/Note records chronologically for an identity. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
+- [ ] AC3: `:viewer` sees timeline/read surfaces but cannot trigger write actions from UI paths; write attempts fail at action boundary. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
+- [ ] AC4: Archive/recover UX behavior is consistent with soft-delete policy (admin recover only, archived hidden from default index). — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
+
+## Files to create
+
+```
+lib/ashy_walnut_desk_web/live/identity_live/index.ex   — identity list
+lib/ashy_walnut_desk_web/live/identity_live/show.ex   — identity detail + timeline
+lib/ashy_walnut_desk_web/live/identity_live/new.ex   — create identity form
+lib/ashy_walnut_desk_web/live/identity_live/edit.ex   — edit identity form
+lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex   — timeline renderer
+test/ashy_walnut_desk_web/live/identity_live/index_test.exs   — index behavior tests
+test/ashy_walnut_desk_web/live/identity_live/show_test.exs   — timeline + role behavior tests
+```
+
+## Files to modify
+
+```
+lib/ashy_walnut_desk_web/router.ex   — Identity LiveView routes
+lib/ashy_walnut_desk_web/live_user_auth.ex   — on_mount usage as needed
+```
+
+## Implementation notes
+
+Keep forms/action wiring inside existing auth live session behavior; do not introduce separate API endpoints.
+
+## Safety review
+
+- Sensitive records touched? Yes — identity details and timeline content.
+- AI output to end user possible? No.
+- Guardrails applied? Role-based read/write policy boundaries.
+- Audit trail covered? Indirectly via resource actions already audited.
+
+## Out of scope (will NOT do in this story)
+
+- Property-based ordering invariants: deferred to 1.7
+- Playwright screenshot capture: deferred to 1.9
+
+## Verification
+
+```bash
+just verify
+mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs
+mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs
+```
+
+## Notes during implementation
+
+- Decisions made:
+- Spec drift noticed:
+- Gotchas to add to AGENTS.md §10:

@@ -48,10 +48,20 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 - Deployment-specific legal/compliance wording, retention windows, and jurisdictional policy documents (deployer repo per ADR-010).
 - Full cross-axis overview dashboard behavior (later phase when multiple axes are populated).
 
-## 4. Story breakdown (filled later by PM)
+## 4. Story breakdown
 
-| # | Story | Estimate | Depends on | Status |
+| # | Story | Est | Depends on | Status |
 |---|---|---|---|---|
+| 1.1 | Identity domain bootstrap + viewer role | 2h | — | ready |
+| 1.2 | Identity resource + hashing + soft-delete base pattern | 3h | 1.1 | ready |
+| 1.3 | Event resource linked to Identity | 2h | 1.2 | ready |
+| 1.4 | Appointment resource with follow-up validation | 3h | 1.2, 1.3 | ready |
+| 1.5 | Note resource with ownership-aware editing | 2h | 1.2 | ready |
+| 1.6 | Identity LiveViews + timeline UI | 3h | 1.2, 1.3, 1.4, 1.5 | ready |
+| 1.7 | Property-based invariants for timeline and soft-delete | 2h | 1.2, 1.3, 1.4, 1.5, 1.6 | ready |
+| 1.8 | TO-3 token expunge schedule via AshOban | 1h | 1.1 | ready |
+| 1.9 | Playwright screenshot evidence for Identity timeline UX | 2h | 1.6 | ready |
+| 1.10 | Phase 1 Identity-axis integration test gate | 2h | 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9 | ready |
 
 ## 5. Dependencies
 

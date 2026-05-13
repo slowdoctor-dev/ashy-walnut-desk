@@ -120,3 +120,4 @@ coverage/
 # Playwright + demo screenshot artifacts (not committed to repo)
 .playwright-mcp/
 demo-*.png
+status-*.png
