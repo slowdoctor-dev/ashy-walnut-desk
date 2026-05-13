@@ -7,5 +7,7 @@ defmodule AshyWalnutDesk.Identity do
   resources do
     resource(AshyWalnutDesk.Identity.Identity)
     resource(AshyWalnutDesk.Identity.Identity.Version)
+    resource(AshyWalnutDesk.Identity.Event)
+    resource(AshyWalnutDesk.Identity.Event.Version)
   end
 end
