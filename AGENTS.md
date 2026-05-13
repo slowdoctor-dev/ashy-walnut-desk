@@ -243,6 +243,14 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   `TRUNCATE` of an FK target with "cannot truncate a table referenced
   in a foreign key constraint." Each phase that adds new resources
   pointing at `users`/`identities`/etc. inherits this hazard.
+- Ash update actions whose policy uses `authorize_if expr(...)` against
+  record attributes (e.g. self-edit via
+  `expr(recorded_by_id == ^actor(:id))`) must set `require_atomic?
+  false`. The default atomic update tries to fold the policy into the
+  data-layer WHERE clause and AshPostgres errors with `data layer
+  "AshPostgres.DataLayer" does not support the function
+  error(Ash.Error.Forbidden.Placeholder, …)`. Atomic mode can only
+  encode policy results that survive as SQL; the deny branch can't.
 
 ## 11. When in Doubt
 
