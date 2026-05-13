@@ -80,10 +80,14 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 - [x] **Soft-delete/archive in Phase 1?** — Yes, soft-delete only (`deleted_at` + default-filtered reads + admin recovery). Hard-delete is forbidden in Phase 1; revisit only if a future governance phase explicitly authorizes it.
 - [x] **Consent versioning model?** — Revisited during Architect pass: Consent has no Phase 1 reader (no send pipeline, no AI gate). Deferred to its first consumer phase (likely Phase 4). The candidate append-only ledger design is recorded in `specs/phase-1/architecture.md §3.5` for continuity; the actual ADR is written by the Architect of that future phase with a real consumer in mind.
 - [x] **Additional operator roles?** — Add `:viewer` (read-only) alongside `:admin`/`:operator`. Further partitioning (per-record assignment, additional roles) deferred until a real deployer onboards (per ADR-006).
-- [x] **Reminders/notifications for appointments and follow-ups?** — Record-only in Phase 1. Sending pipeline lands in Phase 4 (AI Drafts + send) where the send infrastructure exists.
+- [x] **Reminders/notifications for appointments?** — Record-only in Phase 1 (covers both initial and follow-up appointments via `appointment_type`). Sending pipeline lands in Phase 4 (AI Drafts + send) where the send infrastructure exists.
 - [x] **Identity-timeline UX evidence?** — `Phoenix.LiveViewTest` E2E flow **plus** committed Playwright screenshots of the timeline UI under a tracked path. Screenshots are reproducible via `just`.
 
-Each answer is settled here; the Architect persona can proceed without further user input on scope.
+Each answer is settled here. Q2 was re-opened during the Architect
+pass and Consent was deferred (see `specs/phase-1/architecture.md
+§3.5` for the rationale); the rest stand as originally resolved.
 
 ---
-*Requirements drafted by BMAD Analyst persona. When approved, activate the Architect persona for technical design.*
+*Requirements drafted by BMAD Analyst persona (Codex). Architect pass
+complete (`specs/phase-1/architecture.md`, ADR-019). Next: PM persona
+breaks Phase 1 into stories.*
