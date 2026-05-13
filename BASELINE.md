@@ -188,16 +188,25 @@ The framework points to these needs but does not provide them.
 
 ## 13. Where to start
 
-You are at **Phase -1** (planning complete, Phase 0 next).
+**Phase 0 is shipped.** All twelve acceptance criteria in
+`specs/phase-0/requirements.md §2` are checked, stories 0.1–0.11 are
+at `Status: done`, and the foundation has been security-reviewed +
+hardened (see `specs/security/known-trade-offs.md` and the `[0.fix]`
+commits on `main`). The next phase boundary is Phase 1 (Core Domain
+— Identity-axis resources), which begins with the BMAD Analyst
+persona drafting `specs/phase-1/requirements.md`.
+
+To get oriented before contributing:
 
 1. Read `AGENTS.md` (how AI agents work in this repo)
 2. Read `specs/architecture.md` (the three-axis structure)
-3. Read `specs/phase-0/requirements.md` (Phase 0 scope)
-4. Read `specs/phase-0/stories/story-0.1.md` (exemplar story)
+3. Read `specs/phase-0/requirements.md` (the shipped foundation)
+4. Read `specs/security/known-trade-offs.md` (decisions to revisit)
 5. Run `./scripts/status.sh` for current state
-6. Follow `docs/first-week-plan.md` for Day 1-7
+6. Read a recent story (`specs/phase-0/stories/story-0.11.md`) for the
+   exemplar of what "done" looks like under SDD
 
-Day 2 onward uses BMAD personas; see `prompts/`.
+Phase 1 onward uses BMAD personas; see `prompts/`.
 
 ## 14. Heritage
 

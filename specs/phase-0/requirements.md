@@ -90,13 +90,13 @@ Per AGENTS.md §2, each story = one fresh AI session = one PR = one atomic commi
 | CI flakes on first setup | Local `just verify` must pass before push |
 | Magic-link auth requires SMTP | Use local mailer in dev (Swoosh adapter) |
 
-## 7. Open questions (for Architect)
+## 7. Open questions (resolved)
 
-- [ ] Single app vs umbrella project? (Default: single)
-- [ ] AshAuthentication strategy: magic-link only, or also password? (Default: magic-link only)
-- [ ] Tailwind v4 or v3? (Whatever Phoenix 1.7 installs)
-- [ ] CI: GitHub-hosted runner or self-hosted? (Default: GitHub-hosted)
-- [ ] Initial admin user: seeded or created via signup? (Default: signup, first user gets admin role)
+- [x] Single app vs umbrella project? — **Single** (no umbrella). Shipped layout in `lib/ashy_walnut_desk{,_web}/`.
+- [x] AshAuthentication strategy: magic-link only, or also password? — **Magic-link only** for Phase 0 (story 0.5/0.7). Password is out of scope and not planned.
+- [x] Tailwind v4 or v3? — Whatever `mix phx.new` installs (Tailwind from the Phoenix 1.7 scaffold, in `assets/`).
+- [x] CI: GitHub-hosted runner or self-hosted? — **GitHub-hosted** (`runs-on: ubuntu-24.04` in `.github/workflows/ci.yml`, story 0.9).
+- [x] Initial admin user: seeded or created via signup? — **Signup**: first registered user gets `:admin` via the race-safe `AssignFirstUserAdmin` change + partial unique index (story 0.6).
 
-These should be resolved in `specs/phase-0/architecture.md` by the
-Architect persona.
+Each answer is recorded in the relevant story; this section is kept
+for traceability.
