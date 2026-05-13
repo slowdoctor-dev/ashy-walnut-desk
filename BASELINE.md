@@ -142,7 +142,8 @@ Framework-level safety features:
 - 5-second countdown before all sends (ADR-013)
 - Sensitive field marking (Ash policies)
 - Auto-appended AI-assistance disclosure on drafts
-- Versioned Consent resource pattern
+- Versioned Consent resource pattern *(planned; deferred to its first
+  consumer phase — see `specs/phase-1/architecture.md §3.5`)*
 
 **Nothing in this repo is legal advice.** Each deployment needs its own
 legal review.

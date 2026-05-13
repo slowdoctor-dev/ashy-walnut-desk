@@ -76,8 +76,10 @@ Reasoning:
   (`Identity.Changes.SoftDelete`) plus a per-resource convention; not a
   framework-level invention.
 - Exception is allowed for resources where soft-delete is incoherent —
-  specifically the append-only Consent ledger (see ADR-020). Each such
-  exception must justify itself in a follow-up ADR.
+  e.g., immutable append-only ledgers, where a "revoked" state is a new
+  row rather than a state change. Phase 1 ships no such resource;
+  Phase 4's Consent (when it lands) is the expected first case and
+  will need its own ADR. Each future exception must justify itself.
 
 ## Consequences
 
@@ -115,9 +117,11 @@ Reasoning:
 
 ## References
 
-- Related ADRs: ADR-016 (four-stage record chain), ADR-020 (append-only
-  consent ledger — the explicit exception).
+- Related ADRs: ADR-016 (four-stage record chain).
 - AGENTS.md §7.3 (audit mandatory), §7.4 (no raw sensitive content
   logged).
 - `specs/phase-1/requirements.md` §2 (soft-delete AC), §7 (resolved
   Q1).
+- `specs/phase-1/architecture.md` §3.5 (Consent deferred — first
+  expected exception to this ADR; ADR for it written when Consent
+  has a real consumer).

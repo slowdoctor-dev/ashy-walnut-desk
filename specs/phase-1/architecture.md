@@ -8,7 +8,7 @@
 ## 1. Overview
 
 Phase 1 builds the **Identity axis** (Who/When) on top of the Phase 0
-foundation. Six new Ash resources land in a new `AshyWalnutDesk.Identity`
+foundation. Four new Ash resources land in a new `AshyWalnutDesk.Identity`
 domain. The Accounts subsystem stays as the operator-actor surface; the
 Identity domain holds customer records.
 
@@ -38,12 +38,12 @@ Identity domain holds customer records.
                 │            │ (Ash.Domain)    │             │
                 │            └────────┬────────┘             │
                 │                     │                      │
-                │   ┌─────────────────┼────────┐             │
-                │   ▼      ▼          ▼        ▼   ▼   ▼     ▼
-                │ Identity Event Appointment FollowUp Note Consent
-                │   │      │          │        │   │   (ledger)
-                │   │      │          │        │   │     │
-                ▼   ▼      ▼          ▼        ▼   ▼     ▼
+                │   ┌─────────────────┼────────────┐         │
+                │   ▼      ▼          ▼            ▼         │
+                │ Identity Event Appointment    Note         │
+                │   │      │      (incl. f/u    │            │
+                │   │      │       via type)    │            │
+                ▼   ▼      ▼          ▼         ▼            ▼
        ┌──────────────────────────────────────────────────────┐
        │                AshyWalnutDesk.Accounts (P0)          │
        │      User (admin/operator/viewer), Token, audit      │
@@ -52,22 +52,32 @@ Identity domain holds customer records.
                                 ▼
        ┌──────────────────────────────────────────────────────┐
        │                   PostgreSQL 16                      │
-       │     6 new tables (with deleted_at on five of six)    │
-       │     Consent is append-only, no deleted_at            │
+       │       4 new tables (all with `deleted_at`)           │
        │     AshOban trigger nightly: Token expunge_expired   │
        └──────────────────────────────────────────────────────┘
 ```
 
 Key shape decisions, with trade-offs:
 
-- **Six resources, one domain.** All Identity-axis resources live in
+- **Four resources, one domain.** All Identity-axis resources live in
   `AshyWalnutDesk.Identity`. Smaller domains are tempting but the records
   are deeply linked; splitting (e.g. scheduling sub-domain) creates
   cross-domain joins for the timeline view at no benefit.
-- **Soft-delete on five of six** (Identity, Event, Appointment, FollowUp,
-  Note). Consent is **append-only** — there's nothing to soft-delete; a
-  "revoked" consent is a new row, not a state change on the old row.
-  See ADR-019, ADR-020.
+- **Soft-delete on all four** (Identity, Event, Appointment, Note).
+  See ADR-019.
+- **One Appointment resource, not two.** "Follow-up" is a *type* of
+  appointment, not a separate resource. `Appointment.appointment_type`
+  is an enum (`:initial | :follow_up | :recurring`) plus a nullable
+  `originating_event_id` FK. Earlier drafts split Appointment and
+  FollowUp into two resources with 95% identical schemas; the merge
+  removes the duplication.
+- **Consent is deferred** to its first reader-phase (likely Phase 4
+  when the AI-draft / send pipeline first needs to gate on consent).
+  Phase 1 ships no Consent resource. The append-only ledger pattern is
+  noted as a candidate design for when Consent lands, but the ADR is
+  not written until there's a real consumer. See §3.5 "Deferred from
+  Phase 1" below and the amendments to `specs/architecture.md §2` and
+  `BASELINE.md §9`.
 - **Three operator roles**: `:admin`, `:operator`, `:viewer`. `:viewer`
   is read-only; further partitioning deferred per requirements §3.
 - **Identity timeline is a query, not a stored aggregation.** Each
@@ -81,7 +91,7 @@ Key shape decisions, with trade-offs:
 
 ### New (Identity domain)
 
-- `lib/ashy_walnut_desk/identity.ex` — Ash.Domain registering all six
+- `lib/ashy_walnut_desk/identity.ex` — Ash.Domain registering the four
   Identity-axis resources.
 - `lib/ashy_walnut_desk/identity/identity.ex` — customer record (the
   "Who"). Module name `AshyWalnutDesk.Identity.Identity` — the
@@ -89,10 +99,10 @@ Key shape decisions, with trade-offs:
   architecture (`specs/architecture.md §2`).
 - `lib/ashy_walnut_desk/identity/event.ex` — what happened
   (service rendered).
-- `lib/ashy_walnut_desk/identity/appointment.ex` — scheduled future.
-- `lib/ashy_walnut_desk/identity/follow_up.ex` — scheduled post-encounter.
+- `lib/ashy_walnut_desk/identity/appointment.ex` — scheduled future
+  encounter; carries an `appointment_type` enum to distinguish initial
+  appointments, follow-ups, and recurring entries.
 - `lib/ashy_walnut_desk/identity/note.ex` — operator observation.
-- `lib/ashy_walnut_desk/identity/consent.ex` — append-only consent ledger.
 - `lib/ashy_walnut_desk/identity/changes/soft_delete.ex` — generic
   `Ash.Resource.Change` that sets `deleted_at` and prevents re-archiving.
 - `lib/ashy_walnut_desk/identity/changes/hash_primary_identifier.ex` —
@@ -145,8 +155,18 @@ Key shape decisions, with trade-offs:
 
 - `specs/decisions/ADR-019-soft-delete-axis-records.md` — soft-delete
   pattern as a project convention.
-- `specs/decisions/ADR-020-append-only-consent-ledger.md` — ledger
-  pattern as a project convention.
+
+(No ADR-020 in Phase 1. The append-only ledger pattern is described
+as a candidate design for Consent in §3.5 below but is not committed
+to an ADR until Consent has a real reader.)
+
+### Project-level docs amended by this phase
+
+- `specs/architecture.md §2` — Identity-axis list updated to remove
+  `FollowUp` (merged into Appointment) and mark `Consent` as deferred
+  to a later phase.
+- `BASELINE.md §9` — "Versioned Consent resource pattern" softened to
+  forward-looking commitment, not Phase 1 deliverable.
 
 ## 3. Ash resources
 
@@ -221,24 +241,32 @@ Extension: `AshPaperTrail.Resource` with `:redact`.
 
 ### 3.3 `AshyWalnutDesk.Identity.Appointment`
 
-Scheduled future encounter.
+Scheduled future encounter. Covers both initial appointments and
+post-encounter follow-ups via the `appointment_type` enum — earlier
+drafts split these into two near-identical resources; the merge cuts
+the duplication.
 
 | Attribute | Type | Sensitive? | Allow nil? | Notes |
 |---|---|---|---|---|
 | `id` | `uuid_primary_key` | — | no | |
 | `scheduled_for` | `:utc_datetime_usec` | — | no | When the appointment is. |
-| `status` | `:atom` | — | no | One of `:scheduled`, `:cancelled`, `:completed`. Default `:scheduled`. |
+| `appointment_type` | `:atom` | — | no | `:initial \| :follow_up \| :recurring`. Default `:initial`. |
+| `status` | `:atom` | — | no | `:scheduled \| :cancelled \| :completed`. Default `:scheduled`. |
 | `summary` | `:string` | yes | no | |
 | `identity_id` | `:uuid` | — | no | FK with `on_delete: :restrict`. |
+| `originating_event_id` | `:uuid` | — | yes | FK → `events.id`, `on_delete: :restrict`. Only meaningful when `appointment_type == :follow_up`. |
 | `recorded_by_id` | `:uuid` | — | no | |
 | `deleted_at` | `:utc_datetime_usec` | — | yes | |
 | timestamps | | | | |
 
-Actions: `read`, `schedule_appointment` (create), `reschedule` (update —
+A `validate` ensures `originating_event_id` is nil unless
+`appointment_type == :follow_up`. Belongs-to relationship is loaded as
+`originating_event` for timeline rendering.
+
+Actions: `read` (filtered), `schedule_appointment` (create — accepts
+`appointment_type`; defaults `:initial`), `reschedule` (update —
 permits `scheduled_for`), `cancel` (update — sets `status: :cancelled`),
-`complete` (update — sets `status: :completed`; could be triggered when a
-matching Event is recorded, but auto-linking is deferred), `archive`,
-`recover`.
+`complete` (update — sets `status: :completed`), `archive`, `recover`.
 
 **No reminder/notification trigger.** Per requirements §3 out-of-scope,
 appointments are record-only in Phase 1.
@@ -248,19 +276,7 @@ recovery admin-only.
 
 Extension: `AshPaperTrail.Resource` with `:redact`.
 
-### 3.4 `AshyWalnutDesk.Identity.FollowUp`
-
-Scheduled post-encounter check-in. Mirrors Appointment but references an
-originating Event.
-
-Attributes (same shape as Appointment plus): `event_id` `:uuid`,
-`on_delete: :restrict`, `allow_nil?: true` (a follow-up may exist
-without a specific originating event).
-
-Actions: same pattern as Appointment. `schedule_follow_up`,
-`reschedule`, `cancel`, `complete`, `archive`, `recover`.
-
-### 3.5 `AshyWalnutDesk.Identity.Note`
+### 3.4 `AshyWalnutDesk.Identity.Note`
 
 Free-text operator observation.
 
@@ -281,34 +297,36 @@ to the note's `recorded_by_id` actor (self-edit).
 
 Extension: `AshPaperTrail.Resource` with `:redact`.
 
-### 3.6 `AshyWalnutDesk.Identity.Consent`
+### 3.5 Deferred from Phase 1 — Consent
 
-Append-only ledger of consent decisions. **No `deleted_at`, no update
-action, no archive action.** Each row is immutable. See ADR-020.
+`specs/architecture.md §2` lists `Consent` as an Identity-axis resource.
+Phase 1 **does not build it**. The reasoning, recorded here so it
+doesn't have to be re-derived later:
 
-| Attribute | Type | Sensitive? | Allow nil? | Notes |
-|---|---|---|---|---|
-| `id` | `uuid_primary_key` | — | no | |
-| `consent_type` | `:atom` | — | no | E.g. `:contact`, `:data_processing`. Framework keeps it open; deployer's deployment repo lists allowed types. |
-| `decision` | `:atom` | — | no | `:granted` or `:revoked`. |
-| `effective_at` | `:utc_datetime_usec` | — | no | When the decision takes effect. Often = `created_at` but can be backdated. |
-| `notes` | `:string` | yes | yes | Optional operator note. |
-| `identity_id` | `:uuid` | — | no | FK with `on_delete: :restrict`. |
-| `recorded_by_id` | `:uuid` | — | no | |
-| `created_at` | `:utc_datetime_usec` | — | no | Immutable. **No `updated_at`** — rows never change. |
+- Consent is enforcement-shaped: it exists to gate an action ("may we
+  message this customer?"). Phase 1 has no enforcement point — there's
+  no send pipeline, no AI draft, no outbound action to gate against.
+  A Consent resource with no reader is bookkeeping nothing depends on.
+- The deployer's compliance docs (per ADR-010) will define what consent
+  *means* per jurisdiction. Designing the framework-level resource now,
+  without a concrete consumer, risks shipping a shape that's wrong for
+  every real deployer.
+- The "avoid over-implementation" principle (`CLAUDE.md` and recurring
+  project guidance) explicitly warns against scaffolding a resource
+  because the architecture diagram says so.
 
-Actions: `read`, `record_consent` (create only). No update, no delete,
-no archive.
+When Consent lands — likely Phase 4 alongside the AI-draft + send
+pipeline — the candidate design is **append-only ledger** (each
+decision a new immutable row; "current consent" is a query). That
+candidate is captured here for continuity but is **not** committed to
+an ADR; the Architect at that future phase writes a fresh ADR with the
+concrete consumer in mind.
 
-A query function `current_consent/2` on the domain returns the most
-recent row by `effective_at` for a given `(identity_id, consent_type)`.
-
-Policies: `read` admits `:admin`, `:operator`, `:viewer`.
-`record_consent` admits `:admin`, `:operator`. Viewers can see consent
-history but cannot record new decisions.
-
-Extension: **No `AshPaperTrail.Resource`.** Append-only IS the audit
-trail; PaperTrail on an immutable resource adds noise without value.
+Until then:
+- `specs/architecture.md §2` marks Consent as "(deferred to first
+  consumer phase)".
+- `BASELINE.md §9` softens "Versioned Consent resource pattern" to a
+  forward-looking commitment.
 
 ## 4. LiveView components
 
@@ -328,8 +346,9 @@ Mount data: the Identity (with related preloaded counts), the timeline
 LiveComponent.
 
 Events:
-- `record_event`, `schedule_appointment`, `schedule_follow_up`,
-  `record_note`, `record_consent` — handled by inline forms.
+- `record_event`, `schedule_appointment`, `record_note` — handled by
+  inline forms. Scheduling a follow-up reuses `schedule_appointment`
+  with `appointment_type: :follow_up` + an `originating_event_id`.
 - `archive_identity`, `recover_identity` — admin/operator and admin
   respectively.
 
@@ -337,10 +356,9 @@ Components: `Timeline` (below).
 
 ### `IdentityLive.Timeline` (LiveComponent)
 
-The merged chronological view. Reads from all five chronological
-resources (Event, Appointment, FollowUp, Note, Consent), unions them
-ordered by their respective time fields (`occurred_at`,
-`scheduled_for`, `effective_at`, `created_at`).
+The merged chronological view. Reads from the three chronological
+resources (Event, Appointment, Note), unions them ordered by their
+respective time fields (`occurred_at`, `scheduled_for`, `created_at`).
 
 Implementation note: the union is a single Ash query that uses a CTE
 on Postgres; the Architect lists this as a candidate for the PM to
@@ -399,25 +417,7 @@ Repo.update + Version row
 LiveView refreshes; archived rows hidden from default reads
 ```
 
-### 6.3 Consent record (append)
-
-```text
-operator clicks "record consent: granted/revoked"
-   │
-   ▼
-Consent.record_consent (create only)
-   │
-   ▼
-Repo.insert (new row, never an update)
-   │
-   ▼
-current_consent/2 query reflects new state immediately
-   │
-   ▼
-Timeline shows the new row in chronological order
-```
-
-### 6.4 Token expunge (Phase 1 — TO-3)
+### 6.3 Token expunge (Phase 1 — TO-3)
 
 ```text
 AshOban scheduler: 0 3 * * * UTC (daily 03:00)
@@ -439,17 +439,15 @@ Telemetry event for ops visibility
 
 1. Hand-authored migration: extend the `:role` enum on `users` to add
    `:viewer` (Postgres `ALTER TYPE … ADD VALUE`).
-2. `mix ash_postgres.generate_migrations` produces six new tables
-   (`identities`, `events`, `appointments`, `follow_ups`, `notes`,
-   `consents`).
+2. `mix ash_postgres.generate_migrations` produces four new tables
+   (`identities`, `events`, `appointments`, `notes`).
 3. Each table FK to `identities` uses `ON DELETE RESTRICT` so a hard
    `DELETE` from outside Ash actions also fails — defense-in-depth for
-   the soft-delete invariant.
-4. Index on `(identity_id, deleted_at)` for each of the five
+   the soft-delete invariant. `appointments.originating_event_id` FK
+   to `events` is also `ON DELETE RESTRICT` for the same reason.
+4. Index on `(identity_id, deleted_at)` for each of the four
    soft-delete tables; covers the dominant timeline query.
-5. Index on `(identity_id, consent_type, effective_at DESC)` for the
-   `current_consent/2` query (Consent table).
-6. AshPaperTrail generates `*_versions` tables and FKs as it did for
+5. AshPaperTrail generates `*_versions` tables and FKs as it did for
    `User` in Phase 0.
 
 Rollback strategy: each generated migration carries its `down/0`. No
@@ -461,7 +459,7 @@ seeded development data is recreated via the standard seed task.
 | Failure | Degradation |
 |---|---|
 | Two operators archive the same Identity at the same instant | `SoftDelete` change is idempotent (no-op if `deleted_at` already set); second action returns the already-archived record. |
-| Two operators record consent for the same (identity, type) within microseconds | Both rows persist (append-only ledger). `current_consent/2` returns whichever has the later `effective_at`; ties broken by `id` ordering. |
+| Two operators schedule overlapping appointments for the same identity | Both rows persist (no uniqueness constraint on `(identity_id, scheduled_for)`); the operator UX surfaces the overlap visually. Conflict-detection logic is a deployer-domain concern. |
 | Hard `DELETE FROM identities` from a DBA's psql session | FK `ON DELETE RESTRICT` rejects the delete; DBA must explicitly null out dependents first, surfacing the intent. |
 | Postgres down during nightly token expunge | Oban retries the trigger; next-day run picks up the same expired rows. No data loss because the trigger reads what's currently in the table. |
 | Timeline query slow for an identity with 10k events | Pagination cap (default 100 per axis per page); a property test enforces ordering correctness; performance test can be added in a later phase. |
@@ -484,12 +482,9 @@ seeded development data is recreated via the standard seed task.
   `identity_id` and (where applicable) `recorded_by_id`.
 - **Soft-delete recoverability** is an admin-only path; an operator
   cannot accidentally restore a record their teammate archived.
-- **Append-only Consent** preserves a legally-defensible audit trail
-  without depending on `AshPaperTrail` (which itself could fail or be
-  misconfigured).
-- **`:viewer` role**: read-only across the Identity axis; cannot write
-  consent. UI affordances mirror policy denials so a viewer never sees
-  a button they can't use.
+- **`:viewer` role**: read-only across the Identity axis. UI
+  affordances mirror policy denials so a viewer never sees a button
+  they can't use.
 
 ## 10. Safety review
 
@@ -499,7 +494,7 @@ Per AGENTS.md §7:
 |---|---|
 | §7.1 No domain assertions in AI output without validation | N/A — no AI in Phase 1. |
 | §7.2 Human-in-the-loop for ALL sends | N/A — no sends in Phase 1. |
-| §7.3 Audit trail mandatory | All five PaperTrail-enabled resources + the Consent ledger are audited. Tests assert version rows are produced for state changes. |
+| §7.3 Audit trail mandatory | All four Identity-axis resources have `AshPaperTrail.Resource` with redaction. Tests assert version rows are produced for state changes. |
 | §7.4 Sensitive data handling | All identifying/free-text fields marked `sensitive? true`. PaperTrail `:redact`. Raw primary identifier hashed before storage. |
 | §7.5 Disclosure | N/A — no AI-assisted messages in Phase 1. |
 
@@ -520,14 +515,14 @@ Sensitive data flow boundaries:
   - `HashPrimaryIdentifier` change: deterministic given the same salt,
     normalized for whitespace/case.
   - `SoftDelete` change: idempotent (second invocation = no-op).
-  - `Consent.current_consent/2` returns the latest by `effective_at`,
-    ties broken by `id`.
+  - `Appointment` validation: `originating_event_id` is nil unless
+    `appointment_type == :follow_up`.
   - `User.Version`-style admin-only read policy on each Identity-axis
     Version resource.
 - **Integration (`Phoenix.LiveViewTest`)**
-  - Full create-Identity → record-Event → schedule-Appointment →
-    record-Note → record-Consent → view-Timeline flow under an
-    `:operator` actor.
+  - Full create-Identity → record-Event → schedule-Appointment
+    (`appointment_type: :follow_up` with originating-event link) →
+    record-Note → view-Timeline flow under an `:operator` actor.
   - `:viewer` actor sees the timeline but UI hides write buttons; Ash
     actions reject any write attempts.
   - Archive flow: archived Identity disappears from default Index;
@@ -536,8 +531,9 @@ Sensitive data flow boundaries:
   - Timeline ordering: for any set of mixed-type events with random
     timestamps, the merged timeline is monotonically non-decreasing
     by time.
-  - Append-only invariant: a sequence of `record_consent` calls never
-    decreases the `current_consent` row count.
+  - Soft-delete invariant: a sequence of `archive` calls never
+    decreases the count of rows with `is_nil(deleted_at)` for the
+    target id.
 - **Background (`AshOban`)**
   - The `:expunge_tokens` trigger destroys rows where
     `expires_at < now()` and leaves all other rows intact.
@@ -557,19 +553,20 @@ Sensitive data flow boundaries:
    exercised. Index filter uses it for `display_name` similarity. Open
    question: minimum similarity threshold? Recommendation: defer the
    threshold to a story-level decision (default 0.3 from `pg_trgm`).
-3. **Consent type controlled vocabulary**: framework leaves
-   `consent_type` open; should `specs/phase-1/architecture.md` recommend
-   a default set (e.g. `:contact_consent`, `:data_processing`) or stay
-   silent and let deployers declare? Recommendation: stay silent
-   (matches ADR-006). A deployer's compliance docs will enumerate.
-4. **`recorded_by_id` immutability**: if a User is archived in a future
+3. **`recorded_by_id` immutability**: if a User is archived in a future
    phase, do existing notes/events/etc. owned by them get a stale FK?
    Recommendation: leave it; the FK is to the immutable historic
    `users.id` value; archiving a User doesn't delete the row, so the FK
    remains valid. Document in the eventual User-archiving story.
-5. **Pagination contract**: Index page size = 100? Timeline page size
+4. **Pagination contract**: Index page size = 100? Timeline page size
    per axis = 100? Recommendation: 100 across the board; revisit in
    Phase 2 if real data shows otherwise.
+5. **Appointment-status auto-transition**: when an Event is recorded
+   that "fulfills" a scheduled Appointment, should `complete` fire
+   automatically? Recommendation: no auto-link in Phase 1 (avoids the
+   matching-logic question — same identity? same operator? same
+   time window?); operators mark complete manually. Revisit when
+   real usage data shows the manual step is the bottleneck.
 
 ---
 

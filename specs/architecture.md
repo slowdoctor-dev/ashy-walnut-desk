@@ -38,10 +38,9 @@ Identity, history, scheduling.
 
 - `Identity` — the client/customer record
 - `Event` — what happened (service rendered)
-- `Appointment` — when (future)
-- `FollowUp` — when (post)
+- `Appointment` — when (covers both future scheduling and post-encounter follow-ups via an `appointment_type` enum; FollowUp is not a separate resource)
 - `Note` — operator observations
-- `Consent` — legal record
+- `Consent` — legal record *(deferred to first consumer phase; see `specs/phase-1/architecture.md §3.5` for the current rationale and the candidate append-only-ledger design)*
 
 ### Interaction (How)
 
