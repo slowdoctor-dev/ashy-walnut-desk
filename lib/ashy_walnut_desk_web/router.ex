@@ -27,16 +27,10 @@ defmodule AshyWalnutDeskWeb.Router do
     ash_authentication_live_session :authenticated_routes do
       live "/", WelcomeLive
 
-      # in each liveview, add one of the following at the top of the module:
-      #
-      # If an authenticated user must be present:
-      # on_mount {AshyWalnutDeskWeb.LiveUserAuth, :live_user_required}
-      #
-      # If an authenticated user *may* be present:
-      # on_mount {AshyWalnutDeskWeb.LiveUserAuth, :live_user_optional}
-      #
-      # If an authenticated user must *not* be present:
-      # on_mount {AshyWalnutDeskWeb.LiveUserAuth, :live_no_user}
+      live "/identities", IdentityLive.Index, :index
+      live "/identities/new", IdentityLive.New, :new
+      live "/identities/:id", IdentityLive.Show, :show
+      live "/identities/:id/edit", IdentityLive.Edit, :edit
     end
   end
 

@@ -251,6 +251,26 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   "AshPostgres.DataLayer" does not support the function
   error(Ash.Error.Forbidden.Placeholder, …)`. Atomic mode can only
   encode policy results that survive as SQL; the deny branch can't.
+- `AshPhoenix.Form.submit(form, params: new_params)` re-validates the
+  changeset with `new_params`, replacing the params passed at
+  `for_create/3`. Constructor-time defaults for constant attributes
+  (e.g. a parent FK like `identity_id` set when the form was built)
+  get dropped on submit. Re-inject them into the submit params (e.g.
+  `params = Map.put(params, "identity_id", id)`) or the action fails
+  on the missing attribute.
+- Two `AshPhoenix.Form`s rendered on the same LiveView that share an
+  attribute name (e.g. an Event form and a Note form both exposing
+  `body`) collide on the rendered input `id` — the default `as` is
+  `"form"`, so both inputs become `id="form_body"`. LV raises
+  `Duplicate id found while testing LiveView`. Pass distinct `as:`
+  values per form (e.g. `as: "event_form"` / `as: "note_form"`) and
+  match the handle_event params shape accordingly.
+- Magic-link sign-in (`:sign_in_with_magic_link`) runs
+  `AssignFirstUserAdmin` and overrides whatever `role` was set on the
+  user — so test login helpers that need a non-default role must
+  call `:assign_role` (authorize?: false) **after** the magic-link
+  POST and before the LV mounts, then reload the user. Setting role
+  on `:register` first is not sufficient.
 
 ## 11. When in Doubt
 
