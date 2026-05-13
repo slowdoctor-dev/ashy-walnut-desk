@@ -10,7 +10,7 @@ import Config
 config :ashy_walnut_desk, Oban,
   name: Oban,
   repo: AshyWalnutDesk.Repo,
-  plugins: [Oban.Plugins.Pruner],
+  plugins: [Oban.Plugins.Pruner, {Oban.Plugins.Cron, crontab: []}],
   queues: []
 
 config :ashy_walnut_desk,

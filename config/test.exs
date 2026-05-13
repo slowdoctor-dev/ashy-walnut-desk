@@ -20,6 +20,11 @@ config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   secret_key_base: "Xt4k65DjUHXZ4pTVCy79ofBk0A6odis0v6W+JGEfs8Nb3vX23ZMlP9s4aRbS0HAN",
   server: false
 
+# Run Oban in manual testing mode so AshOban triggers can be driven
+# synchronously by AshOban.Test.schedule_and_run_triggers/2 against the
+# sandbox connection (no background queue picks up sandboxed jobs).
+config :ashy_walnut_desk, Oban, testing: :manual
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

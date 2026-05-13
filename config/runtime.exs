@@ -23,7 +23,7 @@ if System.get_env("PHX_SERVER") do
   config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint, server: true
 end
 
-config :ashy_walnut_desk, Oban, queues: [default: 10, messages: 10, ai: 5, reindex: 5]
+config :ashy_walnut_desk, Oban, queues: [default: 10, messages: 10, ai: 5, reindex: 5, tokens: 5]
 
 if config_env() == :prod do
   identifier_hash_salt =

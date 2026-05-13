@@ -222,15 +222,12 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   `phoenix_live_view >= 1.1` (uses `compile.phoenix_live_view`) — if
   your stack is still on LiveView 1.0.x, upgrade LV or pin
   `ash_authentication_phoenix` accordingly before running installers
-- `ash_authentication_phoenix` `LiveSession.generate_session/3`
-  rebuilds the live_session session from `conn.assigns.current_user`
-  via `AshAuthentication.user_to_subject/1`, which drops the `<jti>:`
-  prefix. For resources with `session_identifier(:jti)` the LV
-  `on_mount(:default)` then can't recover the user (its
-  `split_identifier/2` requires the prefix). Workarounds: use
-  `session_identifier(:unsafe)` and accept losing per-session
-  revocation, or wrap `ash_authentication_live_session` with a custom
-  on_mount that loads from the cookie session directly.
+- `ash_authentication_phoenix` `LiveSession.generate_session/3` drops
+  the `<jti>:` prefix when rebuilding sessions via
+  `AshAuthentication.user_to_subject/1`, so resources with
+  `session_identifier(:jti)` mount with `current_user=nil`. Workarounds:
+  `session_identifier(:unsafe)` (loses per-session revocation) or a
+  custom on_mount that loads the user from the cookie session directly.
 - Resources may carry test-only fixture actions guarded by
   `policy action(:name) do forbid_if always() end` (e.g.
   `Accounts.User.:register`). Production code goes through other
@@ -258,13 +255,11 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   get dropped on submit. Re-inject them into the submit params (e.g.
   `params = Map.put(params, "identity_id", id)`) or the action fails
   on the missing attribute.
-- Two `AshPhoenix.Form`s rendered on the same LiveView that share an
-  attribute name (e.g. an Event form and a Note form both exposing
-  `body`) collide on the rendered input `id` — the default `as` is
-  `"form"`, so both inputs become `id="form_body"`. LV raises
-  `Duplicate id found while testing LiveView`. Pass distinct `as:`
-  values per form (e.g. `as: "event_form"` / `as: "note_form"`) and
-  match the handle_event params shape accordingly.
+- Two `AshPhoenix.Form`s on the same LiveView sharing an attribute
+  name (e.g. both exposing `body`) collide on input `id="form_body"`
+  (default `as: "form"`) and LV raises `Duplicate id found`. Pass
+  distinct `as:` per form (`event_form`/`note_form`) and match the
+  handle_event params shape accordingly.
 - Magic-link sign-in (`:sign_in_with_magic_link`) runs
   `AssignFirstUserAdmin` and overrides whatever `role` was set on the
   user — so test login helpers that need a non-default role must
@@ -276,6 +271,11 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   transaction, so `create_user(:admin)` inside the property body fails
   on the second iteration. Mint the admin once in `setup` and pass via
   context; freshly mint only `:operator`/`:viewer` per iteration.
+- AshOban triggers need `pagination keyset?: true, required?: false`
+  on the `read_action`, plus `Oban, testing: :manual` in
+  `config/test.exs` so `AshOban.Test.schedule_and_run_triggers/2` can
+  drain queues against the sandbox. Side effect: `Oban.config().queues`
+  is `[]` — assert on `Application.get_env(:…, Oban)[:queues]`.
 
 ## 11. When in Doubt
 

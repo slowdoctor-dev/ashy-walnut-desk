@@ -11,11 +11,17 @@ defmodule AshyWalnutDesk.ObanSetupTest do
     assert is_pid(pid)
     assert is_pid(Oban.Registry.whereis(Oban))
 
-    assert Oban.config().queues == [
-             default: [limit: 10],
-             messages: [limit: 10],
-             ai: [limit: 5],
-             reindex: [limit: 5]
+    # Oban runs in `testing: :manual` mode in test env, so the running
+    # supervisor reports `queues: []`. Assert on the configured queues
+    # (the source of truth for what `:prod` / `:dev` will start) instead.
+    configured_queues = Application.fetch_env!(:ashy_walnut_desk, Oban)[:queues]
+
+    assert configured_queues == [
+             default: 10,
+             messages: 10,
+             ai: 5,
+             reindex: 5,
+             tokens: 5
            ]
   end
 end
