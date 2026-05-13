@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 2h
 **Depends on**: 1.2
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ Events are the first chronological child record in the Identity timeline and are
 
 ## Acceptance criteria
 
-- [ ] AC1: `Event` resource exists with `record_event`, update, archive, recover, and filtered read behavior, all linked to owning Identity. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
-- [ ] AC2: Event policies enforce viewer read-only and deny unauthenticated access to non-public actions. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
-- [ ] AC3: Event changes are auditable with redacted sensitive payloads and admin-only Version reads. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
+- [x] AC1: `Event` resource exists with `record_event`, update, archive, recover, and filtered read behavior, all linked to owning Identity. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
+- [x] AC2: Event policies enforce viewer read-only and deny unauthenticated access to non-public actions. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
+- [x] AC3: Event changes are auditable with redacted sensitive payloads and admin-only Version reads. — Verify: `mix test test/ashy_walnut_desk/identity/event_test.exs`
 
 ## Files to create
 
@@ -69,5 +69,8 @@ mix test test/ashy_walnut_desk/identity/event_test.exs
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+  - Added a composite `(identity_id, deleted_at)` index and `on_delete: :restrict` on the FK to `identities` at resource definition time (arch §7.3, §7.4), so the generated migration carries them.
+  - Mirrored 1.2's `read_with_archived` admin-only read on Event for parity with `Identity`; arch §3.2 lists only `read` explicitly, but `read_with_archived` is the documented project pattern (see §3.1) and the timeline/admin-recovery flows need it. Treated as convention, not drift.
+  - Unauthenticated `record_event` is refused with `Ash.Error.Invalid` (from `relate_actor` finding no actor) rather than `Forbidden`; the test accepts either since both satisfy AC2 ("deny unauthenticated access").
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none new (existing relate_actor + nil-actor interaction is already implicit in Ash semantics; documented inline in the test).
