@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 2h
 **Depends on**: —
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ This is the Phase 1 hello-world story required by BMAD PM guidance. It establish
 
 ## Acceptance criteria
 
-- [ ] AC1: `lib/ashy_walnut_desk/identity.ex` exists and defines the new Identity Ash domain with no resources yet, compiling cleanly. — Verify: `mix compile`
-- [ ] AC2: `Accounts.User` role constraints include `:viewer` alongside `:admin` and `:operator`. — Verify: `mix test test/ashy_walnut_desk/accounts/user_test.exs`
-- [ ] AC3: Existing auth and policy tests still pass after role enum extension. — Verify: `mix test test/ashy_walnut_desk/accounts`
+- [x] AC1: `lib/ashy_walnut_desk/identity.ex` exists and defines the new Identity Ash domain with no resources yet, compiling cleanly. — Verify: `mix compile`
+- [x] AC2: `Accounts.User` role constraints include `:viewer` alongside `:admin` and `:operator`. — Verify: `mix test test/ashy_walnut_desk/accounts/user_test.exs`
+- [x] AC3: Existing auth and policy tests still pass after role enum extension. — Verify: `mix test test/ashy_walnut_desk/accounts`
 
 ## Files to create
 
@@ -67,5 +67,21 @@ mix test test/ashy_walnut_desk/accounts/user_test.exs
 ## Notes during implementation
 
 - Decisions made:
+  - Registered `AshyWalnutDesk.Identity` in `config :ashy_walnut_desk, ash_domains: […]` so the new domain is discoverable by Ash tooling (mirrors how `Accounts` is wired); the domain compiles with an empty `resources do … end` block per AC1.
 - Spec drift noticed:
+  - `specs/phase-1/architecture.md §2` anticipates a generated migration
+    `*_alter_users_role_add_viewer.exs` for the role enum extension.
+    The current `users.role` column is stored as Postgres `text`
+    (confirmed in `priv/resource_snapshots/repo/users/20260512162015.json`,
+    `"type": "text"`), and Ash's `one_of` constraint is enforced in
+    Elixir, not as a CHECK/ENUM at the DB layer. So adding `:viewer`
+    is a constraint-only change with no DB migration in Story 1.1. The
+    architecture note is forward-looking (would apply if the column
+    were ever promoted to a Postgres ENUM) but doesn't require action
+    now. Leaving the architecture text as-is since it's accurate as
+    an "if we ever migrate to ENUM" reminder rather than a Phase 1
+    deliverable.
 - Gotchas to add to AGENTS.md §10:
+  - None new; the text-vs-ENUM nuance is captured in the spec-drift
+    note above and is too specific to this Phase 1 column to warrant
+    a global Gotchas entry.
