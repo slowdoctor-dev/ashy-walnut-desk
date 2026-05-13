@@ -50,17 +50,17 @@ see a welcome LiveView, and CI is green on push.
 
 | # | Story | Est | Depends on | Status |
 |---|---|---|---|---|
-| 0.1 | Initialize Phoenix project + Ash deps + Docker Compose | 2h | — | ready |
-| 0.2 | Enable PostgreSQL extensions (pgvector + pg_trgm) | 1h | 0.1 | ready |
-| 0.3 | Configure Oban with default/messages/ai/reindex queues | 1.5h | 0.1 | ready |
-| 0.4 | Install AshPaperTrail at app level | 1h | 0.1 | ready |
-| 0.5 | AshAuthentication install + Accounts.User + Accounts.Token | 2.5h | 0.1, 0.2 | ready |
-| 0.6 | First-user-admin Ash change + race-safe constraint | 1.5h | 0.5 | ready |
-| 0.7 | AshAuthentication Phoenix UI mounting | 1.5h | 0.5 | ready |
-| 0.8 | WelcomeLive + gettext for Phase 0 strings | 1.5h | 0.7 | ready |
-| 0.9 | GitHub Actions CI workflow | 1h | 0.1 | ready |
-| 0.10 | README quick-start verification + CHANGELOG Phase 0 update | 1h | 0.6, 0.8, 0.9 | ready |
-| 0.11 | Phase 0 E2E magic-link integration test | 2h | 0.6, 0.8, 0.9, 0.10 | ready |
+| 0.1 | Initialize Phoenix project + Ash deps + Docker Compose | 2h | — | done |
+| 0.2 | Enable PostgreSQL extensions (pgvector + pg_trgm) | 1h | 0.1 | done |
+| 0.3 | Configure Oban with default/messages/ai/reindex queues | 1.5h | 0.1 | done |
+| 0.4 | Install AshPaperTrail at app level | 1h | 0.1 | done |
+| 0.5 | AshAuthentication install + Accounts.User + Accounts.Token | 2.5h | 0.1, 0.2 | done |
+| 0.6 | First-user-admin Ash change + race-safe constraint | 1.5h | 0.5 | done |
+| 0.7 | AshAuthentication Phoenix UI mounting | 1.5h | 0.5 | done |
+| 0.8 | WelcomeLive + gettext for Phase 0 strings | 1.5h | 0.7 | done |
+| 0.9 | GitHub Actions CI workflow | 1h | 0.1 | done |
+| 0.10 | README quick-start verification + CHANGELOG Phase 0 update | 1h | 0.6, 0.8, 0.9 | done |
+| 0.11 | Phase 0 E2E magic-link integration test | 2h | 0.6, 0.8, 0.9, 0.10 | done |
 
 Total: 11 stories, ~16.5h of new work after 0.1 (~18.5h including 0.1).
 

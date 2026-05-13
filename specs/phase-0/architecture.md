@@ -223,9 +223,9 @@ Actions:
 
 | Action | Type | Purpose |
 |---|---|---|
-| `register_with_magic_link` | create | Create or initiate a user registration via magic-link flow. |
-| `request_magic_link` | read/action | Request a sign-in link for an existing or new email, following AshAuthentication conventions. |
-| `sign_in_with_magic_link` | action | Validate token and establish authenticated session. |
+| `register` | create | **Test-only fixture action.** Guarded by `policy action(:register) do forbid_if always() end`; production code must not call it. Real registration goes through `:sign_in_with_magic_link` below. |
+| `request_magic_link` | action | Issue a magic-link token for an email address (AshAuthentication strategy action). |
+| `sign_in_with_magic_link` | create | Validate the magic-link token, upsert the User on first sign-in, run `AssignFirstUserAdmin` to set role, and establish the authenticated session. This is the production registration + sign-in path. |
 | `assign_role` | update | Admin-only role change for future account management. |
 | `mark_signed_in` | update | Record successful sign-in timestamp when practical. |
 | `read` | read | Policy-restricted user lookup. |
@@ -669,12 +669,17 @@ Test surface in Phase 0 is small. Each AC in `specs/phase-0/requirements.md
 ### Unit (`mix test`)
 
 - `AshyWalnutDesk.Accounts.User`:
-  - `register_with_magic_link` creates User with `email`, generates `email_hash`,
-    leaves `confirmed_at` nil.
+  - `sign_in_with_magic_link` creates User with `email`, generates
+    `email_hash`, leaves `confirmed_at` nil on first sign-in.
   - First successful sign-in assigns `:admin`; second assigns `:operator`
     (covers `Changes.AssignFirstUserAdmin`).
+  - `:register` is forbidden by policy except with `authorize?: false`
+    (test-fixture guard); production callers must not reach it.
   - `assign_role` rejects non-admin actor (policy test).
   - `read` returns own record for `:operator`; admin sees all.
+  - PaperTrail `User.Version` redacts sensitive attributes
+    (`email`, `email_hash` → `"REDACTED"` in `changes`); admin-only
+    read policy on `Version`.
 - `AshyWalnutDesk.Accounts.Token`:
   - Cannot read tokens without the system actor (policy test).
   - Token storage is hashed where the strategy supports it (introspection test).
