@@ -55,3 +55,72 @@ even after a valid sign-in. See AGENTS.md §10 gotchas.
 
 **Tracking**: an ADR will be drafted at revisit time. No upstream
 issue filed yet (low-priority follow-up).
+
+---
+
+## TO-2 — Session cookie `secure` flag + `force_ssl` not enforced
+
+**Status**: deferred to the first deployer's hardening story.
+
+**Decision**: `lib/ashy_walnut_desk_web/endpoint.ex`'s `@session_options`
+does not set `secure: true`, and `config/runtime.exs`'s prod block
+does not enable `force_ssl: [hsts: true]`. Surfaced as finding #6 in
+the Phase 0 security review.
+
+**Why**: dev and test environments don't have TLS. Flipping
+`secure: true` unconditionally breaks local dev (cookies stop being
+sent over `http://localhost`). The Cloudflare Tunnel path (the
+documented self-host route in BASELINE §12) terminates TLS at the
+tunnel, so the Phoenix endpoint itself can run plain HTTP — but the
+session cookie must still be marked secure end-to-end. This is a
+deployment-config decision per ADR-010, not a framework decision.
+
+**Compensating controls (Phase 0)**:
+- `same_site: "Lax"` already set on the session cookie.
+- No real users / no production deployment.
+- BASELINE §12 names "Domain + TLS" as a deployer responsibility.
+
+**Revisit trigger**: the first real deployer's hardening story. They
+must set `secure: true` (and `http_only: true`, which Plug.Session
+defaults to) in their deployment-specific endpoint override, and
+enable `force_ssl` in `runtime.exs`'s prod block. Alternatively, if
+we ship a default-on prod hardening pass before any deployer
+engages, do it in `config/runtime.exs`'s `:prod` block keyed on
+`PHX_HOST != "localhost"` (so the dev fallback keeps working).
+
+**Tracking**: no separate ADR — this is hardening-tasks territory.
+Will be a Phase 1+ story or part of the deployer-instance README.
+
+---
+
+## TO-3 — `Token` resource has no scheduled expunge of expired rows
+
+**Status**: deferred to Phase 1.
+
+**Decision**: `lib/ashy_walnut_desk/accounts/token.ex` defines a
+`destroy :expunge_expired` action (per the AshAuthentication.TokenResource
+extension), but nothing schedules it. Surfaced as finding #7 in the
+Phase 0 security review.
+
+**Why**: Phase 0's focus was authentication correctness, not
+operational hygiene. Each magic-link sign-in writes a Token row;
+without a sweep, the table grows monotonically. For Phase 0 with no
+real users this is invisible.
+
+**Compensating controls (Phase 0)**:
+- Magic-link tokens have a short lifetime (10 min by default).
+- No real users → table stays small.
+- `mix ash_postgres.generate_migrations --check` keeps the schema
+  honest, so we'll notice if Token grows weird columns.
+
+**Revisit trigger**: Phase 1, when Identity-axis resources start
+referencing Token (or earlier if a first deployer engages). The
+shape is a small story: add an AshOban trigger or an Oban Cron
+entry in `runtime.exs` calling
+`Ash.bulk_destroy(Token, :expunge_expired, %{}, authorize?: false)`
+daily. Includes a regression test that an expired token is destroyed
+on the next sweep tick.
+
+**Tracking**: candidate story for `specs/phase-1/stories/`. Title
+suggestion: "Daily expunge of expired authentication tokens via
+AshOban trigger".
