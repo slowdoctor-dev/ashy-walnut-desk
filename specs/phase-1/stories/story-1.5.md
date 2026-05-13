@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 2h
 **Depends on**: 1.2
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ Notes complete the core Phase 1 Identity resource set and are required for timel
 
 ## Acceptance criteria
 
-- [ ] AC1: `Note` resource exists with `record_note`, `edit_note`, `archive`, `recover`, and filtered reads linked to Identity. — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
-- [ ] AC2: Policy enforces viewer read-only and owner/admin edit semantics (self-edit or admin). — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
-- [ ] AC3: Note audit/version behavior redacts sensitive values and restricts Version reads to admins. — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
+- [x] AC1: `Note` resource exists with `record_note`, `edit_note`, `archive`, `recover`, and filtered reads linked to Identity. — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
+- [x] AC2: Policy enforces viewer read-only and owner/admin edit semantics (self-edit or admin). — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
+- [x] AC3: Note audit/version behavior redacts sensitive values and restricts Version reads to admins. — Verify: `mix test test/ashy_walnut_desk/identity/note_test.exs`
 
 ## Files to create
 
@@ -69,5 +69,8 @@ mix test test/ashy_walnut_desk/identity/note_test.exs
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
+  - `edit_note` and `archive` policies use `authorize_if expr(recorded_by_id == ^actor(:id))` for the self-edit clause (admin OR self), as called out in the story brief.
+  - `edit_note` requires `require_atomic? false` because the `expr()`-based policy cannot be pushed into the data-layer atomic update filter (postgres has no way to express the policy-deny side of the clause).
+- Spec drift noticed: none.
 - Gotchas to add to AGENTS.md §10:
+  - When a `policy action(:foo)` uses `authorize_if expr(...)` against record attributes (e.g. self-edit via `recorded_by_id == ^actor(:id)`), the update action must set `require_atomic? false`. Otherwise Ash tries to encode the policy denial into the WHERE clause and AshPostgres errors with "data layer ... does not support the function error(Ash.Error.Forbidden.Placeholder, ...)".
