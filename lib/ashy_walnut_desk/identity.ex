@@ -5,5 +5,7 @@ defmodule AshyWalnutDesk.Identity do
     otp_app: :ashy_walnut_desk
 
   resources do
+    resource(AshyWalnutDesk.Identity.Identity)
+    resource(AshyWalnutDesk.Identity.Identity.Version)
   end
 end
