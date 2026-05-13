@@ -271,6 +271,11 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   call `:assign_role` (authorize?: false) **after** the magic-link
   POST and before the LV mounts, then reload the user. Setting role
   on `:register` first is not sufficient.
+- `Accounts.User` has `users_one_admin_idx` (one admin per Postgres
+  transaction). `ExUnitProperties` `check all` iterations share one
+  transaction, so `create_user(:admin)` inside the property body fails
+  on the second iteration. Mint the admin once in `setup` and pass via
+  context; freshly mint only `:operator`/`:viewer` per iteration.
 
 ## 11. When in Doubt
 
