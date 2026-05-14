@@ -7,7 +7,7 @@ defmodule AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdminTest do
   alias AshyWalnutDesk.Repo
 
   setup do
-    Repo.query!("TRUNCATE TABLE users_versions, users, tokens")
+    Repo.query!("TRUNCATE TABLE users_versions, users, tokens CASCADE")
     :ok
   end
 

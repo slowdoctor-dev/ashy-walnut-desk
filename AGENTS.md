@@ -237,6 +237,12 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   actions (e.g. `:sign_in_with_magic_link`). When writing test
   fixtures call them with `Ash.create(..., authorize?: false)`;
   never invoke them from `lib/` code.
+- Test fixtures that `TRUNCATE` a parent table referenced by other
+  tables' FKs (e.g. `users` after Phase 1 introduced the Identity
+  axis) must use `TRUNCATE … CASCADE`. Postgres rejects a plain
+  `TRUNCATE` of an FK target with "cannot truncate a table referenced
+  in a foreign key constraint." Each phase that adds new resources
+  pointing at `users`/`identities`/etc. inherits this hazard.
 
 ## 11. When in Doubt
 
