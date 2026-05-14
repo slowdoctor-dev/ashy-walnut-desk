@@ -54,7 +54,10 @@ even after a valid sign-in. See AGENTS.md §10 gotchas.
    on_mount that loads the user from the cookie session directly.
 
 **Tracking**: an ADR will be drafted at revisit time. No upstream
-issue filed yet (low-priority follow-up).
+issue filed yet (low-priority follow-up). `mix.exs` carries
+`{:ash_authentication, "== 4.13.7"}` as an exact pin (not `~>`)
+because the worked-around bug is version-sensitive; a future bumper
+should confirm the JTI fix landed upstream before relaxing the pin.
 
 ---
 
@@ -114,3 +117,130 @@ asserts an expired token is removed on the next tick (run via
 Required `Oban.testing: :manual` in `config/test.exs` and
 `pagination keyset?: true, required?: false` on the trigger's
 `read_action` — both captured as gotchas in `AGENTS.md` §10.
+
+---
+
+## TO-4 — Token expunge schedule is hardcoded to 03:00 UTC
+
+**Status**: active, accepted as default.
+
+**Decision**: `lib/ashy_walnut_desk/accounts/token.ex`'s
+`AshOban.Trigger :expunge_tokens` uses `scheduler_cron("0 3 * * *")`.
+The hour, day-of-week, and TZ are all hardcoded.
+
+**Why**: 03:00 UTC is a defensible off-peak default for most
+geographies; this repo is the framework, not a specific deployment,
+so picking *some* default is correct and tuning is a deployer
+concern per ADR-010.
+
+**What we lose**:
+- Deployers in time zones where 03:00 UTC falls during business
+  hours (e.g. Asia-Pacific late morning) eat the trigger's
+  bulk-destroy on hot Postgres connections.
+- No env-var override; tweaking it requires a code change in the
+  deployment repo.
+
+**Compensating controls**:
+- The expunge action is small (only expired Token rows) and idempotent.
+- No real users yet; first deployer will rediscover this immediately.
+
+**Revisit trigger**: the first deployer's hardening story. Either
+(a) leave the default and document it as a deployer-overrides-in-
+their-repo concern, or (b) move the cron string into
+`config/runtime.exs` keyed on an env var (e.g. `TOKEN_EXPUNGE_CRON`)
+and update story 1.8's test to read from the same source.
+
+**Tracking**: hardening-checklist concern; no separate ADR planned.
+
+---
+
+## TO-5 — Identity timeline is loaded unbounded, in-memory merged
+
+**Status**: active, accepted for Phase 1 dataset sizes only.
+
+**Decision**: `lib/ashy_walnut_desk_web/live/identity_live/show.ex`'s
+`load_timeline/1` issues three independent `Ash.read!` calls
+(`Event`, `Appointment`, `Note`) filtered by `identity_id`, with no
+`limit` or pagination, then `Enum.sort_by/3` merges them by
+timestamp. Each LiveView mount of `IdentityLive.Show` reloads the
+full history.
+
+**Why**: Phase 1's `IdentityLive.Show` is the first read surface
+that touches multiple Identity-axis resources. The merge is
+client-LV-side because Postgres can't `UNION` three Ash resource
+queries through Ash 3's read pipeline without giving up policy
+checks. A real cross-resource sort + paginate needs either an Ash
+calculation or a manual SQL view — both are Phase 2+ shape.
+
+**What we lose**:
+- Memory + transfer cost scales linearly with `N_events + M_appointments + K_notes`
+  per Identity. For demo data this is fine; at deployer scale (>100
+  records per Identity), the LV mount stalls and the BEAM allocates
+  the full result set in process heap.
+- No `phx-update="stream"` / append behavior — the timeline is a
+  static assign re-computed on every change.
+
+**Compensating controls**:
+- Identity-axis resources all carry `(:identity_id, :deleted_at)`
+  custom indexes (filtering is index-backed).
+- No deployer yet; current property tests run against ≤50 records.
+
+**Revisit trigger**: whichever comes first:
+1. A deployer reports `IdentityLive.Show` mount > 200 ms with a
+   real dataset (≥100 timeline entries).
+2. Phase 2 (Interaction-axis messaging) adds a fourth timeline
+   resource (Message), pushing the merge cost above the threshold
+   where unbounded loading is plausibly fine.
+
+When triggered: design either an `Identity.timeline_page` Ash
+calculation backed by a materialized view, or a Phoenix.PubSub
++ LiveView stream approach. New story; new architecture section.
+
+**Tracking**: no ADR yet — design happens at revisit time. Mention
+in `AGENTS.md §10` after the design lands.
+
+---
+
+## TO-6 — No prod mailer adapter configured
+
+**Status**: active, accepted as deployer concern.
+
+**Decision**: `config/config.exs` sets
+`Swoosh.Adapters.Local` as the global default. `config/dev.exs`
+overrides to `Local` (writes to dev mailbox); `config/test.exs`
+overrides to `Test` (captures in `assert_email_sent`). There is no
+`Mix.env() == :prod` Swoosh block in `config/runtime.exs`. Prod
+deploys therefore default to `Local`, which writes the magic-link
+email to the local filesystem.
+
+**Why**: magic-link delivery requires a deployer-specific
+transactional provider (SMTP credentials, Postmark/Mailgun keys,
+Cloudflare email worker, …). The framework cannot pick a sane
+default that works without secrets. ADR-010 puts secrets +
+provider choice in the deployer's private repo.
+
+**What we lose**:
+- A deployer who forgets to add a prod Swoosh adapter sees
+  silently-vanishing magic links (the email is written to a
+  filesystem path they're unlikely to look at) and a quiet
+  inability to onboard any user.
+- No CI gate catches this — `Swoosh.Adapters.Local` is a valid
+  Swoosh adapter, so the app boots and the test suite passes.
+
+**Compensating controls**:
+- `Accounts.Emails.deliver_magic_link/2` returns the standard
+  Swoosh `{:ok, _}` from Local, so an explicit smoke test that
+  asserts on the *Adapter* name in `Application.get_env(:swoosh)`
+  would catch a misconfigured prod boot.
+
+**Revisit trigger**: the first deployer hardening story. Decide
+between:
+1. A `runtime.exs` prod block that *requires* `SWOOSH_ADAPTER`
+   and a provider key, raising at boot if absent (mirrors the
+   `IDENTIFIER_HASH_SALT` + `ASH_AUTHENTICATION_SECRET` pattern
+   added by the Phase 0 hardening pass).
+2. A documented checklist in a future `docs/deployer-setup.md`
+   that names "configure a non-Local Swoosh adapter for prod"
+   alongside TLS, DNS, and DB.
+
+**Tracking**: hardening-checklist concern; ADR not required.
