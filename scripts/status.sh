@@ -97,7 +97,20 @@ for p in 0 1 2 3 4 5 6 7 8 9; do
         elif [ -f "$P_DIR/architecture.md" ] && [ -d "$P_DIR/stories" ]; then
             stories_count=$(find "$P_DIR/stories" -name "story-*.md" 2>/dev/null | wc -l | tr -d ' ')
             if [ "$stories_count" -gt 0 ]; then
-                echo "  Phase $p: 🟡 in progress ($stories_count stories)"
+                # All stories done ⇒ phase is shipped (retrospective is optional).
+                done_in_phase=0
+                for s in "$P_DIR/stories"/story-*.md; do
+                    [ -f "$s" ] || continue
+                    line=$(grep -m1 '^\*\*Status\*\*:' "$s" 2>/dev/null || echo "")
+                    case "$line" in
+                        *done*) done_in_phase=$((done_in_phase + 1)) ;;
+                    esac
+                done
+                if [ "$done_in_phase" -eq "$stories_count" ]; then
+                    echo "  Phase $p: ✅ shipped ($stories_count/$stories_count stories done)"
+                else
+                    echo "  Phase $p: 🟡 in progress ($done_in_phase/$stories_count stories done)"
+                fi
             else
                 echo "  Phase $p: 🟡 architecture done, no stories yet"
             fi

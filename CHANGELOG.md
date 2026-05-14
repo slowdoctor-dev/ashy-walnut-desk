@@ -99,6 +99,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   + `git diff --exit-code priv/gettext/` to fail CI on stale `.po`
   files.
 
+### Added — Phase 1 (Core Domain — Identity axis)
+- `AshyWalnutDesk.Identity` domain (ADR-019) bootstrapped with a
+  `:viewer` role added to `Accounts.User` (story 1.1).
+- `Identity` resource: SHA-256-hashed primary identifier via the
+  `HashPrimaryIdentifier` change (salted by `IDENTIFIER_HASH_SALT`),
+  soft-delete via `deleted_at` + `SoftDelete` change, paper-trail
+  with sensitive-attr redaction, role-aware policies
+  (`:viewer` read; `:operator`+`:admin` write; `:admin`-only
+  `:read_with_archived` and `:recover`) (story 1.2).
+- `Event` resource linked to Identity (`occurred_at`, `summary`,
+  `body`) with the same soft-delete + audit + policy pattern
+  (story 1.3).
+- `Appointment` resource merging the previously-planned FollowUp
+  (ADR-020): `appointment_type ∈ {initial, follow_up, recurring}`
+  with `OriginatingEventLink` validation enforcing the follow-up
+  contract; `:reschedule`, `:cancel`, `:complete` status transitions
+  (story 1.4).
+- `Note` resource: free-text body (`sensitive? true`), self-edit
+  policy via `expr(recorded_by_id == ^actor(:id))` + admin override
+  (story 1.5).
+- Identity LiveViews: `IdentityLive.{Index,Show,New,Edit}` plus
+  `TimelineComponent` rendering a chronological merge of
+  events + appointments + notes; gettext-routed strings; per-form
+  `as:` namespacing to avoid duplicate-id collisions when multiple
+  forms share an attribute name (story 1.6).
+- Property tests covering timeline ordering invariants and
+  soft-delete idempotence across all four Identity resources
+  (story 1.7).
+- AshOban trigger schedules daily `Token.expunge_expired` —
+  resolves TO-3 (story 1.8, commit `7d5d02a`).
+- Playwright screenshot evidence harness for the Identity timeline
+  UX (story 1.9).
+- Phase 1 integration gate test exercising the cross-resource
+  Identity-axis flow end-to-end (story 1.10).
+- `just verify` now runs `mix gettext.extract` + diff drift check
+  to fail on stale `.po` files (`[1.fix]`, PR #12).
+
+### Fixed — Phase 1 hardening pass
+- `OriginatingEventLink` now verifies the originating Event belongs
+  to the same Identity as the Appointment. Previously the validation
+  only checked the type↔id pairing, so an operator could craft a
+  form POST with an `originating_event_id` from any other Identity
+  and the FK constraint would accept it (both rows exist; only the
+  relationship is wrong). Uses `:read_with_archived` so a
+  soft-deleted foreign event still trips the check. Regression
+  tests cover the live and soft-deleted cases (`[1.fix]`).
+- `scripts/status.sh` heuristic now marks a phase ✅ shipped when
+  all its stories are `Status: done`, instead of requiring a
+  `retrospective.md` that no phase has. Phase 0 and Phase 1 both
+  now display correctly (`[1.fix]`).
+
+### Changed — Phase 1 hardening pass
+- The five identical `*.VersionPolicies` paper-trail mixins
+  (`Accounts.User`, `Identity.{Identity,Event,Appointment,Note}`)
+  consolidated into one shared `AshyWalnutDesk.AdminOnlyVersions`
+  mixin. Same admin-only-read rule, one place to change it
+  (`[1.fix]`).
+- `specs/security/known-trade-offs.md` TO-3 marked ✅ resolved,
+  linking story 1.8 and commit `7d5d02a`.
+- `BASELINE.md §13` updated to reflect Phase 1 shipped; next
+  phase boundary is Phase 2 (Interaction-axis messaging).
+
 ## [0.0.0] — 2026-05-12
 
 ### Added
