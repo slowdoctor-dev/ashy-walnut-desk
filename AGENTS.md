@@ -242,12 +242,9 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   pointing at `users`/`identities`/etc. inherits this hazard.
 - Ash update actions whose policy uses `authorize_if expr(...)` against
   record attributes (e.g. self-edit via
-  `expr(recorded_by_id == ^actor(:id))`) must set `require_atomic?
-  false`. The default atomic update tries to fold the policy into the
-  data-layer WHERE clause and AshPostgres errors with `data layer
-  "AshPostgres.DataLayer" does not support the function
-  error(Ash.Error.Forbidden.Placeholder, …)`. Atomic mode can only
-  encode policy results that survive as SQL; the deny branch can't.
+  `expr(recorded_by_id == ^actor(:id))`) must set `require_atomic? false`.
+  The default atomic update tries to fold the policy into the data-layer
+  WHERE clause; AshPostgres can't encode the deny branch and errors.
 - `AshPhoenix.Form.submit(form, params: new_params)` re-validates the
   changeset with `new_params`, replacing the params passed at
   `for_create/3`. Constructor-time defaults for constant attributes
@@ -276,6 +273,9 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   `config/test.exs` so `AshOban.Test.schedule_and_run_triggers/2` can
   drain queues against the sandbox. Side effect: `Oban.config().queues`
   is `[]` — assert on `Application.get_env(:…, Oban)[:queues]`.
+- Helpers used in both `data-*={…}` and `:if={…}` must return booleans —
+  string `"false"` is truthy, so `:if` always passes. Convert at the
+  attribute boundary with `to_string/1`.
 
 ## 11. When in Doubt
 
