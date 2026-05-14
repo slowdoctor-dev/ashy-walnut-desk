@@ -6,20 +6,20 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 
 ## 2. Acceptance criteria (phase-level)
 
-- [ ] `just verify` is green after all Phase 1 stories merge.
-- [ ] Identity-axis resources exist for customer identity, event/encounter, appointment, and note, and they are reachable only through named Ash actions (no direct data-layer access path).
-- [ ] Every Identity-axis resource has explicit authorization policies; unauthenticated callers are denied by default for non-public actions.
-- [ ] Sensitive customer fields are marked and handled as sensitive, and raw sensitive values are not persisted in audit payloads in plaintext.
-- [ ] The project-level invariant "raw primary identifiers are never stored when hashing is required" is enforced for the Identity resource.
-- [ ] **Appointment is one resource, not two.** Follow-ups are modeled via an `appointment_type` enum (`:initial | :follow_up | :recurring`) plus a nullable `originating_event_id` FK that is required when type is `:follow_up`.
-- [ ] Identity timeline behavior is observable: operators can view a customer's linked events, appointments (including follow-ups), and notes in chronological order.
-- [ ] Cross-resource ownership constraints are enforced: event/appointment/note records cannot exist without an owning identity context.
-- [ ] Audit trail coverage is active for Identity-axis sensitive-record changes, with tests asserting that key state transitions produce version/audit entries.
-- [ ] **Soft-delete only** on every Identity-axis resource: each resource has a `deleted_at` timestamp; reads filter deleted rows by default; admin can recover. No hard-delete action ships in Phase 1.
-- [ ] A new `:viewer` role is added to the role enum alongside `:admin` and `:operator`. Identity-axis read policies admit `:viewer`; write policies do not.
-- [ ] Appointment records carry a `scheduled_for` timestamp and are observable to operators, but Phase 1 does **not** ship a sending/reminder pipeline (record-only — deferred to Phase 4).
-- [ ] Identity-timeline UX evidence: an automated `Phoenix.LiveViewTest` E2E flow exercises create → link → view-timeline, **plus** committed Playwright-driven screenshots of the timeline UI showing create + linked records (one screenshot per major UX state). The screenshots live under a tracked path (e.g. `docs/phase-1-screenshots/`) and the script that produces them is reproducible from `just`.
-- [ ] TO-3 from `specs/security/known-trade-offs.md` is resolved in this phase: expired authentication tokens are expunged on a recurring schedule and verified by tests.
+- [x] `just verify` is green after all Phase 1 stories merge.
+- [x] Identity-axis resources exist for customer identity, event/encounter, appointment, and note, and they are reachable only through named Ash actions (no direct data-layer access path).
+- [x] Every Identity-axis resource has explicit authorization policies; unauthenticated callers are denied by default for non-public actions.
+- [x] Sensitive customer fields are marked and handled as sensitive, and raw sensitive values are not persisted in audit payloads in plaintext.
+- [x] The project-level invariant "raw primary identifiers are never stored when hashing is required" is enforced for the Identity resource.
+- [x] **Appointment is one resource, not two.** Follow-ups are modeled via an `appointment_type` enum (`:initial | :follow_up | :recurring`) plus a nullable `originating_event_id` FK that is required when type is `:follow_up`.
+- [x] Identity timeline behavior is observable: operators can view a customer's linked events, appointments (including follow-ups), and notes in chronological order.
+- [x] Cross-resource ownership constraints are enforced: event/appointment/note records cannot exist without an owning identity context.
+- [x] Audit trail coverage is active for Identity-axis sensitive-record changes, with tests asserting that key state transitions produce version/audit entries.
+- [x] **Soft-delete only** on every Identity-axis resource: each resource has a `deleted_at` timestamp; reads filter deleted rows by default; admin can recover. No hard-delete action ships in Phase 1.
+- [x] A new `:viewer` role is added to the role enum alongside `:admin` and `:operator`. Identity-axis read policies admit `:viewer`; write policies do not.
+- [x] Appointment records carry a `scheduled_for` timestamp and are observable to operators, but Phase 1 does **not** ship a sending/reminder pipeline (record-only — deferred to Phase 4).
+- [x] Identity-timeline UX evidence: an automated `Phoenix.LiveViewTest` E2E flow exercises create → link → view-timeline, **plus** committed Playwright-driven screenshots of the timeline UI showing create + linked records (one screenshot per major UX state). The screenshots live under a tracked path (e.g. `docs/phase-1-screenshots/`) and the script that produces them is reproducible from `just`.
+- [x] TO-3 from `specs/security/known-trade-offs.md` is resolved in this phase: expired authentication tokens are expunged on a recurring schedule and verified by tests.
 
 ## 3. Scope
 
@@ -61,7 +61,7 @@ Deliver the Identity axis foundation (Who/When) so operators can create, read, u
 | 1.7 | Property-based invariants for timeline and soft-delete | 2h | 1.2, 1.3, 1.4, 1.5, 1.6 | ready |
 | 1.8 | TO-3 token expunge schedule via AshOban | 1h | 1.1 | ready |
 | 1.9 | Playwright screenshot evidence for Identity timeline UX | 2h | 1.6 | ready |
-| 1.10 | Phase 1 Identity-axis integration test gate | 2h | 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9 | ready |
+| 1.10 | Phase 1 Identity-axis integration test gate | 2h | 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9 | done |
 
 ## 5. Dependencies
 
