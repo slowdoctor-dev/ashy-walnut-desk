@@ -26,6 +26,19 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
 
   @impl Mix.Task
   def run(argv) do
+    # The seed bypasses `User.:register`'s `forbid_if always()` policy and
+    # auto-promotes to `:admin` via `authorize?: false` (intentional for
+    # deterministic screenshot fixtures). That same shape is a
+    # privilege-escalation path if invoked against a prod DB, so refuse
+    # to run anywhere except dev/test.
+    unless Mix.env() in [:dev, :test] do
+      Mix.raise(
+        "phase1.demo.seed is dev/test-only — it bypasses `User.:register` " <>
+          "policy and auto-grants :admin. Refusing to run in Mix.env=" <>
+          inspect(Mix.env()) <> "."
+      )
+    end
+
     {opts, _, _} = OptionParser.parse(argv, switches: @switches)
 
     email = Keyword.get(opts, :email, "demo-admin@example.com")
