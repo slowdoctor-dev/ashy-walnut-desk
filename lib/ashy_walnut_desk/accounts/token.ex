@@ -5,7 +5,7 @@ defmodule AshyWalnutDesk.Accounts.Token do
     otp_app: :ashy_walnut_desk,
     domain: AshyWalnutDesk.Accounts,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication.TokenResource],
+    extensions: [AshAuthentication.TokenResource, AshOban],
     authorizers: [Ash.Policy.Authorizer]
 
   postgres do
@@ -13,10 +13,25 @@ defmodule AshyWalnutDesk.Accounts.Token do
     repo(AshyWalnutDesk.Repo)
   end
 
+  oban do
+    triggers do
+      trigger :expunge_tokens do
+        action(:expunge_expired)
+        read_action(:expired)
+        queue(:tokens)
+        scheduler_cron("0 3 * * *")
+        where(expr(expires_at < now()))
+        worker_module_name(__MODULE__.AshOban.Worker.ExpungeTokens)
+        scheduler_module_name(__MODULE__.AshOban.Scheduler.ExpungeTokens)
+      end
+    end
+  end
+
   actions do
     defaults([:read])
 
     read :expired do
+      pagination(keyset?: true, required?: false)
       filter(expr(expires_at < now()))
     end
 
@@ -68,6 +83,10 @@ defmodule AshyWalnutDesk.Accounts.Token do
 
   policies do
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if(always())
+    end
+
+    bypass AshOban.Checks.AshObanInteraction do
       authorize_if(always())
     end
 
