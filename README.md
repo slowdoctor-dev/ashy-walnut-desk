@@ -9,7 +9,9 @@
 
 ## Status
 
-**Phase -1** — Planning complete. Phase 0 (foundation) starting.
+**Phase 0 (foundation) and Phase 1 (Identity-axis core domain) are
+shipped.** Next phase boundary: Phase 2 (Interaction-axis messaging).
+Run `./scripts/status.sh` for the live picture.
 
 For the full picture, start with [`BASELINE.md`](BASELINE.md) — single
 entry point covering identity, architecture, methodology, and current state.

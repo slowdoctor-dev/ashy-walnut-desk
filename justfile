@@ -65,10 +65,6 @@ test-file FILE:
 spec-check:
     @./scripts/spec-check.sh
 
-# Security scan
-security:
-    mix sobelow
-
 # Type check (slow)
 dialyzer:
     mix dialyzer
