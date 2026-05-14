@@ -208,6 +208,39 @@ defmodule AshyWalnutDesk.Identity.AppointmentTest do
              })
   end
 
+  test "follow_up rejects originating_event_id from a different identity" do
+    operator = create_user(:operator)
+    own_identity = register_identity(operator)
+    other_identity = register_identity(operator)
+    foreign_event = record_event(operator, other_identity)
+
+    assert {:error, %Ash.Error.Invalid{} = err} =
+             schedule_appointment(operator, own_identity, %{
+               appointment_type: :follow_up,
+               originating_event_id: foreign_event.id
+             })
+
+    assert Exception.message(err) =~ "same identity"
+  end
+
+  test "follow_up rejects originating_event_id from a soft-deleted foreign event" do
+    operator = create_user(:operator)
+    admin = create_user(:admin)
+    own_identity = register_identity(operator)
+    other_identity = register_identity(operator)
+    foreign_event = record_event(operator, other_identity)
+
+    {:ok, _archived} = Ash.update(foreign_event, %{}, action: :archive, actor: admin)
+
+    assert {:error, %Ash.Error.Invalid{} = err} =
+             schedule_appointment(operator, own_identity, %{
+               appointment_type: :follow_up,
+               originating_event_id: foreign_event.id
+             })
+
+    assert Exception.message(err) =~ "same identity"
+  end
+
   # AC3 — role-based policies + viewer + unauthenticated denial
 
   test "operator and admin can schedule; viewer cannot" do
