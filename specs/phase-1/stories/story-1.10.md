@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 2h
 **Depends on**: 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,9 +23,9 @@ Per BMAD PM rules, the final story is the phase integration gate that catches cr
 
 ## Acceptance criteria
 
-- [ ] AC1: Integration test (`Phoenix.LiveViewTest`) executes create identity → record event → schedule follow-up appointment (with originating event) → record note → render timeline assertions in one authenticated flow. — Verify: `mix test test/integration/identity_phase1_e2e_test.exs`
-- [ ] AC2: Same integration suite asserts role boundaries (`:viewer` read-only, non-admin cannot recover archived identity, admin can recover). — Verify: `mix test test/integration/identity_phase1_e2e_test.exs`
-- [ ] AC3: Phase-level verification remains green with integration gate included. — Verify: `just verify`
+- [x] AC1: Integration test (`Phoenix.LiveViewTest`) executes create identity → record event → schedule follow-up appointment (with originating event) → record note → render timeline assertions in one authenticated flow. — Verify: `mix test test/integration/identity_phase1_e2e_test.exs`
+- [x] AC2: Same integration suite asserts role boundaries (`:viewer` read-only, non-admin cannot recover archived identity, admin can recover). — Verify: `mix test test/integration/identity_phase1_e2e_test.exs`
+- [x] AC3: Phase-level verification remains green with integration gate included. — Verify: `just verify`
 
 ## Files to create
 
@@ -65,5 +65,8 @@ mix test test/integration/identity_phase1_e2e_test.exs
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+  - Two-test layout in a single file (`AC1` composition + `AC2` role boundaries) instead of one mega-test. Each test reads top-to-bottom as an integration story and a failure points cleanly at one concern. The story explicitly requires a single file; it does not require a single test.
+  - The Show LV's `appointment_form` does not expose `originating_event_id` (Phase 1 deferred a full follow-up linker UI). The follow-up appointment is therefore created through `Ash.create(..., action: :schedule_appointment, actor: operator)` — the same action the LV would call — to exercise the originating-event link without inventing a UI for it.
+  - `:operator` in AC2 is minted via direct `Ash.create(User, ..., authorize?: false)` (no magic-link) because the operator only exercises Ash actions (archive + recover-denied). This avoids a third magic-link round-trip and the `AssignFirstUserAdmin` role-clobber dance for a user that never mounts a LiveView.
+- Spec drift noticed: none. AC1/AC2/AC3 hold as written.
+- Gotchas to add to AGENTS.md §10: none new. The existing magic-link/role-clobber and form-prefix-collision gotchas already cover the integration-test surface; the new test reuses the documented mitigations.
