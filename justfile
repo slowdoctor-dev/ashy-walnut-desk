@@ -86,6 +86,13 @@ migrate:
 db-reset:
     mix ecto.reset
 
+# === Phase 1 evidence ===
+
+# Capture Identity timeline screenshots into docs/phase-1-screenshots/
+# (requires `just dev` running in another terminal + python3 playwright)
+screenshots:
+    @./scripts/screenshots-phase1.sh
+
 # === Story workflow ===
 
 # Print prompt to start a new story execution session

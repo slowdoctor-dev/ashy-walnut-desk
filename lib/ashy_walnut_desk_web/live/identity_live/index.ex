@@ -76,7 +76,7 @@ defmodule AshyWalnutDeskWeb.IdentityLive.Index do
         <li
           :for={identity <- @identities}
           id={"identity-#{identity.id}"}
-          data-archived={archived?(identity)}
+          data-archived={to_string(archived?(identity))}
           class="flex items-center justify-between gap-4 py-3"
         >
           <.link
@@ -102,6 +102,6 @@ defmodule AshyWalnutDeskWeb.IdentityLive.Index do
     """
   end
 
-  defp archived?(%{deleted_at: nil}), do: "false"
-  defp archived?(_), do: "true"
+  defp archived?(%{deleted_at: nil}), do: false
+  defp archived?(_), do: true
 end

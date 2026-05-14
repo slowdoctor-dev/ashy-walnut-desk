@@ -100,6 +100,20 @@ See [`docs/first-week-plan.md`](docs/first-week-plan.md) for the full
 Day 1 → Day 7 action plan, and run `just story-prompt` in a fresh AI
 session when you're ready to start the next story.
 
+## Phase 1 timeline screenshots
+
+Identity-timeline UX evidence lives in
+[`docs/phase-1-screenshots/`](docs/phase-1-screenshots/) and is regenerable
+from `just`:
+
+```bash
+just dev                      # in one terminal
+just screenshots              # in another — seeds demo data + captures PNGs
+```
+
+Requires Python 3 + the `playwright` package (`pip install playwright` and
+`python3 -m playwright install chromium` if Chromium isn't already cached).
+
 ## AI tool compatibility
 
 This project is **LLM-agnostic**. Any AGENTS.md-compatible AI coding tool
