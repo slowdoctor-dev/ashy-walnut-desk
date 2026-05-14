@@ -29,7 +29,7 @@ defmodule AshyWalnutDesk.Identity.Note do
     store_action_name?(true)
     sensitive_attributes(:redact)
     version_extensions(authorizers: [Ash.Policy.Authorizer])
-    mixin(AshyWalnutDesk.Identity.Note.VersionPolicies)
+    mixin(AshyWalnutDesk.AdminOnlyVersions)
   end
 
   actions do

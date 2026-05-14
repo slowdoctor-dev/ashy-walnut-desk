@@ -31,7 +31,7 @@ defmodule AshyWalnutDesk.Identity.Appointment do
     store_action_name?(true)
     sensitive_attributes(:redact)
     version_extensions(authorizers: [Ash.Policy.Authorizer])
-    mixin(AshyWalnutDesk.Identity.Appointment.VersionPolicies)
+    mixin(AshyWalnutDesk.AdminOnlyVersions)
   end
 
   actions do
