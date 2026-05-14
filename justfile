@@ -31,7 +31,7 @@ dev-bg:
 # === Verification gates (MUST pass before commit) ===
 
 # Run all verification gates
-verify: format-check credo test spec-check
+verify: format-check credo gettext-check test spec-check
     @echo "✓ All verification gates passed"
 
 # Format check
@@ -45,6 +45,13 @@ format:
 # Credo lint
 credo:
     mix credo --strict
+
+# Re-extract gettext .pot from source and fail if the working tree drifts.
+# Mirrors CI Gate 3b — keeps story-level just verify in lockstep with CI.
+gettext-check:
+    @mix gettext.extract >/dev/null
+    @git diff --exit-code priv/gettext/ \
+      || (echo "✗ gettext drift — run 'mix gettext.extract' locally and commit"; exit 1)
 
 # All tests
 test:
