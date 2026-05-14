@@ -104,10 +104,12 @@ Phase 4  AI Drafts      — AI-generated drafts with countdown + guardrails
 Phase 5  Knowledge      — pgvector RAG over Manual/Persona content
 ```
 
-Phase 0 has detailed requirements and Story 0.1 ready. Subsequent phases
-are described in one line above; their detailed requirements are written
-by the BMAD Analyst persona at the start of each phase (just-in-time spec
-per AGENTS.md §3 and the SDD methodology in `docs/methodology.md`).
+Phases 0 and 1 are shipped — see `specs/phase-{0,1}/` for their
+detailed requirements, architecture, and stories. Subsequent phases
+are described in one line above; their detailed requirements are
+written by the BMAD Analyst persona at the start of each phase
+(just-in-time spec per AGENTS.md §3 and the SDD methodology in
+`docs/methodology.md`).
 
 Phase 0-5 together form **Season 1** (single deployment, single domain).
 Later seasons exist as possibilities, not commitments (ADR-018).

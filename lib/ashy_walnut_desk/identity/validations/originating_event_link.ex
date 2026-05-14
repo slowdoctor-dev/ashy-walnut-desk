@@ -19,11 +19,26 @@ defmodule AshyWalnutDesk.Identity.Validations.OriginatingEventLink do
   def validate(changeset, _opts, _context) do
     type = Changeset.get_attribute(changeset, :appointment_type)
     link = Changeset.get_attribute(changeset, :originating_event_id)
-    identity_id = Changeset.get_attribute(changeset, :identity_id)
 
     case check_pairing(type, link) do
-      :ok -> check_same_identity(link, identity_id)
+      :ok -> maybe_check_same_identity(changeset, link)
       error -> error
+    end
+  end
+
+  # On status-only updates (`:reschedule`, `:cancel`, `:complete`)
+  # neither `identity_id` nor `originating_event_id` is in the action's
+  # accept list, so re-reading the originating Event would be a pure
+  # extra DB round-trip. Only run the cross-Identity check when at
+  # least one of the two attributes is actually changing on this
+  # changeset.
+  defp maybe_check_same_identity(changeset, link) do
+    if Changeset.changing_attribute?(changeset, :originating_event_id) or
+         Changeset.changing_attribute?(changeset, :identity_id) do
+      identity_id = Changeset.get_attribute(changeset, :identity_id)
+      check_same_identity(link, identity_id)
+    else
+      :ok
     end
   end
 
