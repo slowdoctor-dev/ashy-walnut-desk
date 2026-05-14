@@ -3,7 +3,7 @@
 **Phase**: 1
 **Estimate**: 3h
 **Depends on**: 1.2, 1.3, 1.4, 1.5
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Resource-level correctness is insufficient without observable operator UX. This 
 
 ## Acceptance criteria
 
-- [ ] AC1: `IdentityLive.Index` and `IdentityLive.Show` routes render for authenticated actors and list non-archived identities by default. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
-- [ ] AC2: Timeline view shows linked Event/Appointment/Note records chronologically for an identity. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
-- [ ] AC3: `:viewer` sees timeline/read surfaces but cannot trigger write actions from UI paths; write attempts fail at action boundary. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
-- [ ] AC4: Archive/recover UX behavior is consistent with soft-delete policy (admin recover only, archived hidden from default index). — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
+- [x] AC1: `IdentityLive.Index` and `IdentityLive.Show` routes render for authenticated actors and list non-archived identities by default. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
+- [x] AC2: Timeline view shows linked Event/Appointment/Note records chronologically for an identity. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
+- [x] AC3: `:viewer` sees timeline/read surfaces but cannot trigger write actions from UI paths; write attempts fail at action boundary. — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs`
+- [x] AC4: Archive/recover UX behavior is consistent with soft-delete policy (admin recover only, archived hidden from default index). — Verify: `mix test test/ashy_walnut_desk_web/live/identity_live/index_test.exs`
 
 ## Files to create
 
@@ -74,5 +74,22 @@ mix test test/ashy_walnut_desk_web/live/identity_live/show_test.exs
 ## Notes during implementation
 
 - Decisions made:
-- Spec drift noticed:
+  - Show LiveView embeds three named inline forms (event_form / appointment_form / note_form)
+    — using distinct `as:` values per form so DOM ids stay unique within a single LV
+    (otherwise Event `body` and Note `body` collide on `id="form_body"`).
+  - Submit handlers re-inject `identity_id` into form params before
+    `AshPhoenix.Form.submit/2`, because `submit` re-validates with the new params
+    and would drop the constructor-time `identity_id` otherwise.
+  - Test login helper signs in via magic-link then immediately calls `:assign_role`
+    (authorize?: false) to restore the test-intended role, since
+    `sign_in_with_magic_link` runs `AssignFirstUserAdmin` which overrides role.
+  - Admin viewing an archived identity falls back to the `:read_with_archived`
+    action; non-admin can't reach the Show page for archived rows by design.
+- Spec drift noticed: none.
 - Gotchas to add to AGENTS.md §10:
+  - `AshPhoenix.Form.submit/2` re-validates with the params you pass, replacing
+    constructor-time params. Constant attributes (parent FKs) must be re-injected
+    into the submit params or the validation drops them.
+  - When two `AshPhoenix.Form`s on the same LV expose fields with the same name
+    (e.g. `body`), pass distinct `as:` values per form so the rendered `id`
+    attributes don't collide. LiveView raises `Duplicate id found` otherwise.

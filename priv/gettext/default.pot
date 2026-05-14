@@ -81,3 +81,243 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:41
+#, elixir-autogen, elixir-format
+msgid "Appointment"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:86
+#, elixir-autogen, elixir-format
+msgid "Appointment scheduled."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:288
+#, elixir-autogen, elixir-format
+msgid "Archive"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:285
+#, elixir-autogen, elixir-format
+msgid "Archive this identity?"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:269
+#, elixir-autogen, elixir-format
+msgid "Archived"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:393
+#, elixir-autogen, elixir-format
+msgid "Back to identities"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:330
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:385
+#, elixir-autogen, elixir-format
+msgid "Body"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:73
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:67
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:131
+#, elixir-autogen, elixir-format
+msgid "Could not archive identity."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:148
+#, elixir-autogen, elixir-format
+msgid "Could not recover identity."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:47
+#, elixir-autogen, elixir-format
+msgid "Customers and clients on the desk."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:64
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:55
+#, elixir-autogen, elixir-format
+msgid "Display name"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:278
+#, elixir-autogen, elixir-format
+msgid "Edit"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:55
+#, elixir-autogen, elixir-format
+msgid "Edit identity"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:40
+#, elixir-autogen, elixir-format
+msgid "Event"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:63
+#, elixir-autogen, elixir-format
+msgid "Event recorded."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:365
+#, elixir-autogen, elixir-format
+msgid "Follow up"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:68
+#, elixir-autogen, elixir-format
+msgid "Hide archived"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:46
+#, elixir-autogen, elixir-format
+msgid "Identities"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:128
+#, elixir-autogen, elixir-format
+msgid "Identity archived."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:26
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:30
+#, elixir-autogen, elixir-format
+msgid "Identity not found."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:145
+#, elixir-autogen, elixir-format
+msgid "Identity recovered."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:34
+#, elixir-autogen, elixir-format
+msgid "Identity registered."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:43
+#, elixir-autogen, elixir-format
+msgid "Identity updated."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:364
+#, elixir-autogen, elixir-format
+msgid "Initial"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:55
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:46
+#, elixir-autogen, elixir-format
+msgid "New identity"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:99
+#, elixir-autogen, elixir-format
+msgid "No identities yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:34
+#, elixir-autogen, elixir-format
+msgid "No linked records yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:42
+#, elixir-autogen, elixir-format
+msgid "Note"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:109
+#, elixir-autogen, elixir-format
+msgid "Note recorded."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:65
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:62
+#, elixir-autogen, elixir-format
+msgid "Notes summary"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:326
+#, elixir-autogen, elixir-format
+msgid "Occurred at"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:59
+#, elixir-autogen, elixir-format
+msgid "Primary identifier"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:315
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:332
+#, elixir-autogen, elixir-format
+msgid "Record event"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:377
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:387
+#, elixir-autogen, elixir-format
+msgid "Record note"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:297
+#, elixir-autogen, elixir-format
+msgid "Recover"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:366
+#, elixir-autogen, elixir-format
+msgid "Recurring"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/new.ex:65
+#, elixir-autogen, elixir-format
+msgid "Register identity"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:68
+#, elixir-autogen, elixir-format
+msgid "Save"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:370
+#, elixir-autogen, elixir-format
+msgid "Schedule"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:339
+#, elixir-autogen, elixir-format
+msgid "Schedule appointment"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:350
+#, elixir-autogen, elixir-format
+msgid "Scheduled for"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:70
+#, elixir-autogen, elixir-format
+msgid "Show archived"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:329
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:356
+#, elixir-autogen, elixir-format
+msgid "Summary"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:10
+#, elixir-autogen, elixir-format
+msgid "Timeline"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:362
+#, elixir-autogen, elixir-format
+msgid "Type"
+msgstr ""
