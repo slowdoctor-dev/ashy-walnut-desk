@@ -95,32 +95,22 @@ Will be a Phase 1+ story or part of the deployer-instance README.
 
 ## TO-3 — `Token` resource has no scheduled expunge of expired rows
 
-**Status**: deferred to Phase 1.
+**Status**: ✅ resolved by story 1.8 (commit `7d5d02a`, PR #9).
 
-**Decision**: `lib/ashy_walnut_desk/accounts/token.ex` defines a
-`destroy :expunge_expired` action (per the AshAuthentication.TokenResource
-extension), but nothing schedules it. Surfaced as finding #7 in the
-Phase 0 security review.
+**Decision** *(historical)*: `lib/ashy_walnut_desk/accounts/token.ex`
+defined a `destroy :expunge_expired` action (per the
+AshAuthentication.TokenResource extension), but nothing scheduled it.
+Surfaced as finding #7 in the Phase 0 security review.
 
-**Why**: Phase 0's focus was authentication correctness, not
-operational hygiene. Each magic-link sign-in writes a Token row;
-without a sweep, the table grows monotonically. For Phase 0 with no
-real users this is invisible.
+**Why** *(historical)*: Phase 0's focus was authentication
+correctness, not operational hygiene. Each magic-link sign-in writes
+a Token row; without a sweep, the table grew monotonically.
 
-**Compensating controls (Phase 0)**:
-- Magic-link tokens have a short lifetime (10 min by default).
-- No real users → table stays small.
-- `mix ash_postgres.generate_migrations --check` keeps the schema
-  honest, so we'll notice if Token grows weird columns.
-
-**Revisit trigger**: Phase 1, when Identity-axis resources start
-referencing Token (or earlier if a first deployer engages). The
-shape is a small story: add an AshOban trigger or an Oban Cron
-entry in `runtime.exs` calling
-`Ash.bulk_destroy(Token, :expunge_expired, %{}, authorize?: false)`
-daily. Includes a regression test that an expired token is destroyed
-on the next sweep tick.
-
-**Tracking**: candidate story for `specs/phase-1/stories/`. Title
-suggestion: "Daily expunge of expired authentication tokens via
-AshOban trigger".
+**Resolution**: Story 1.8 wired an `AshOban.Trigger` on the `Token`
+resource scheduled daily that drains expired rows via the existing
+`:expunge_expired` destroy action, with a regression test that
+asserts an expired token is removed on the next tick (run via
+`AshOban.Test.schedule_and_run_triggers/2` against the sandbox).
+Required `Oban.testing: :manual` in `config/test.exs` and
+`pagination keyset?: true, required?: false` on the trigger's
+`read_action` — both captured as gotchas in `AGENTS.md` §10.
