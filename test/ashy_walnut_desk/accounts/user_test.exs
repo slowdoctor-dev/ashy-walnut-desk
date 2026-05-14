@@ -20,9 +20,9 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
     assert user2.email_hash == expected
   end
 
-  test "roles include admin/operator enum" do
+  test "roles include admin/operator/viewer enum" do
     attr = Info.attribute(User, :role)
-    assert attr.constraints[:one_of] == [:admin, :operator]
+    assert attr.constraints[:one_of] == [:admin, :operator, :viewer]
   end
 
   test "unauthenticated can request magic link" do

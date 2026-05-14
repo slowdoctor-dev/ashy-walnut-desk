@@ -155,7 +155,7 @@ defmodule AshyWalnutDesk.Accounts.User do
     end
 
     attribute :role, :atom do
-      constraints(one_of: [:admin, :operator])
+      constraints(one_of: [:admin, :operator, :viewer])
       default(:operator)
       allow_nil?(false)
       public?(true)
