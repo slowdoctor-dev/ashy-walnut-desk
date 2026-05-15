@@ -14,7 +14,10 @@ corresponding commit / ADR).
 
 ## TO-1 — `User.session_identifier(:unsafe)` instead of `:jti`
 
-**Status**: active, accepted for Phase 0 only.
+**Status**: ✅ resolved by ADR-020 (Phase 2 prep). Implementing
+story is the first Phase 2 story — flips `session_identifier` back
+to `:jti` and adds the cookie-loading `on_mount` in the same merge.
+Historical context below preserved for the audit trail.
 
 **Decision**: `lib/ashy_walnut_desk/accounts/user.ex` sets
 `session_identifier(:unsafe)`. Set by commit `85c6bfb` (story 0.8).
@@ -63,7 +66,12 @@ should confirm the JTI fix landed upstream before relaxing the pin.
 
 ## TO-2 — Session cookie `secure` flag + `force_ssl` not enforced
 
-**Status**: deferred to the first deployer's hardening story.
+**Status**: ✅ resolved by ADR-021 (Phase 2 prep). Implementing
+story is the first Phase 2 story (same one that lands ADR-020) —
+`config/runtime.exs` prod block keyed on `PHX_HOST != "localhost"`
+sets `force_ssl: [hsts: true]` and `secure: true` on the session
+cookie. Dev fallback unchanged. Historical context below preserved
+for the audit trail.
 
 **Decision**: `lib/ashy_walnut_desk_web/endpoint.ex`'s `@session_options`
 does not set `secure: true`, and `config/runtime.exs`'s prod block

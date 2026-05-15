@@ -66,7 +66,7 @@ See `specs/architecture.md` for full structural details.
 | Container | Docker for local development |
 | CI | GitHub Actions |
 
-## 6. Key ADRs (17 total)
+## 6. Key ADRs (20 total)
 
 | ADR | Title | Status |
 |---|---|---|
@@ -87,6 +87,9 @@ See `specs/architecture.md` for full structural details.
 | ADR-016 | Four-stage record chain for communications | Accepted |
 | ADR-017 | From-scratch on Ash, not composing existing OSS | Accepted |
 | ADR-018 | Seasoning as multi-year scope structure | Accepted |
+| ADR-019 | Soft-delete is the default for axis records | Accepted |
+| ADR-020 | LiveView user loaded from cookie session (resolves TO-1) | Accepted |
+| ADR-021 | Prod TLS + secure-cookie hardening keyed on `PHX_HOST` (resolves TO-2) | Accepted |
 
 Full text in `specs/decisions/`.
 
