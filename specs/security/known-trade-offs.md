@@ -19,7 +19,7 @@ Historical context below preserved for the audit trail.
 
 **Resolution**: Story 2.1 implementation on
 `feat/story-2.1-security-entry-gate` (commit `04472ab`, squash SHA:
-`TBD-on-merge`) lands `LiveUserAuth.on_mount(:load_from_cookie)` and
+`28a0c36`) lands `LiveUserAuth.on_mount(:load_from_cookie)` and
 flips `Accounts.User.session_identifier` back to `:jti`, restoring
 per-session revocation on the LiveView path.
 
@@ -75,7 +75,7 @@ Historical context below preserved for the audit trail.
 
 **Resolution**: Story 2.1 implementation on
 `feat/story-2.1-security-entry-gate` (commit `04472ab`, squash SHA:
-`TBD-on-merge`) adds the `config/runtime.exs` prod block keyed on
+`28a0c36`) adds the `config/runtime.exs` prod block keyed on
 `PHX_HOST != "localhost"` and applies `force_ssl: [hsts: true]` plus
 secure `session_options` flags at runtime. Dev fallback unchanged.
 
