@@ -61,7 +61,16 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 
 | # | Story | Est | Depends on | Status |
 |---|---|---|---|---|
-| (filled by PM after Architect pass) | | | | |
+| 2.1 | Security entry gate (ADR-020 cookie on_mount + `:jti` restore + ADR-021 prod TLS/cookie hardening) | 3h | — | ready |
+| 2.2 | Interaction domain bootstrap + resource skeletons | 2h | 2.1 | ready |
+| 2.3 | Mutable Interaction resources + soft-delete policies | 3h | 2.2 | ready |
+| 2.4 | Immutable chain resources + adapter contract | 2h | 2.2 | ready |
+| 2.5 | Chain transition actions + server countdown enforcement | 3h | 2.3, 2.4 | ready |
+| 2.6 | Hash-chained AuditEvent writer + `mix audit.verify` | 3h | 2.4, 2.5 | ready |
+| 2.7 | Operator LiveView flow for Inbox-to-Action chain | 3h | 2.5, 2.6 | ready |
+| 2.8 | Safety framing guard + audit coverage assertions | 2h | 2.7 | ready |
+| 2.9 | Reproducible UX screenshots + phase docs sync | 2h | 2.7, 2.8 | ready |
+| 2.10 | Phase 2 integration gate (full AC verification) | 3h | 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 | ready |
 
 ## 5. Dependencies
 
