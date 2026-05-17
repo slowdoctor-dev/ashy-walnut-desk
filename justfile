@@ -31,7 +31,7 @@ dev-bg:
 # === Verification gates (MUST pass before commit) ===
 
 # Run all verification gates
-verify: format-check credo gettext-check test spec-check
+verify: format-check credo gettext-check test audit-verify spec-check
     @echo "✓ All verification gates passed"
 
 # Format check
@@ -56,6 +56,10 @@ gettext-check:
 # All tests
 test:
     mix test
+
+# Verify audit chain integrity
+audit-verify:
+    mix audit.verify
 
 # Test specific file
 test-file FILE:

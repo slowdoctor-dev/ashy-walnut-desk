@@ -6,22 +6,22 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 
 ## 2. Acceptance criteria (phase-level)
 
-- [ ] `just verify` is green after all Phase 2 stories merge.
-- [ ] Interaction-axis resources exist for `Conversation`, `Message`, `Channel`, `Inbox`, `Draft`, `Action`, `Compensation`, and `AuditEvent`, reachable only through named Ash actions (no direct data-layer access path).
-- [ ] Every Interaction-axis resource has explicit authorization policies; unauthenticated callers are denied by default for non-public actions.
-- [ ] Every `Conversation` is linked to exactly one `Channel` and exactly one `Identity` (data invariant §8.3 of `specs/architecture.md`).
-- [ ] Every `Message` is linked to exactly one `Conversation` (data invariant §8.2).
-- [ ] Every outbound `Message` carries a non-null `approved_by_id` referencing the User who approved (invariant §8.4); writes that bypass this are rejected at the action layer.
-- [ ] **Four-stage chain is mandatory.** Every operator-initiated send produces, in order, an `Inbox` row, a `Draft`, an `Action`, *and* a `Compensation` row — with the Compensation created at Action-approval time, never lazily. Verified by tests.
-- [ ] **5-second countdown is enforced** between draft approval and Action execution (invariant §8.5, ADR-013). The countdown is a server-side delay, not just a UI animation; bypass via direct Ash action call is rejected.
-- [ ] **AuditEvent hash chain is intact and verifiable.** Every chain transition (`Inbox → Draft`, `Draft → Action`, `Action → Compensation`, status changes) writes an immutable `AuditEvent` whose `prev_hash` references the previous event's hash. A `mix audit.verify` task (or equivalent) walks the chain and exits non-zero on tampering.
-- [ ] **Compensation is registered, not invoked, in Phase 2.** Every Action that executes also creates a `Compensation` row with `status: :registered` and the remediation text/template captured at approval time. Operator UI to *trigger* the compensation send ships with the first real channel adapter (Phase 3).
-- [ ] **Placeholder channel adapter ships.** A `Channel.Adapter.Stub` implements the `Channel.Adapter` behaviour with a no-op outbound (records `Action.status: :executed` without an external API call) so the chain is testable end-to-end. Real adapters (SMS, email, etc.) land in Phase 3.
-- [ ] **"Honest framing" is enforced in code** (ADR-016): any UI surface or status string that could read as "unsend" is rejected by a test that greps Phoenix templates + gettext strings.
-- [ ] Inbox source in Phase 2 is **operator-initiated only**. An operator can create an Inbox row referencing an existing Identity from Phase 1; scheduled / inbound webhook sources are deferred to Phase 3.
-- [ ] Drafts are **operator-composed (manual) in Phase 2**. AI-generated drafts, prompt builders, and validator integration are deferred to Phase 4 per BASELINE §7. The `Draft` resource has the schema to hold AI metadata (prompt, model, response, validator output per invariant §8.6); those columns are nullable in Phase 2 and required in Phase 4.
-- [ ] **Soft-delete pattern** (per ADR-019) is applied to every Interaction-axis resource that carries operator-visible state (`Conversation`, `Message`, `Inbox`, `Draft`). `Action`, `Compensation`, and `AuditEvent` are **immutable** and never soft-deleted (audit-trail integrity).
-- [ ] Audit trail coverage (AshPaperTrail) is active for sensitive-record changes on Interaction-axis resources, with tests asserting that approval, execution, and status transitions produce version entries.
+- [x] `just verify` is green after all Phase 2 stories merge.
+- [x] Interaction-axis resources exist for `Conversation`, `Message`, `Channel`, `Inbox`, `Draft`, `Action`, `Compensation`, and `AuditEvent`, reachable only through named Ash actions (no direct data-layer access path).
+- [x] Every Interaction-axis resource has explicit authorization policies; unauthenticated callers are denied by default for non-public actions.
+- [x] Every `Conversation` is linked to exactly one `Channel` and exactly one `Identity` (data invariant §8.3 of `specs/architecture.md`).
+- [x] Every `Message` is linked to exactly one `Conversation` (data invariant §8.2).
+- [x] Every outbound `Message` carries a non-null `approved_by_id` referencing the User who approved (invariant §8.4); writes that bypass this are rejected at the action layer.
+- [x] **Four-stage chain is mandatory.** Every operator-initiated send produces, in order, an `Inbox` row, a `Draft`, an `Action`, *and* a `Compensation` row — with the Compensation created at Action-approval time, never lazily. Verified by tests.
+- [x] **5-second countdown is enforced** between draft approval and Action execution (invariant §8.5, ADR-013). The countdown is a server-side delay, not just a UI animation; bypass via direct Ash action call is rejected.
+- [x] **AuditEvent hash chain is intact and verifiable.** Every chain transition (`Inbox → Draft`, `Draft → Action`, `Action → Compensation`, status changes) writes an immutable `AuditEvent` whose `prev_hash` references the previous event's hash. A `mix audit.verify` task (or equivalent) walks the chain and exits non-zero on tampering.
+- [x] **Compensation is registered, not invoked, in Phase 2.** Every Action that executes also creates a `Compensation` row with `status: :registered` and the remediation text/template captured at approval time. Operator UI to *trigger* the compensation send ships with the first real channel adapter (Phase 3).
+- [x] **Placeholder channel adapter ships.** A `Channel.Adapter.Stub` implements the `Channel.Adapter` behaviour with a no-op outbound (records `Action.status: :executed` without an external API call) so the chain is testable end-to-end. Real adapters (SMS, email, etc.) land in Phase 3.
+- [x] **"Honest framing" is enforced in code** (ADR-016): any UI surface or status string that could read as "unsend" is rejected by a test that greps Phoenix templates + gettext strings.
+- [x] Inbox source in Phase 2 is **operator-initiated only**. An operator can create an Inbox row referencing an existing Identity from Phase 1; scheduled / inbound webhook sources are deferred to Phase 3.
+- [x] Drafts are **operator-composed (manual) in Phase 2**. AI-generated drafts, prompt builders, and validator integration are deferred to Phase 4 per BASELINE §7. The `Draft` resource has the schema to hold AI metadata (prompt, model, response, validator output per invariant §8.6); those columns are nullable in Phase 2 and required in Phase 4.
+- [x] **Soft-delete pattern** (per ADR-019) is applied to every Interaction-axis resource that carries operator-visible state (`Conversation`, `Message`, `Inbox`, `Draft`). `Action`, `Compensation`, and `AuditEvent` are **immutable** and never soft-deleted (audit-trail integrity).
+- [x] Audit trail coverage (AshPaperTrail) is active for sensitive-record changes on Interaction-axis resources, with tests asserting that approval, execution, and status transitions produce version entries.
 - [x] Operator UX evidence: a `Phoenix.LiveViewTest` E2E flow exercises *create Inbox → compose Draft → approve with countdown → see Action + Compensation*, plus committed Playwright screenshots of the chain visualization UI (one screenshot per major UX state — open Inbox, drafting, countdown, executed). Screenshots live under `docs/phase-2-screenshots/` and are reproducible from `just`.
 
 ## 3. Scope
