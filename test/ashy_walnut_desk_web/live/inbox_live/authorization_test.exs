@@ -53,12 +53,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.AuthorizationTest do
     assert {:error, %Ash.Error.Forbidden{}} =
              Ash.create(
                Inbox,
-               %{
-                 conversation_id: conversation.id,
-                 status: :open,
-                 summary: "Blocked",
-                 recorded_by_id: viewer.id
-               },
+               %{conversation_id: conversation.id, summary: "Blocked"},
                action: :record_inbox,
                actor: viewer
              )

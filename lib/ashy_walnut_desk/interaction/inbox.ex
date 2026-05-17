@@ -11,6 +11,8 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.ChainLink
+  alias AshyWalnutDesk.Interaction.Checks.FromActionExecute
+  alias AshyWalnutDesk.Interaction.Validations.StatusTransition
 
   postgres do
     table("inboxes")
@@ -42,12 +44,40 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     end
 
     create :record_inbox do
-      accept([:conversation_id, :status, :summary, :recorded_by_id])
+      accept([:conversation_id, :summary])
+      change(set_attribute(:status, :open))
+      change(relate_actor(:recorded_by))
       change({ChainLink, event_type: :inbox_opened})
     end
 
-    update :update_inbox do
-      accept([:status, :summary])
+    update :mark_drafting do
+      accept([])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:open]})
+      change(set_attribute(:status, :drafting))
+    end
+
+    update :mark_executed do
+      accept([])
+      require_atomic?(false)
+      # Idempotent: multiple Action.execute calls against the same
+      # inbox (multiple drafts → multiple actions per inbox) leave the
+      # inbox at :executed. We still reject the :dismissed → :executed
+      # transition because dismissal is an explicit operator decision
+      # to drop the thread.
+      validate({StatusTransition, from: [:open, :drafting, :executed]})
+      change(set_attribute(:status, :executed))
+    end
+
+    update :dismiss do
+      accept([])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:open, :drafting]})
+      change(set_attribute(:status, :dismissed))
+    end
+
+    update :edit_summary do
+      accept([:summary])
     end
 
     update :archive do
@@ -79,7 +109,26 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
-    policy action(:update_inbox) do
+    policy action(:mark_drafting) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    # Internal-only: must originate from `Action.execute`'s
+    # `ExecuteOutbound` change, which sets the context flag. Operators
+    # cannot transition an inbox to :executed by hand — that would let
+    # them mark "the send happened" without the chain (ADR-016) ever
+    # firing.
+    policy action(:mark_executed) do
+      authorize_if(FromActionExecute)
+    end
+
+    policy action(:dismiss) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:edit_summary) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
     end
@@ -126,6 +175,11 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
     belongs_to :recorded_by, AshyWalnutDesk.Accounts.User do
       allow_nil?(false)
+      # FK set exclusively via `change(relate_actor(:recorded_by))` on
+      # :record_inbox. Non-writable so a future caller adding
+      # `:recorded_by_id` to an accept list cannot bypass actor
+      # attribution.
+      attribute_writable?(false)
       public?(true)
     end
   end

@@ -33,12 +33,7 @@ defmodule AshyWalnutDesk.Interaction.PaperTrailCoverageTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :open,
-          summary: "sensitive-summary",
-          recorded_by_id: admin.id
-        },
+        %{conversation_id: conversation.id, summary: "sensitive-summary"},
         action: :record_inbox,
         actor: admin
       )
@@ -46,8 +41,8 @@ defmodule AshyWalnutDesk.Interaction.PaperTrailCoverageTest do
     {:ok, _updated_inbox} =
       Ash.update(
         inbox,
-        %{status: :drafting, summary: "new-sensitive-summary"},
-        action: :update_inbox,
+        %{summary: "new-sensitive-summary"},
+        action: :edit_summary,
         actor: admin
       )
 
@@ -71,7 +66,7 @@ defmodule AshyWalnutDesk.Interaction.PaperTrailCoverageTest do
       Ash.update(
         draft,
         %{body: "edited-sensitive-body", compensation_body: "edited-sensitive-compensation"},
-        action: :edit_draft,
+        action: :revise,
         actor: admin
       )
 

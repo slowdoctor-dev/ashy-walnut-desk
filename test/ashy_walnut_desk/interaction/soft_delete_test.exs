@@ -62,12 +62,7 @@ defmodule AshyWalnutDesk.Interaction.SoftDeleteTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :open,
-          summary: "summary",
-          recorded_by_id: operator.id
-        },
+        %{conversation_id: conversation.id, summary: "summary"},
         action: :record_inbox,
         actor: operator
       )

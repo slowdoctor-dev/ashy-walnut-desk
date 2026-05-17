@@ -57,12 +57,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.ShowTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :drafting,
-          summary: "Need callback",
-          recorded_by_id: operator.id
-        },
+        %{conversation_id: conversation.id, summary: "Need callback"},
         action: :record_inbox,
         actor: operator
       )

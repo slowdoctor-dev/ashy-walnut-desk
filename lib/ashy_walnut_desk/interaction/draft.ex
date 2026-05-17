@@ -56,13 +56,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change({ChainLink, event_type: :draft_started})
     end
 
-    update :edit_draft do
+    update :revise do
       accept([
         :body,
         :compensation_body,
         :status,
-        :approved_at,
-        :approved_by_id,
         :ai_prompt,
         :ai_model,
         :ai_response,
@@ -78,6 +76,15 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change(set_attribute(:approved_at, &DateTime.utc_now/0))
       change(relate_actor(:approved_by))
       change({ChainLink, event_type: :draft_approved})
+    end
+
+    # Test-only escape hatch: backdate `approved_at` so countdown tests
+    # can simulate the 5-second window having elapsed without sleeping.
+    # The `forbid_if always()` policy means production callers cannot
+    # invoke this — only test fixtures going through `authorize?: false`
+    # can. See the AGENTS.md gotcha about fixture actions.
+    update :backdate_approval_for_tests do
+      accept([:approved_at])
     end
 
     update :archive do
@@ -109,7 +116,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
-    policy action(:edit_draft) do
+    policy action(:revise) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
     end
@@ -117,6 +124,10 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     policy action(:approve) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:backdate_approval_for_tests) do
+      forbid_if(always())
     end
 
     policy action(:archive) do
@@ -194,6 +205,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
     belongs_to :approved_by, AshyWalnutDesk.Accounts.User do
       allow_nil?(true)
+      # FK set exclusively via `change(relate_actor(:approved_by))` on
+      # :approve. Non-writable so a future caller adding
+      # `:approved_by_id` to an accept list cannot stamp the approver
+      # field directly (countdown bypass).
+      attribute_writable?(false)
       public?(true)
     end
   end
