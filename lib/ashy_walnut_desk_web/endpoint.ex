@@ -1,15 +1,14 @@
 defmodule AshyWalnutDeskWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :ashy_walnut_desk
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
-  @session_options [
-    store: :cookie,
-    key: "_ashy_walnut_desk_key",
-    signing_salt: "xwQ+0Tlz",
-    same_site: "Lax"
-  ]
+  # Session options live in app env (`config :ashy_walnut_desk,
+  # :session_options`) so `runtime.exs` can override `secure` /
+  # `http_only` at prod boot keyed on `PHX_HOST` (ADR-021). The
+  # socket connect_info must match what `Plug.Session` sees, so we
+  # read the same env at compile time — the socket route is
+  # rewritten on app boot, and the per-request plug below re-reads
+  # at runtime so dev/prod overrides actually win.
+  @session_options Application.compile_env!(:ashy_walnut_desk, :session_options)
 
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],
@@ -48,6 +47,20 @@ defmodule AshyWalnutDeskWeb.Endpoint do
 
   plug Plug.MethodOverride
   plug Plug.Head
-  plug Plug.Session, @session_options
+  plug :put_session_options
   plug AshyWalnutDeskWeb.Router
+
+  # Read session options at request time so `runtime.exs` overrides
+  # (e.g. `secure: true` keyed on `PHX_HOST` per ADR-021) actually
+  # land on the `Plug.Session` plug. Without this indirection the
+  # `@session_options` module attribute would bake in compile-time
+  # values and silently ignore runtime config changes.
+  defp put_session_options(conn, _opts) do
+    opts =
+      :ashy_walnut_desk
+      |> Application.fetch_env!(:session_options)
+      |> Plug.Session.init()
+
+    Plug.Session.call(conn, opts)
+  end
 end

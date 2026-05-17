@@ -115,9 +115,14 @@ defmodule AshyWalnutDesk.Accounts.User do
   end
 
   authentication do
-    # Phase 0 trade-off — see specs/security/known-trade-offs.md TO-1
-    # for the upstream bug, what we lose, and the revisit trigger.
-    session_identifier(:unsafe)
+    # `:jti` keys the LV session value on the per-token JWT id, so
+    # per-session revocation actually invalidates the cookie. The
+    # Phase 0 `:unsafe` workaround for TO-1 is gone: the upstream
+    # `LiveSession.generate_session/3` jti-stripping bug is now
+    # sidestepped by `AshyWalnutDeskWeb.LiveUserAuth.on_mount/4`
+    # reading the cookie session directly (ADR-020). See
+    # `specs/security/known-trade-offs.md` TO-1.
+    session_identifier(:jti)
 
     tokens do
       enabled?(true)

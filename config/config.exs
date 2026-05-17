@@ -18,6 +18,16 @@ config :ashy_walnut_desk,
   generators: [timestamp_type: :utc_datetime, binary_id: true],
   ash_domains: [AshyWalnutDesk.Accounts, AshyWalnutDesk.Identity]
 
+# Base session-cookie options. `runtime.exs` `:prod` block merges
+# `secure: true` + `http_only: true` when `PHX_HOST != "localhost"`
+# (ADR-021). The endpoint's `put_session_options` plug reads this
+# at request time so runtime overrides win.
+config :ashy_walnut_desk, :session_options,
+  store: :cookie,
+  key: "_ashy_walnut_desk_key",
+  signing_salt: "xwQ+0Tlz",
+  same_site: "Lax"
+
 # AshPaperTrail app-level setup for later per-resource opt-in.
 config :ash_paper_trail,
   repo: AshyWalnutDesk.Repo
