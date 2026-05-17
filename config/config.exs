@@ -16,7 +16,11 @@ config :ashy_walnut_desk, Oban,
 config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true],
-  ash_domains: [AshyWalnutDesk.Accounts, AshyWalnutDesk.Identity]
+  ash_domains: [
+    AshyWalnutDesk.Accounts,
+    AshyWalnutDesk.Identity,
+    AshyWalnutDesk.Interaction
+  ]
 
 # Base session-cookie options. `runtime.exs` `:prod` block merges
 # `secure: true` + `http_only: true` when `PHX_HOST != "localhost"`
