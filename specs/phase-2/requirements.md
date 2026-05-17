@@ -22,7 +22,7 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 - [ ] Drafts are **operator-composed (manual) in Phase 2**. AI-generated drafts, prompt builders, and validator integration are deferred to Phase 4 per BASELINE §7. The `Draft` resource has the schema to hold AI metadata (prompt, model, response, validator output per invariant §8.6); those columns are nullable in Phase 2 and required in Phase 4.
 - [ ] **Soft-delete pattern** (per ADR-019) is applied to every Interaction-axis resource that carries operator-visible state (`Conversation`, `Message`, `Inbox`, `Draft`). `Action`, `Compensation`, and `AuditEvent` are **immutable** and never soft-deleted (audit-trail integrity).
 - [ ] Audit trail coverage (AshPaperTrail) is active for sensitive-record changes on Interaction-axis resources, with tests asserting that approval, execution, and status transitions produce version entries.
-- [ ] Operator UX evidence: a `Phoenix.LiveViewTest` E2E flow exercises *create Inbox → compose Draft → approve with countdown → see Action + Compensation*, plus committed Playwright screenshots of the chain visualization UI (one screenshot per major UX state — open Inbox, drafting, countdown, executed). Screenshots live under `docs/phase-2-screenshots/` and are reproducible from `just`.
+- [x] Operator UX evidence: a `Phoenix.LiveViewTest` E2E flow exercises *create Inbox → compose Draft → approve with countdown → see Action + Compensation*, plus committed Playwright screenshots of the chain visualization UI (one screenshot per major UX state — open Inbox, drafting, countdown, executed). Screenshots live under `docs/phase-2-screenshots/` and are reproducible from `just`.
 
 ## 3. Scope
 

@@ -96,6 +96,11 @@ db-reset:
 screenshots:
     @./scripts/screenshots-phase1.sh
 
+# Capture Inbox chain screenshots into docs/phase-2-screenshots/
+# (requires `just dev` running in another terminal + python3 playwright)
+phase2-screenshots:
+    @./scripts/screenshots-phase2.sh
+
 # === Story workflow ===
 
 # Print prompt to start a new story execution session

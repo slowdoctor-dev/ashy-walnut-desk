@@ -116,6 +116,19 @@ just screenshots              # in another — seeds demo data + captures PNGs
 Requires Python 3 + the `playwright` package (`pip install playwright` and
 `python3 -m playwright install chromium` if Chromium isn't already cached).
 
+## Phase 2 Inbox screenshots
+
+Inbox chain UX evidence lives in
+[`docs/phase-2-screenshots/`](docs/phase-2-screenshots/) and is regenerable
+from `just`:
+
+```bash
+just dev                      # in one terminal
+just phase2-screenshots       # in another — seeds demo data + captures PNGs
+```
+
+Uses the same Python/Playwright setup as Phase 1.
+
 ## AI tool compatibility
 
 This project is **LLM-agnostic**. Any AGENTS.md-compatible AI coding tool
