@@ -54,7 +54,18 @@ defmodule AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdmin do
   defp maybe_retry_as_operator(_changeset, result, _context), do: result
 
   defp admin_index_conflict?(error) do
-    message = Exception.message(error)
+    # Error can arrive as an Exception (DB constraint), an Ash.Changeset
+    # (validation failure from another change in the pipeline — e.g.
+    # `RegistrationGate`), or any other shape. Only the DB-constraint
+    # case carries the index name; everything else short-circuits to
+    # "not a conflict" so the outer error propagates unchanged.
+    message =
+      try do
+        Exception.message(error)
+      rescue
+        _ -> inspect(error)
+      end
+
     String.contains?(message, "users_one_admin_idx")
   end
 

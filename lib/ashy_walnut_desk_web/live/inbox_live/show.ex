@@ -127,29 +127,34 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
          true <- allow_archived? and actor.role == :admin do
       Ash.get(Inbox, id, Keyword.put(opts, :action, :read_with_archived))
     else
-      {:ok, inbox} -> {:ok, load_chain(inbox)}
+      {:ok, inbox} -> {:ok, load_chain(inbox, actor)}
       {:error, _} = err -> err
       false -> {:error, :not_found}
     end
   end
 
-  defp load_chain(inbox) do
-    inbox = Ash.load!(inbox, [:conversation], actor: nil, authorize?: false)
-    conversation = Ash.load!(inbox.conversation, [:identity], actor: nil, authorize?: false)
+  # F5/A1: thread the current_user actor through every chain-piece
+  # load so a future tightening of any resource's `:read` policy
+  # (e.g. dropping `:viewer` from `Draft.:read` per F8) is honored
+  # by the LV automatically. Stages the actor isn't allowed to see
+  # render as `nil` — the chain component already handles that.
+  defp load_chain(inbox, actor) do
+    inbox = Ash.load!(inbox, [:conversation], actor: actor)
+    conversation = Ash.load!(inbox.conversation, [:identity], actor: actor)
 
     draft =
       Draft
       |> Ash.Query.filter(inbox_id == ^inbox.id)
       |> Ash.Query.sort(created_at: :desc)
-      |> Ash.read_one!(actor: nil, authorize?: false)
+      |> Ash.read_one!(actor: actor)
 
-    action = if draft, do: find_action_for_draft!(draft.id), else: nil
+    action = if draft, do: find_action_for_draft!(draft.id, actor), else: nil
 
     compensation =
       if action do
         Compensation
         |> Ash.Query.filter(action_id == ^action.id)
-        |> Ash.read_one!(actor: nil, authorize?: false)
+        |> Ash.read_one!(actor: actor)
       end
 
     inbox
@@ -172,10 +177,10 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     end
   end
 
-  defp find_action_for_draft!(draft_id) do
+  defp find_action_for_draft!(draft_id, actor) do
     Action
     |> Ash.Query.filter(draft_id == ^draft_id)
-    |> Ash.read_one!(actor: nil, authorize?: false)
+    |> Ash.read_one!(actor: actor)
   end
 
   defp assign_draft_form(socket) do

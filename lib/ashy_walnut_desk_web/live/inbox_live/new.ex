@@ -17,7 +17,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.New do
     actor = socket.assigns.current_user
 
     with identity_id when not is_nil(identity_id) <- socket.assigns.identity_id,
-         {:ok, channel} <- fetch_stub_channel(),
+         {:ok, channel} <- fetch_stub_channel(actor),
          {:ok, conversation} <-
            Ash.create(
              Conversation,
@@ -46,8 +46,11 @@ defmodule AshyWalnutDeskWeb.InboxLive.New do
     end
   end
 
-  defp fetch_stub_channel do
-    case Ash.read(Channel, action: :read, authorize?: false) do
+  # A1: read channels with the actor so a future Channel-read tightening
+  # is honored. Today operator can list all channels, but this keeps the
+  # LV from pierce-bypassing the policy.
+  defp fetch_stub_channel(actor) do
+    case Ash.read(Channel, action: :read, actor: actor) do
       {:ok, channels} ->
         Enum.find(channels, &(&1.slug == "stub"))
         |> then(&if &1, do: {:ok, &1}, else: {:error, :missing_stub})

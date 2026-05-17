@@ -17,6 +17,8 @@ defmodule AshyWalnutDeskWeb.ConnCase do
 
   use ExUnit.CaseTemplate
 
+  alias AshyWalnutDeskWeb.Plugs.RateLimit
+
   using do
     quote do
       # The default endpoint for testing
@@ -33,6 +35,12 @@ defmodule AshyWalnutDeskWeb.ConnCase do
 
   setup tags do
     AshyWalnutDesk.DataCase.setup_sandbox(tags)
+    # F2/A2: tests share the rate-limiter ETS table across all
+    # ConnCase modules in one `mix test` run. Wipe per-test so a
+    # test that hits magic-link / sign-in / sign-out routes doesn't
+    # pollute the next.
+    RateLimit.start_table()
+    :ets.delete_all_objects(:__awd_rate_limit__)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

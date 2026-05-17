@@ -67,6 +67,9 @@ config :ashy_walnut_desk, dev_routes: true
 
 config :ashy_walnut_desk, AshyWalnutDesk.Mailer, adapter: Swoosh.Adapters.Local
 
+# Local dev: allow sign-up so `mix phx.server` works without env wiring.
+config :ashy_walnut_desk, :registration_enabled?, true
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 

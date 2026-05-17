@@ -36,3 +36,7 @@ config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
 config :ashy_walnut_desk, AshyWalnutDesk.Mailer, adapter: Swoosh.Adapters.Test
+
+# Existing magic-link / fixture tests register fresh users. Tests that
+# pin the F1 gate flip this back to false on a per-test basis.
+config :ashy_walnut_desk, :registration_enabled?, true
