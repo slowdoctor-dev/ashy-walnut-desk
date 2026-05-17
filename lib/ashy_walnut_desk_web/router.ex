@@ -24,7 +24,8 @@ defmodule AshyWalnutDeskWeb.Router do
   scope "/", AshyWalnutDeskWeb do
     pipe_through :browser
 
-    ash_authentication_live_session :authenticated_routes do
+    live_session :authenticated_routes,
+      on_mount: [{AshyWalnutDeskWeb.LiveUserAuth, :load_from_cookie}] do
       live "/", WelcomeLive
 
       live "/identities", IdentityLive.Index, :index

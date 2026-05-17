@@ -57,6 +57,21 @@ if config_env() == :prod do
 
   config :ashy_walnut_desk, ash_authentication_secret: ash_authentication_secret
 
+  # ADR-021 — prod TLS + secure-cookie hardening keyed on PHX_HOST.
+  # Dev / test (no PHX_HOST set, or set to "localhost") keep the base
+  # `session_options` from `config.exs` so local HTTP works. A real
+  # host triggers `force_ssl: [hsts: true]` and merges `secure: true`
+  # + `http_only: true` into the session cookie. Closes TO-2.
+  if System.get_env("PHX_HOST", "localhost") != "localhost" do
+    base = Application.get_env(:ashy_walnut_desk, :session_options, [])
+
+    config :ashy_walnut_desk, :session_options,
+      Keyword.merge(base, secure: true, http_only: true)
+
+    config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
+      force_ssl: [hsts: true]
+  end
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
