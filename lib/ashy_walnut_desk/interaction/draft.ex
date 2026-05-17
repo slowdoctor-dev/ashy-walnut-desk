@@ -9,6 +9,8 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Identity.Changes.SoftDelete
+
   postgres do
     table("drafts")
     repo(AshyWalnutDesk.Repo)
@@ -29,14 +31,83 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
   actions do
     default_accept([])
-    defaults([:read])
+
+    read :read do
+      primary?(true)
+      filter(expr(is_nil(deleted_at)))
+    end
+
+    read :read_with_archived do
+    end
+
+    create :compose_draft do
+      accept([
+        :inbox_id,
+        :body,
+        :compensation_body,
+        :status,
+        :ai_prompt,
+        :ai_model,
+        :ai_response,
+        :ai_validator_output
+      ])
+    end
+
+    update :edit_draft do
+      accept([
+        :body,
+        :compensation_body,
+        :status,
+        :approved_at,
+        :approved_by_id,
+        :ai_prompt,
+        :ai_model,
+        :ai_response,
+        :ai_validator_output
+      ])
+    end
+
+    update :archive do
+      accept([])
+      require_atomic?(false)
+      change(SoftDelete)
+    end
+
+    update :recover do
+      accept([])
+      require_atomic?(false)
+      change(set_attribute(:deleted_at, nil))
+    end
   end
 
   policies do
-    policy action_type(:read) do
+    policy action(:read) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
       authorize_if(actor_attribute_equals(:role, :viewer))
+    end
+
+    policy action(:read_with_archived) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:compose_draft) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:edit_draft) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:archive) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:recover) do
+      authorize_if(actor_attribute_equals(:role, :admin))
     end
   end
 
