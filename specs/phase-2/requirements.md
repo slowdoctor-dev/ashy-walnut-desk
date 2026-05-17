@@ -61,16 +61,18 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 
 | # | Story | Est | Depends on | Status |
 |---|---|---|---|---|
-| 2.1 | Security entry gate (ADR-020 cookie on_mount + `:jti` restore + ADR-021 prod TLS/cookie hardening) | 3h | — | ready |
+| 2.1 | Security entry gate (ADR-020 cookie on_mount + `:jti` restore + ADR-021 prod TLS/cookie hardening + runtime-resolved session plug) | 4h | — | ready |
 | 2.2 | Interaction domain bootstrap + resource skeletons | 2h | 2.1 | ready |
 | 2.3 | Mutable Interaction resources + soft-delete policies | 3h | 2.2 | ready |
-| 2.4 | Immutable chain resources + adapter contract | 2h | 2.2 | ready |
-| 2.5 | Chain transition actions + server countdown enforcement | 3h | 2.3, 2.4 | ready |
-| 2.6 | Hash-chained AuditEvent writer + `mix audit.verify` | 3h | 2.4, 2.5 | ready |
+| 2.4 | Immutable chain resources + adapter contract + adapter allowlist | 2h | 2.2 | ready |
+| 2.5 | Chain transition actions + server countdown + concurrent-approve race guard | 3h | 2.3, 2.4 | ready |
+| 2.6 | Hash-chained AuditEvent writer + closed payload contract + `mix audit.verify` | 4h | 2.4, 2.5 | ready |
 | 2.7 | Operator LiveView flow for Inbox-to-Action chain | 3h | 2.5, 2.6 | ready |
 | 2.8 | Safety framing guard + audit coverage assertions | 2h | 2.7 | ready |
 | 2.9 | Reproducible UX screenshots + phase docs sync | 2h | 2.7, 2.8 | ready |
 | 2.10 | Phase 2 integration gate (full AC verification) | 3h | 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 | ready |
+
+**Phase total: 28h** (up from initial 26h after R1/R2 review estimate calibration on 2.1 and 2.6).
 
 ## 5. Dependencies
 
@@ -82,8 +84,8 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 - Phase 0 (foundation: auth, policies, audit, gettext, CI) and Phase 1 (Identity axis: `Identity`, `Event`, `Appointment`, `Note`) shipped on `main`.
 - `AshPaperTrail` mixin pattern from Phase 1 (`AshyWalnutDesk.AdminOnlyVersions`) reused on Interaction-axis resources where appropriate.
 - Security trade-off register (`specs/security/known-trade-offs.md`):
-  - TO-1 (`session_identifier(:unsafe)`) becomes materially exploitable in Phase 2 — operator sends are the first privileged action surface. **Phase 2 must either flip back to `:jti` if upstream is fixed, or implement one of TO-1's documented alternatives, or explicitly accept the risk with a written compensating control.**
-  - TO-2 (session `secure` flag + `force_ssl`) — Phase 2 should re-evaluate; the first send path raises the stakes.
+  - **TO-1 resolved by ADR-020** — Story 2.1 implements the custom cookie-loading `on_mount` and flips `Accounts.User.session_identifier` back to `:jti`, restoring per-session JWT revocation before any send-related story merges.
+  - **TO-2 resolved by ADR-021** — Story 2.1 also lands the `PHX_HOST != "localhost"` prod block in `config/runtime.exs` (`force_ssl: [hsts: true]` + `secure: true` session cookie).
   - TO-4, TO-5, TO-6 — unchanged; tracked.
 
 ## 6. Risks
@@ -113,10 +115,10 @@ Deliver the Interaction-axis schema and the **four-stage record chain** (ADR-016
 
 - [x] **Soft-delete pattern on Interaction resources?** — Apply to `Conversation`, `Message`, `Inbox`, `Draft` (operator-visible state). `Action`, `Compensation`, `AuditEvent` are **immutable** — never soft-deleted — because the audit chain depends on them being permanent.
 
-- [ ] **TO-1 (`session_identifier(:unsafe)`) — what's the Phase 2 entry decision?** *(Genuinely blocking. Phase 2 ships the first privileged surface; TO-1's "revisit before Phase 2" trigger fires now. Three options: (a) upstream JTI fix landed → flip back to `:jti` and re-run story 0.8 tests; (b) write a custom on_mount that loads the user from the cookie session; (c) short-lived tokens + re-auth required on every send action. Architect can't proceed without this decision.)*
+- [x] **TO-1 (`session_identifier(:unsafe)`) — Phase 2 entry decision?** — Resolved by **ADR-020** (custom cookie-loading `on_mount` + flip `:unsafe` → `:jti`). Story 2.1 implements.
 
-- [ ] **TO-2 (session `secure` flag + `force_ssl`) — does Phase 2 close this, or does it stay deployer-territory?** *(Phase 2 is the first phase where session-cookie theft has material consequences. Either ship a `PHX_HOST != "localhost"`-keyed prod hardening in `config/runtime.exs` now, or explicitly document the deferral with a Phase 2 compensating control.)*
+- [x] **TO-2 (session `secure` flag + `force_ssl`) — close in Phase 2 or stay deferred?** — Resolved by **ADR-021** (close in Phase 2: `PHX_HOST != "localhost"`-keyed prod block in `config/runtime.exs` for `force_ssl: [hsts: true]` and `secure: true` cookie). Story 2.1 implements.
 
 ---
 
-*Requirements drafted by BMAD Analyst persona (Claude, solo per the Codex outage to 2026-05-17). Two open questions above (TO-1 entry decision, TO-2 deferral vs close) are genuinely blocking and need human resolution before Architect pass. Other Q&A items are proposed answers; push back in PR review where you disagree. Next step after approval: Architect persona for `specs/phase-2/architecture.md`.*
+*Phase 2 BMAD complete on `main`: Analyst (PR #20) → Architect + PM (PR #21). Architect-redraft pass against R1/R2 review by Claude+Codex applied here. Stories 2.1–2.10 ready for implementation; story 2.1 is the security entry gate (ADR-020 + ADR-021) and must merge before any send-related story.*

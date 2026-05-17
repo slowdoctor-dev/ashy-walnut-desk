@@ -100,34 +100,59 @@ Reasoning:
   termination. The framework just makes the safe-default choice
   for them when `PHX_HOST` indicates a real host.
 
-Implementation sketch (see `specs/phase-2/architecture.md §9.2`):
-
-`config/runtime.exs`, inside the existing `if config_env() == :prod do`
-block:
+Implementation requires **three coordinated changes** (the original
+draft of this ADR had a circular `Application.get_env`-inside-
+`config` sketch — corrected here via the R1 review).
 
 ```elixir
-host = System.get_env("PHX_HOST", "localhost")
+# config/config.exs — base defaults stored in app env
+config :ashy_walnut_desk, :session_options,
+  store: :cookie,
+  key: "_ashy_walnut_desk_key",
+  signing_salt: System.get_env("SESSION_SIGNING_SALT") || "dev-only-salt",
+  same_site: "Lax"
 
-if host != "localhost" do
-  config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
-    force_ssl: [hsts: true]
+# config/runtime.exs `:prod` block
+if System.get_env("PHX_HOST", "localhost") != "localhost" do
+  base = Application.get_env(:ashy_walnut_desk, :session_options, [])
 
   config :ashy_walnut_desk, :session_options,
-    Application.get_env(:ashy_walnut_desk, :session_options, [])
-    |> Keyword.merge(secure: true)
+    Keyword.merge(base, secure: true, http_only: true)
+
+  config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
+    force_ssl: [hsts: true]
+end
+
+# lib/ashy_walnut_desk_web/endpoint.ex — replace
+#   plug Plug.Session, @session_options
+# with a runtime-resolved plug:
+plug :put_session_options
+defp put_session_options(conn, _opts) do
+  opts =
+    Application.fetch_env!(:ashy_walnut_desk, :session_options)
+    |> Plug.Session.init()
+
+  Plug.Session.call(conn, opts)
 end
 ```
 
-And the existing `endpoint.ex` `@session_options` reads the merged
-runtime config so the `secure: true` flag lands on the actual
-`Plug.Session` opts.
+The `endpoint.ex` change is the load-bearing piece. Without it,
+`@session_options` is baked in at compile time and no `runtime.exs`
+override can take effect.
 
-Test coverage:
+Test coverage (story 2.1):
 
-- A unit test that asserts the runtime config sets the flags when
-  `PHX_HOST` is a non-localhost value.
-- A unit test that asserts the flags are NOT set when `PHX_HOST`
-  is unset or `"localhost"`.
+- Config test: `PHX_HOST=desk.example.com` → app env contains
+  `secure: true, http_only: true`; endpoint config has
+  `force_ssl: [hsts: true]`.
+- Config test: `PHX_HOST=localhost` (or unset) → base session
+  options only, no `secure`, no `force_ssl`.
+- **Integration test (S1/A3 review findings):** make an HTTP request
+  to the endpoint under prod-like config and assert the `Set-Cookie`
+  response header includes `Secure` and `HttpOnly` attributes. Pure
+  config asserts can pass even if the plug change isn't wired
+  correctly; the integration test pins the actual cookie flag at
+  HTTP boundary.
 
 ## Consequences
 

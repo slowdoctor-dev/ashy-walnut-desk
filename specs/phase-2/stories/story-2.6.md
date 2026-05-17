@@ -1,7 +1,7 @@
 # Story 2.6: Hash-chained AuditEvent writer + verifier task
 
 **Phase**: 2
-**Estimate**: 3h
+**Estimate**: 4h
 **Depends on**: 2.4, 2.5
 **Status**: ready
 
@@ -18,10 +18,10 @@ Implement `AuditEvent` hash-chain writes for each transition and ship `mix audit
 
 ## Acceptance criteria
 
-- [ ] AC1: Chain transitions write immutable AuditEvents with `prev_hash` continuity within `chain_topic`. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_chain_test.exs`
-- [ ] AC2: Concurrent transition writes serialize correctly and preserve continuity. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_chain_concurrency_test.exs`
+- [ ] AC1: Chain transitions write immutable AuditEvents with `prev_hash` continuity within `chain_topic`. Payload follows the closed allow-list per `event_type` from architecture §3.8 ("Payload contract"); `ChainLink.canonicalize_payload/2` rejects unknown keys. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_chain_test.exs`
+- [ ] AC2: **Concurrent writes serialize correctly** (T2 review): using `Task.async_stream/3` with per-task Sandbox checkouts (`Ecto.Adapters.SQL.Sandbox.allow/3`), N parallel `Draft.approve+Action.execute` cycles on different drafts of the same chain all produce a continuous chain — every `prev_hash` resolves, walking from genesis reaches every event, no duplicate `prev_hash` values. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_chain_concurrency_test.exs`
 - [ ] AC3: `mix audit.verify` exits non-zero on tampering and zero on intact chain. — Verify: `mix test test/mix/tasks/audit_verify_test.exs`
-- [ ] AC4: Architect migration-order ambiguity is resolved: index creation for `audit_events` must run after table exists (same migration or later timestamp), never before table creation. — Verify: migration set applies cleanly via `mix ecto.migrate`
+- [ ] AC4: The `audit_events` composite indexes (`chain_topic + inserted_at`; `prev_hash`) are created in a migration with a timestamp >= the Ash-generated `audit_events` table migration. The full Phase 2 migration set applies cleanly via `mix ecto.migrate`. — Verify: `mix ecto.migrate && mix ecto.rollback` round-trip on a fresh DB
 
 ## Files to create
 
