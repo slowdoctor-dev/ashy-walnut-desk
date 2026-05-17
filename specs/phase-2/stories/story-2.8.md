@@ -3,7 +3,7 @@
 **Phase**: 2
 **Estimate**: 2h
 **Depends on**: 2.7
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -18,9 +18,9 @@ Enforce “honest framing” and audit-trail coverage requirements with automate
 
 ## Acceptance criteria
 
-- [ ] AC1: Test fails if forbidden “unsend” framing appears in LiveView templates/gettext strings. — Verify: `mix test test/ashy_walnut_desk_web/safety/honest_framing_test.exs`
-- [ ] AC2: Approval/execution/status transitions produce expected PaperTrail version records. — Verify: `mix test test/ashy_walnut_desk/interaction/paper_trail_coverage_test.exs`
-- [ ] AC3: Conversation create is denied when Identity is soft-deleted (regression guard at acceptance layer). — Verify: `mix test test/ashy_walnut_desk/interaction/conversation_test.exs`
+- [x] AC1: Test fails if forbidden “unsend” framing appears in LiveView templates/gettext strings. — Verify: `mix test test/ashy_walnut_desk_web/safety/honest_framing_test.exs`
+- [x] AC2: Approval/execution/status transitions produce expected PaperTrail version records. — Verify: `mix test test/ashy_walnut_desk/interaction/paper_trail_coverage_test.exs`
+- [x] AC3: Conversation create is denied when Identity is soft-deleted (regression guard at acceptance layer). — Verify: `mix test test/ashy_walnut_desk/interaction/conversation_test.exs`
 
 ## Files to create
 
