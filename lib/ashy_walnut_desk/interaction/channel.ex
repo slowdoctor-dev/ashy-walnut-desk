@@ -9,6 +9,8 @@ defmodule AshyWalnutDesk.Interaction.Channel do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Identity.Changes.SoftDelete
+
   postgres do
     table("channels")
     repo(AshyWalnutDesk.Repo)
@@ -28,14 +30,71 @@ defmodule AshyWalnutDesk.Interaction.Channel do
 
   actions do
     default_accept([])
-    defaults([:read])
+
+    read :read do
+      primary?(true)
+      filter(expr(is_nil(deleted_at)))
+    end
+
+    read :read_with_archived do
+    end
+
+    create :register_channel do
+      accept([:slug, :display_name, :adapter_module, :enabled?])
+    end
+
+    update :disable do
+      accept([])
+      change(set_attribute(:enabled?, false))
+    end
+
+    update :enable do
+      accept([])
+      change(set_attribute(:enabled?, true))
+    end
+
+    update :archive do
+      accept([])
+      require_atomic?(false)
+      change(SoftDelete)
+    end
+
+    update :recover do
+      accept([])
+      require_atomic?(false)
+      change(set_attribute(:deleted_at, nil))
+    end
   end
 
   policies do
-    policy action_type(:read) do
+    policy action(:read) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
       authorize_if(actor_attribute_equals(:role, :viewer))
+    end
+
+    policy action(:read_with_archived) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:register_channel) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:disable) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:enable) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:archive) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:recover) do
+      authorize_if(actor_attribute_equals(:role, :admin))
     end
   end
 

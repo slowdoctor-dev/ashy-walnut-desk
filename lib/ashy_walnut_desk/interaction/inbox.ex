@@ -9,6 +9,8 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Identity.Changes.SoftDelete
+
   postgres do
     table("inboxes")
     repo(AshyWalnutDesk.Repo)
@@ -29,14 +31,64 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
   actions do
     default_accept([])
-    defaults([:read])
+
+    read :read do
+      primary?(true)
+      filter(expr(is_nil(deleted_at)))
+    end
+
+    read :read_with_archived do
+    end
+
+    create :record_inbox do
+      accept([:conversation_id, :status, :summary, :recorded_by_id])
+    end
+
+    update :update_inbox do
+      accept([:status, :summary])
+    end
+
+    update :archive do
+      accept([])
+      require_atomic?(false)
+      change(SoftDelete)
+    end
+
+    update :recover do
+      accept([])
+      require_atomic?(false)
+      change(set_attribute(:deleted_at, nil))
+    end
   end
 
   policies do
-    policy action_type(:read) do
+    policy action(:read) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
       authorize_if(actor_attribute_equals(:role, :viewer))
+    end
+
+    policy action(:read_with_archived) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    policy action(:record_inbox) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:update_inbox) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:archive) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:recover) do
+      authorize_if(actor_attribute_equals(:role, :admin))
     end
   end
 

@@ -3,7 +3,7 @@
 **Phase**: 2
 **Estimate**: 3h
 **Depends on**: 2.2
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -19,10 +19,10 @@ Implement mutable Interaction resources (`Conversation`, `Message`, `Channel`, `
 
 ## Acceptance criteria
 
-- [ ] AC1: `Conversation` enforces exactly one `Identity` + one `Channel`, and denies creation for soft-deleted Identity. — Verify: `mix test test/ashy_walnut_desk/interaction/conversation_test.exs`
-- [ ] AC2: `Message` enforces exactly one `Conversation`; outbound shape requires approver attribution path (direct bypass rejected). — Verify: `mix test test/ashy_walnut_desk/interaction/message_test.exs`
-- [ ] AC3: `Conversation`, `Message`, `Inbox`, `Draft` implement archive/recover/read_with_archived soft-delete pattern; `Channel` follows configured mutable policy path. — Verify: `mix test test/ashy_walnut_desk/interaction/soft_delete_test.exs`
-- [ ] AC4: Sensitive fields are marked and PaperTrail mixin is present where required. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_redaction_test.exs`
+- [x] AC1: `Conversation` enforces exactly one `Identity` + one `Channel`, and denies creation for soft-deleted Identity. — Verify: `mix test test/ashy_walnut_desk/interaction/conversation_test.exs`
+- [x] AC2: `Message` enforces exactly one `Conversation`; outbound shape requires approver attribution path (direct bypass rejected). — Verify: `mix test test/ashy_walnut_desk/interaction/message_test.exs`
+- [x] AC3: `Conversation`, `Message`, `Inbox`, `Draft` implement archive/recover/read_with_archived soft-delete pattern; `Channel` follows configured mutable policy path. — Verify: `mix test test/ashy_walnut_desk/interaction/soft_delete_test.exs`
+- [x] AC4: Sensitive fields are marked and PaperTrail mixin is present where required. — Verify: `mix test test/ashy_walnut_desk/interaction/audit_redaction_test.exs`
 
 ## Files to create
 
