@@ -46,9 +46,13 @@ defmodule AshyWalnutDesk.Interaction.Message do
       validate(fn changeset, _context ->
         case Ash.Changeset.get_attribute(changeset, :direction) do
           :outbound ->
-            {:error,
-             field: :direction,
-             message: "outbound messages must be created through the Action.execute path"}
+            if Map.get(changeset.context, :from_action_execute, false) do
+              :ok
+            else
+              {:error,
+               field: :direction,
+               message: "outbound messages must be created through the Action.execute path"}
+            end
 
           _ ->
             :ok

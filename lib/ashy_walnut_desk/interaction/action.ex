@@ -1,6 +1,8 @@
 defmodule AshyWalnutDesk.Interaction.Action do
   @moduledoc false
 
+  alias AshyWalnutDesk.Interaction.Changes.CountdownGuard
+
   use Ash.Resource,
     otp_app: :ashy_walnut_desk,
     domain: AshyWalnutDesk.Interaction,
@@ -25,6 +27,16 @@ defmodule AshyWalnutDesk.Interaction.Action do
   actions do
     default_accept([])
     defaults([:read])
+
+    create :register_pending do
+      accept([:draft_id, :channel_id, :status])
+    end
+
+    update :execute do
+      accept([])
+      require_atomic?(false)
+      change(CountdownGuard)
+    end
   end
 
   policies do
@@ -32,6 +44,16 @@ defmodule AshyWalnutDesk.Interaction.Action do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
       authorize_if(actor_attribute_equals(:role, :viewer))
+    end
+
+    policy action(:execute) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:register_pending) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
     end
   end
 
