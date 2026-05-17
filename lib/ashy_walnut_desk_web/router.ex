@@ -32,6 +32,9 @@ defmodule AshyWalnutDeskWeb.Router do
       live "/identities/new", IdentityLive.New, :new
       live "/identities/:id", IdentityLive.Show, :show
       live "/identities/:id/edit", IdentityLive.Edit, :edit
+      live "/inbox", InboxLive.Index, :index
+      live "/inbox/new", InboxLive.New, :new
+      live "/inbox/:id", InboxLive.Show, :show
     end
   end
 

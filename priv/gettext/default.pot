@@ -117,6 +117,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:330
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:385
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:227
 #, elixir-autogen, elixir-format
 msgid "Body"
 msgstr ""
@@ -174,6 +175,7 @@ msgid "Follow up"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:68
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
 #, elixir-autogen, elixir-format
 msgid "Hide archived"
 msgstr ""
@@ -305,6 +307,7 @@ msgid "Scheduled for"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:70
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
 #, elixir-autogen, elixir-format
 msgid "Show archived"
 msgstr ""
@@ -331,6 +334,129 @@ msgid "Created"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:106
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:112
 #, elixir-autogen, elixir-format
 msgid "View"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:40
+#, elixir-autogen, elixir-format
+msgid "Action"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/components/countdown_send_button.ex:20
+#, elixir-autogen, elixir-format
+msgid "Approve & send"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:10
+#, elixir-autogen, elixir-format
+msgid "Chain status"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:46
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:231
+#, elixir-autogen, elixir-format
+msgid "Compensation"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:212
+#, elixir-autogen, elixir-format
+msgid "Conversation"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:68
+#, elixir-autogen, elixir-format
+msgid "Could not approve draft."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:47
+#, elixir-autogen, elixir-format
+msgid "Could not create inbox chain."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:104
+#, elixir-autogen, elixir-format
+msgid "Could not execute action."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/components/countdown_send_button.ex:25
+#, elixir-autogen, elixir-format
+msgid "Countdown is running on the server."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:69
+#, elixir-autogen, elixir-format
+msgid "Create conversation and inbox in one operator action."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:74
+#, elixir-autogen, elixir-format
+msgid "Create inbox"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:34
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:218
+#, elixir-autogen, elixir-format
+msgid "Draft"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:67
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:69
+#, elixir-autogen, elixir-format
+msgid "Draft is not ready for approval."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:239
+#, elixir-autogen, elixir-format
+msgid "Draft status"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:12
+#, elixir-autogen, elixir-format
+msgid "Four recorded stages keep each response traceable."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:31
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:64
+#, elixir-autogen, elixir-format
+msgid "Inbox"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:24
+#, elixir-autogen, elixir-format
+msgid "Inbox not found."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:71
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:66
+#, elixir-autogen, elixir-format
+msgid "New inbox"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:65
+#, elixir-autogen, elixir-format
+msgid "Operator queue from inbox to action."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:234
+#, elixir-autogen, elixir-format
+msgid "Save draft"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/components/countdown_send_button.ex:18
+#, elixir-autogen, elixir-format
+msgid "Sending in %{seconds}s…"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:46
+#, elixir-autogen, elixir-format
+msgid "identity_id is required"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:35
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:41
+#: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:47
+#, elixir-autogen, elixir-format
+msgid "pending"
 msgstr ""
