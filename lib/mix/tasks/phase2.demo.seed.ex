@@ -13,22 +13,16 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
 
   use Mix.Task
 
-  alias AshyWalnutDesk.Accounts.User
+  alias AshyWalnutDesk.DemoSeedHelpers
   alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Channel, Conversation, Draft, Inbox}
+  alias AshyWalnutDesk.Interaction.{Adapter, Channel, Conversation, Draft, Inbox}
   require Ash.Query
 
   @switches [email: :string, display_name: :string]
 
   @impl Mix.Task
   def run(argv) do
-    unless Mix.env() in [:dev, :test] do
-      Mix.raise(
-        "phase2.demo.seed is dev/test-only — it bypasses `User.:register` " <>
-          "policy and auto-grants :admin. Refusing to run in Mix.env=" <>
-          inspect(Mix.env()) <> "."
-      )
-    end
+    DemoSeedHelpers.guard_env!("phase2.demo.seed")
 
     {opts, _, _} = OptionParser.parse(argv, switches: @switches)
 
@@ -37,12 +31,12 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
 
     Mix.Task.run("app.start")
 
-    admin = ensure_admin(email)
+    admin = DemoSeedHelpers.ensure_admin(email)
     channel = ensure_stub_channel(admin)
     identity = create_identity(admin, display_name)
     conversation = create_conversation(admin, identity, channel)
-    open_inbox = create_inbox(admin, conversation, display_name, :open)
-    drafting_inbox = create_inbox(admin, conversation, display_name, :drafting)
+    open_inbox = create_inbox(admin, conversation, display_name, "open")
+    drafting_inbox = create_inbox(admin, conversation, display_name, "drafting")
     drafting_inbox = mark_drafting(admin, drafting_inbox)
     _draft = create_draft(admin, drafting_inbox)
 
@@ -55,27 +49,6 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
       open inbox id   : #{open_inbox.id}
       drafting inbox id: #{drafting_inbox.id}
     """)
-  end
-
-  defp ensure_admin(email) do
-    case Ash.read_one(User, action: :get_by_email, arguments: %{email: email}, authorize?: false) do
-      {:ok, %User{} = user} ->
-        promote_if_needed(user)
-
-      _ ->
-        User
-        |> Ash.Changeset.for_create(:register, %{email: email}, authorize?: false)
-        |> Ash.create!()
-        |> promote_if_needed()
-    end
-  end
-
-  defp promote_if_needed(%User{role: :admin} = user), do: user
-
-  defp promote_if_needed(%User{} = user) do
-    user
-    |> Ash.Changeset.for_update(:assign_role, %{role: :admin}, authorize?: false)
-    |> Ash.update!()
   end
 
   defp ensure_stub_channel(admin) do
@@ -95,7 +68,7 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
           %{
             slug: "stub-phase2",
             display_name: "Stub Phase 2",
-            adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub",
+            adapter_module: Adapter.stub_module_string(),
             enabled?: true
           },
           actor: admin
@@ -132,13 +105,17 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
     |> Ash.create!()
   end
 
-  defp create_inbox(admin, conversation, display_name, status) do
+  # A2: `label` is just text embedded in the summary — it does not set
+  # the actual `:status` attribute (that goes through `:record_inbox`
+  # default + `:mark_drafting` below). The previous parameter name
+  # `status` falsely suggested state was set at create time.
+  defp create_inbox(admin, conversation, display_name, label) do
     Inbox
     |> Ash.Changeset.for_create(
       :record_inbox,
       %{
         conversation_id: conversation.id,
-        summary: "#{display_name} requested a callback this week (#{status})."
+        summary: "#{display_name} requested a callback this week (#{label})."
       },
       actor: admin
     )

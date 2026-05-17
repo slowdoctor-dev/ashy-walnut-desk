@@ -16,7 +16,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ExecuteOutbound do
   use Ash.Resource.Change
 
   alias Ash.Changeset
-  alias AshyWalnutDesk.Interaction.{Channel, Message}
+  alias AshyWalnutDesk.Interaction.{Channel, ErrorHelpers, Message}
 
   @impl true
   def change(changeset, _opts, _context) do
@@ -121,7 +121,5 @@ defmodule AshyWalnutDesk.Interaction.Changes.ExecuteOutbound do
       {:error, "channel misconfigured: adapter module not loaded"}
   end
 
-  defp error_text(error) do
-    if is_exception(error), do: Exception.message(error), else: inspect(error)
-  end
+  defp error_text(error), do: ErrorHelpers.error_to_string(error)
 end

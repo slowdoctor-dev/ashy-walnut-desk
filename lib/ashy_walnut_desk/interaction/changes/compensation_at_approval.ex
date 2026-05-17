@@ -4,28 +4,21 @@ defmodule AshyWalnutDesk.Interaction.Changes.CompensationAtApproval do
   use Ash.Resource.Change
 
   alias Ash.Changeset
-  alias AshyWalnutDesk.Interaction.{Action, Compensation}
-  alias AshyWalnutDesk.Repo
+  alias AshyWalnutDesk.Interaction.{Action, Compensation, ErrorHelpers, Locks}
 
   @impl true
   def change(changeset, _opts, context) do
     changeset
     |> Changeset.before_action(fn changeset ->
-      draft_id = changeset.data.id
-      draft_id_bin = Ecto.UUID.dump!(draft_id)
-
-      case Repo.query(
-             "SELECT id FROM drafts WHERE id = $1 AND status = 'drafting' FOR UPDATE",
-             [draft_id_bin]
-           ) do
-        {:ok, %{num_rows: 1}} ->
+      case Locks.lock_drafting_draft(changeset.data.id) do
+        {:ok, :locked} ->
           validate_compensation_and_stage(changeset, context)
 
-        {:ok, %{num_rows: 0}} ->
+        {:ok, :not_drafting} ->
           Changeset.add_error(changeset, field: :status, message: "draft_not_drafting")
 
         {:error, error} ->
-          Changeset.add_error(changeset, field: :status, message: Exception.message(error))
+          Changeset.add_error(changeset, field: :status, message: error_text(error))
       end
     end)
     |> Changeset.after_transaction(fn _changeset, result -> normalize_result(result) end)
@@ -42,32 +35,27 @@ defmodule AshyWalnutDesk.Interaction.Changes.CompensationAtApproval do
         message: "is required when approving a draft"
       )
     else
-      draft_id = changeset.data.id
-      draft_id_bin = Ecto.UUID.dump!(draft_id)
-
-      with {:ok, %{rows: [[channel_id]]}} <-
-             Repo.query(
-               """
-               SELECT c.channel_id
-               FROM drafts d
-               JOIN inboxes i ON i.id = d.inbox_id
-               JOIN conversations c ON c.id = i.conversation_id
-               WHERE d.id = $1
-               """,
-               [draft_id_bin]
-             ),
-           {:ok, action} <- create_action(draft_id, channel_id, context),
-           {:ok, _compensation} <- create_compensation(action.id, compensation_body, context) do
-        changeset
+      with {:ok, channel_id} when not is_atom(channel_id) <-
+             Locks.resolve_channel_for_draft(changeset.data.id),
+           {:ok, action} <- create_action(changeset.data.id, channel_id, context),
+           {:ok, compensation} <- create_compensation(action.id, compensation_body, context) do
+        # S4: stash the just-created chain rows so `ChainLink` can
+        # write the `:draft_approved` + `:compensation_registered`
+        # events without re-querying. Falls back to a fresh DB read
+        # if absent — keeps `ChainLink` usable from direct tests /
+        # future actions that don't go through this path.
+        Changeset.set_context(changeset, %{
+          chain_payload: %{action: action, compensation: compensation}
+        })
       else
-        {:ok, %{rows: []}} ->
+        {:ok, :not_found} ->
           Changeset.add_error(changeset, field: :inbox_id, message: "could not resolve channel")
 
         {:error, :action_already_exists} ->
           Changeset.add_error(changeset, field: :status, message: "draft_not_drafting")
 
         {:error, error} ->
-          Changeset.add_error(changeset, field: :status, message: Exception.message(error))
+          Changeset.add_error(changeset, field: :status, message: error_text(error))
       end
     end
   end
@@ -121,11 +109,5 @@ defmodule AshyWalnutDesk.Interaction.Changes.CompensationAtApproval do
 
   defp normalize_result(other), do: other
 
-  defp error_text(error) do
-    if is_exception(error) do
-      Exception.message(error)
-    else
-      inspect(error)
-    end
-  end
+  defp error_text(error), do: ErrorHelpers.error_to_string(error)
 end

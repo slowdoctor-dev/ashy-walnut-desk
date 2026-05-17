@@ -117,7 +117,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:330
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:385
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:232
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:236
 #, elixir-autogen, elixir-format
 msgid "Body"
 msgstr ""
@@ -355,12 +355,12 @@ msgid "Chain status"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:46
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:236
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:240
 #, elixir-autogen, elixir-format
 msgid "Compensation"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:217
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:221
 #, elixir-autogen, elixir-format
 msgid "Conversation"
 msgstr ""
@@ -396,7 +396,7 @@ msgid "Create inbox"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:34
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:223
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:227
 #, elixir-autogen, elixir-format
 msgid "Draft"
 msgstr ""
@@ -407,7 +407,7 @@ msgstr ""
 msgid "Draft is not ready for approval."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:244
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:248
 #, elixir-autogen, elixir-format
 msgid "Draft status"
 msgstr ""
@@ -439,7 +439,7 @@ msgstr ""
 msgid "Operator queue from inbox to action."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:239
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:243
 #, elixir-autogen, elixir-format
 msgid "Save draft"
 msgstr ""

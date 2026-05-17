@@ -55,7 +55,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     with %Draft{} = draft <- socket.assigns.inbox.draft,
          true <- ready_for_approval?(draft),
          {:ok, _approved} <- Ash.update(draft, %{}, action: :approve, actor: actor),
-         {:ok, action} <- find_action_for_draft(draft.id) do
+         {:ok, action} <- find_action_for_draft(draft.id, actor) do
       Process.send_after(self(), {:countdown_tick, action.id, 4}, 1_000)
       Process.send_after(self(), {:execute_action, action.id}, 5_000)
 
@@ -148,7 +148,13 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
       |> Ash.Query.sort(created_at: :desc)
       |> Ash.read_one!(actor: actor)
 
-    action = if draft, do: find_action_for_draft!(draft.id, actor), else: nil
+    action =
+      if draft do
+        case find_action_for_draft(draft.id, actor) do
+          {:ok, found} -> found
+          {:error, _} -> nil
+        end
+      end
 
     compensation =
       if action do
@@ -164,23 +170,21 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     |> Map.put(:compensation, compensation)
   end
 
-  defp find_action_for_draft(draft_id) do
-    action =
-      Action
-      |> Ash.Query.filter(draft_id == ^draft_id)
-      |> Ash.read_one(actor: nil, authorize?: false)
-
-    case action do
-      {:ok, nil} -> {:error, :not_found}
-      {:ok, found} -> {:ok, found}
-      other -> other
-    end
-  end
-
-  defp find_action_for_draft!(draft_id, actor) do
+  # S6: single actor-aware lookup. Returns `{:ok, action}` or
+  # `{:error, :not_found}`; callers decide whether nil-coalesce
+  # (chain load) or pattern-match (approve flow). Replaces the
+  # previous split between `find_action_for_draft/1` (authorize?:
+  # false) and `find_action_for_draft!/2` — actor-aware shouldn't
+  # differ in raise behaviour.
+  defp find_action_for_draft(draft_id, actor) do
     Action
     |> Ash.Query.filter(draft_id == ^draft_id)
-    |> Ash.read_one!(actor: actor)
+    |> Ash.read_one(actor: actor)
+    |> case do
+      {:ok, nil} -> {:error, :not_found}
+      {:ok, action} -> {:ok, action}
+      other -> other
+    end
   end
 
   defp assign_draft_form(socket) do
