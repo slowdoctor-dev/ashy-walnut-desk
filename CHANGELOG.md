@@ -161,6 +161,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BASELINE.md §13` updated to reflect Phase 1 shipped; next
   phase boundary is Phase 2 (Interaction-axis messaging).
 
+### Added — Phase 2 (Interaction axis)
+
+The four-stage record chain from ADR-016 — Inbox → Draft → Action →
+Compensation — lands as Ash resources with hash-chained
+`AuditEvent` rows. Operator LiveView at `/inbox` drives the chain
+end-to-end against a no-op stub channel adapter. Real channel
+adapters land in Phase 3; AI draft generation lands in Phase 4.
+
+- `AshyWalnutDesk.Interaction` domain bootstrapped; 8 resources
+  scaffolded with explicit `actions` + `policies` blocks
+  (story 2.2).
+- Mutable resources — `Conversation`, `Message`, `Channel`,
+  `Inbox`, `Draft` — gain ADR-019 soft-delete pattern,
+  `:viewer`/`:operator`/`:admin` role policies, `AshPaperTrail`
+  with `:redact` on sensitive fields, and `ConversationIdentityAlive`
+  validation rejecting Conversations on soft-deleted Identities
+  (story 2.3).
+- Immutable resources — `Action`, `Compensation`, `AuditEvent` —
+  carry no soft-delete and no destroy actions; audit-chain
+  integrity depends on permanence (story 2.4).
+- `Channel.Adapter` behaviour + `Adapters.Stub` ship; `Channel`
+  validates `adapter_module` against a `:channel_adapters`
+  allowlist (default `[Adapters.Stub]`) — closes the R2-1 review
+  finding (an unconstrained string→atom `apply/3` dispatch would
+  have been an admin-side RCE vector) (story 2.4).
+- `Draft.approve` runs in a transaction with `SELECT ... FOR
+  UPDATE` on the Draft row, blocking the concurrent-approve race
+  (S3 review): loser gets `{:error, :draft_not_drafting}`, no
+  duplicate Compensation, no duplicate Action (story 2.5).
+- `Action.execute` is rejected by `CountdownGuard` (a
+  `before_action` change) if the elapsed time since
+  `draft.approved_at` is under 5 seconds (ADR-013); the guard is
+  server-authoritative — the LV UI countdown is convenience
+  (story 2.5).
+- Outbound `Message` rows always carry a non-null `approved_by_id`
+  (data invariant §8.4); direct `Message.record_message` with
+  `direction: :outbound` is rejected outside the
+  `Action.execute` context (story 2.5).
+- `AuditEvent` writes are hash-chained: each event's `hash =
+  sha256(prev_hash || canonical_payload)`. `ChainLink` change
+  serializes concurrent writers via `SELECT ... FOR UPDATE` on the
+  latest event for the chain topic (architecture §6.4).
+  `canonicalize_payload/2` enforces a **closed allow-list per
+  event_type** (architecture §3.8) — `:inbox_opened`,
+  `:draft_started`, `:draft_approved`, `:action_executed`,
+  `:compensation_registered` each have a fixed set of allowed
+  keys, no free text, no sensitive content (story 2.6).
+- `mix audit.verify` walks every `chain_topic` recomputing
+  hashes; exits non-zero on the first mismatch, prints the broken
+  event id. Wired into `just verify` after `mix test`
+  (story 2.6 + 2.10).
+- Operator UX: `InboxLive.{Index,Show,New}` + `ChainComponent`
+  (single chain-visualization band per ADR-016 follow-up) +
+  reusable `CountdownSendButton`. The `:viewer` role cannot reach
+  write actions (story 2.7).
+- Honest-framing test (`safety/honest_framing_test.exs`) greps
+  the user-facing surface and gettext catalog for `unsend`,
+  `undo send`, `recall message`, `take back` — fails the build
+  if any leak in (ADR-016 "honest framing" principle; story 2.8).
+- PaperTrail coverage test asserts each mutable Interaction
+  resource writes Version rows on create+update and redacts
+  sensitive attrs to `"REDACTED"` (story 2.8).
+- Phase 2 screenshot pipeline: `just phase2-screenshots` →
+  `mix phase2.demo.seed` (Mix.env-guarded per AGENTS.md §10) →
+  Playwright captures four states (open / drafting / countdown /
+  executed) into `docs/phase-2-screenshots/` (story 2.9).
+- Phase 2 integration gate: `phase2_e2e_test.exs` (full chain
+  end-to-end + cross-link denial on soft-deleted Identity) +
+  StreamData property tests for Action↔Compensation bijection
+  and payload canonicalization determinism (story 2.10).
+
+### Resolved trade-offs — Phase 2
+
+- **TO-1** (`session_identifier(:unsafe)`) resolved by ADR-020:
+  custom `on_mount` (`AshyWalnutDeskWeb.LiveUserAuth.:load_from_cookie`)
+  loads the user from the cookie session via
+  `AshAuthentication.Plug.Helpers.authenticate_resource_from_session/4`,
+  sidestepping the upstream `LiveSession.generate_session/3`
+  jti-stripping bug. `User.session_identifier` flips back to `:jti`,
+  restoring per-session JWT revocation. Story 2.1, commit
+  `28a0c36`.
+- **TO-2** (session `secure` flag + `force_ssl` not enforced)
+  resolved by ADR-021: `config/runtime.exs` `:prod` block keyed
+  on `PHX_HOST != "localhost"` merges `secure: true` +
+  `http_only: true` into `:session_options` and enables
+  `force_ssl: [hsts: true]`. The endpoint replaces the
+  compile-time `@session_options` module attribute with a runtime-
+  resolved `put_session_options/2` plug so the prod overrides
+  actually win. Story 2.1, commit `28a0c36`.
+
+### Meta — Phase 2
+
+- ADRs 020 + 021 accepted (cookie-loading `on_mount`; prod TLS +
+  secure-cookie hardening).
+- `BASELINE.md §6` ADR count: 17 → 21.
+- Phase 2 BMAD review cooperative pattern (Claude architect +
+  Codex analyst/PM) iterated R1/R2 with explicit pushback
+  semantics before any story implementation began — caught the
+  adapter-allowlist RCE class (R2-1), the concurrent-approve race
+  (S3), the closed payload allow-list (S5), the
+  `Process.send_after` vs CountdownGuard authority question, and
+  several spec drifts. See PRs #20–#23.
+
 ## [0.0.0] — 2026-05-12
 
 ### Added

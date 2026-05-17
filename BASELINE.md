@@ -194,32 +194,38 @@ The framework points to these needs but does not provide them.
 
 ## 13. Where to start
 
-**Phase 0 and Phase 1 are both shipped.**
+**Phase 0, Phase 1, and Phase 2 are all shipped.**
 
-- *Phase 0 (Foundation)*: all twelve acceptance criteria in
-  `specs/phase-0/requirements.md §2` are checked, stories 0.1–0.11
-  are at `Status: done`, security-reviewed and hardened via the
-  `[0.fix]` series.
-- *Phase 1 (Core Domain — Identity-axis)*: stories 1.1–1.10 are at
-  `Status: done`, all four Identity resources (Identity, Event,
-  Appointment, Note) ship with policies, soft-delete, paper-trail,
-  LiveView surface, property tests, and the daily token-expunge
-  trigger (which resolves TO-3). The `[1.fix]` series adds the
-  Phase 1 hardening pass (cross-Identity event-link guard, shared
-  Version-policy mixin, this consistency sweep).
+- *Phase 0 (Foundation)*: all twelve ACs in `specs/phase-0/requirements.md §2`
+  checked; stories 0.1–0.11 done; hardened via `[0.fix]`.
+- *Phase 1 (Core Domain — Identity-axis)*: stories 1.1–1.10 done; four
+  Identity resources (Identity, Event, Appointment, Note) ship with
+  policies, soft-delete, paper-trail, LiveView surface, property tests,
+  daily token-expunge trigger (resolves TO-3); `[1.fix]` hardening
+  series applied.
+- *Phase 2 (Interaction-axis messaging)*: stories 2.1–2.10 done. Ships
+  the four-stage record chain from ADR-016 (Inbox → Draft → Action →
+  Compensation) with hash-chained AuditEvents (`mix audit.verify`),
+  server-authoritative 5-second countdown (ADR-013), stub channel
+  adapter, operator LiveView (`InboxLive`), honest-framing guard, and
+  reproducible UX screenshots. **Closes TO-1 via ADR-020** (custom
+  cookie-loading `on_mount` + `:jti` flip) and **TO-2 via ADR-021**
+  (`PHX_HOST`-keyed prod TLS + secure-cookie hardening). Cooperative
+  implementation: Claude (architect/redraft), Codex (analyst/PM/story
+  driver).
 
-The next phase boundary is Phase 2 (Interaction-axis messaging),
-which begins with the BMAD Analyst persona drafting
-`specs/phase-2/requirements.md`.
+The next phase boundary is Phase 3 (first real channel adapter
+integration), which begins with the BMAD Analyst persona drafting
+`specs/phase-3/requirements.md`.
 
 To get oriented before contributing:
 
 1. Read `AGENTS.md` (how AI agents work in this repo)
 2. Read `specs/architecture.md` (the three-axis structure)
-3. Read `specs/phase-1/architecture.md` (the most recent shipped phase)
+3. Read `specs/phase-2/architecture.md` (the most recent shipped phase)
 4. Read `specs/security/known-trade-offs.md` (decisions to revisit)
 5. Run `./scripts/status.sh` for current state
-6. Read a recent story (`specs/phase-1/stories/story-1.10.md`) for the
+6. Read a recent story (`specs/phase-2/stories/story-2.10.md`) for the
    exemplar of what "done" looks like under SDD
 
 Phase 2 onward continues with BMAD personas; see `prompts/`.
