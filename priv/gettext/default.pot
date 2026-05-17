@@ -370,7 +370,7 @@ msgstr ""
 msgid "Could not approve draft."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:47
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:45
 #, elixir-autogen, elixir-format
 msgid "Could not create inbox chain."
 msgstr ""
@@ -385,12 +385,12 @@ msgstr ""
 msgid "Countdown is running on the server."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:69
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:67
 #, elixir-autogen, elixir-format
 msgid "Create conversation and inbox in one operator action."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:74
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:72
 #, elixir-autogen, elixir-format
 msgid "Create inbox"
 msgstr ""
@@ -429,7 +429,7 @@ msgid "Inbox not found."
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:71
-#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:66
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:64
 #, elixir-autogen, elixir-format
 msgid "New inbox"
 msgstr ""
@@ -449,7 +449,7 @@ msgstr ""
 msgid "Sending in %{seconds}s…"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:46
+#: lib/ashy_walnut_desk_web/live/inbox_live/new.ex:44
 #, elixir-autogen, elixir-format
 msgid "identity_id is required"
 msgstr ""

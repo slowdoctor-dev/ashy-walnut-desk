@@ -8,6 +8,8 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
     authorizers: [Ash.Policy.Authorizer],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Interaction.Checks.FromDraftApprove
+
   postgres do
     table("compensations")
     repo(AshyWalnutDesk.Repo)
@@ -26,7 +28,8 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
     defaults([:read])
 
     create :register do
-      accept([:action_id, :status, :body, :triggered_at])
+      accept([:action_id, :body, :triggered_at])
+      change(set_attribute(:status, :registered))
     end
   end
 
@@ -37,9 +40,12 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
+    # R2-3: internal-only. Must originate from `Draft.approve`'s
+    # `CompensationAtApproval` change. An operator calling this
+    # directly would forge a compensation row without a real approval
+    # behind it.
     policy action(:register) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(FromDraftApprove)
     end
   end
 

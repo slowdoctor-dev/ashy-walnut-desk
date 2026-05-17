@@ -258,3 +258,148 @@ between:
    alongside TLS, DNS, and DB.
 
 **Tracking**: hardening-checklist concern; ADR not required.
+
+---
+
+## TO-7 — `CompensationAtApproval` uses raw `Repo.query` for the FOR UPDATE lock
+
+**Status**: active, accepted for Phase 2.
+
+**Decision**: `lib/ashy_walnut_desk/interaction/changes/compensation_at_approval.ex`
+issues a raw SQL `SELECT … FOR UPDATE` against the `drafts` table
+inside its `before_action` hook (and another raw `SELECT` against
+the `inboxes`/`conversations` join to resolve the channel id). This
+sidesteps Ash's read pipeline and policies for that specific
+locking + join.
+
+**Why**: AshPostgres 3.x does not expose row-level pessimistic
+locking through Ash queries, and the approval flow must hold a
+write-intent lock on the draft row across the Action + Compensation
+create steps to defend the per-draft uniqueness invariant against
+concurrent approves (proven by `draft_approval_concurrency_test`).
+The raw `Repo.query` is the smallest viable workaround.
+
+**What we lose**:
+- A second escape from the "all access through Ash" rule (the other
+  is `ChainLink`'s prev-hash `FOR UPDATE`, which is structurally
+  similar and tested together).
+- `AshPaperTrail` does not see this lock, so the policy /
+  authorization layer is silently bypassed for those two queries.
+  This is currently safe because the queries are read-only (status
+  filter + join) and gated by `CompensationAtApproval` only being
+  invoked from inside `Draft.:approve`'s change pipeline.
+
+**Compensating controls**:
+- Both raw queries run inside the same DB transaction as the
+  enclosing Ash action, so the SERIALIZABLE / READ COMMITTED
+  guarantees apply.
+- Property-style concurrency test
+  (`draft_approval_concurrency_test.exs`) and the audit-chain
+  concurrency test exercise this path at `n=6` parallel approvals.
+
+**Revisit trigger**: whichever comes first:
+1. AshPostgres adds first-class `lock_for_update` support — then
+   replace the raw SQL with the typed primitive.
+2. A third raw-SQL escape lands in the codebase (the threshold for
+   designing a shared `Interaction.Locks` helper).
+
+**Tracking**: hardening-checklist concern; no ADR planned.
+
+---
+
+## TO-8 — `Action.:execute` lifecycle spans CountdownGuard + ExecuteOutbound + ChainLink
+
+**Status**: active, accepted for Phase 2.
+
+**Decision**: `lib/ashy_walnut_desk/interaction/action.ex`'s
+`:execute` update action chains three changes — `CountdownGuard`
+(elapsed-time check + stashes the loaded draft on context),
+`ExecuteOutbound` (resolves adapter, calls `send_outbound/2`, sets
+outcome attrs, creates the outbound Message, transitions Inbox via
+`:mark_executed`), and `ChainLink` (writes the hash-chained audit
+event). The action body itself is empty.
+
+**Why**: Splitting the workflow into composable `Ash.Resource.Change`
+modules keeps each step independently testable and lets the same
+`ChainLink` change be reused on `record_inbox`, `compose_draft`,
+`approve`, and `execute`. The cost is that the `:execute` action
+reads as "see the change modules" rather than "here is the
+transition."
+
+**What we lose**:
+- A reader has to traverse four files
+  (`action.ex` → `countdown_guard.ex` → `execute_outbound.ex` →
+  `chain_link.ex`) to follow one logical operation.
+- Implicit dependency: `ExecuteOutbound` requires
+  `CountdownGuard` to have stashed `%{draft: …}` on the context.
+  Today this is documented in the moduledoc and validated by the
+  existing test suite, but it isn't statically enforced.
+
+**Compensating controls**:
+- `ExecuteOutbound.do_send/1` early-exits on
+  `Enum.any?(changeset.errors)`, so a missing `CountdownGuard` (or
+  a status-validation failure) doesn't crash with
+  `Map.fetch!` against `:draft`.
+- `HardeningTest` "S3: adapter receives %Message{} struct" pins
+  the end-to-end behaviour.
+
+**Revisit trigger**: whichever comes first:
+1. A second action grows the same "guard → execute → chain-link"
+   shape and we'd want a shared scaffold.
+2. The implicit context-stash dependency causes a real bug — at
+   which point we elevate the contract to a typed struct (e.g.
+   `Interaction.ExecuteContext`) instead of an untyped map key.
+
+**Tracking**: hardening-checklist concern; no ADR planned.
+
+---
+
+## TO-9 — `ChainLink.event_specs/3` for `:draft_approved` re-queries Action + Compensation
+
+**Status**: active, accepted for Phase 2.
+
+**Decision**: `lib/ashy_walnut_desk/interaction/changes/chain_link.ex`
+handles the `:draft_approved` event by running two
+`Ash.read_one(authorize?: false)` lookups inside its
+`after_action`: one for the just-created `Action` row, one for the
+just-created `Compensation` row. These exist in memory inside the
+calling `CompensationAtApproval.create_action/3` /
+`create_compensation/3`, but `ChainLink` doesn't have access to
+those local bindings.
+
+**Why**: `ChainLink` is invoked uniformly via
+`change({ChainLink, event_type: …})` on every chain step, so it
+sees only the record returned by the parent action — for
+`:draft_approved`, that's the `%Draft{}`. The sibling Action /
+Compensation rows are produced inside a different change
+(`CompensationAtApproval`) earlier in the same transaction. There
+is no Ash-blessed way to pass arbitrary data from one change to
+another except `changeset.context`.
+
+**What we lose**:
+- Two extra round-trips per approval (small, but real). Both hit
+  unique indexes (`actions_draft_id_index`,
+  `compensations_action_id_index`), so they're index-only lookups.
+- A correctness footgun: if `CompensationAtApproval` is ever
+  re-ordered relative to `ChainLink`, the re-queries silently
+  return `{:error, :action_not_found}`. Today the ordering is
+  enforced by reading `Draft.:approve` top-to-bottom.
+
+**Compensating controls**:
+- Both re-queries run in the same transaction as the parent
+  approve action, so they're guaranteed to see the just-inserted
+  rows.
+- `audit_chain_test.exs` "chain writes five linked events" pins
+  the expected event sequence including
+  `:compensation_registered`, so a regression here fails fast.
+
+**Revisit trigger**: whichever comes first:
+1. A third event type needs to read sibling rows from the same
+   transaction — at which point design a typed
+   `changeset.context.chain_payload` contract that producing
+   changes (`CompensationAtApproval`, etc.) fill in for consumer
+   changes (`ChainLink`).
+2. Profile data shows the two extra queries materially extending
+   approval latency under load.
+
+**Tracking**: hardening-checklist concern; no ADR planned.

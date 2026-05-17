@@ -24,8 +24,8 @@ defmodule AshyWalnutDesk.Interaction.AuditChainConcurrencyTest do
 
         {:ok, _} =
           Ash.update(approved, %{approved_at: DateTime.add(DateTime.utc_now(), -6, :second)},
-            action: :edit_draft,
-            actor: operator
+            action: :backdate_approval_for_tests,
+            authorize?: false
           )
 
         action =
@@ -88,12 +88,7 @@ defmodule AshyWalnutDesk.Interaction.AuditChainConcurrencyTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :drafting,
-          summary: "Need response",
-          recorded_by_id: operator.id
-        },
+        %{conversation_id: conversation.id, summary: "Need response"},
         action: :record_inbox,
         actor: operator
       )

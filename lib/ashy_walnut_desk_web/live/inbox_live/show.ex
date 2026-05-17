@@ -193,7 +193,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
           )
 
         %Draft{status: :drafting} = draft ->
-          AshPhoenix.Form.for_update(draft, :edit_draft, actor: actor, as: "draft_form")
+          AshPhoenix.Form.for_update(draft, :revise, actor: actor, as: "draft_form")
 
         _ ->
           nil

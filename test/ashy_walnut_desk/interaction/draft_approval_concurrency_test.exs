@@ -70,12 +70,7 @@ defmodule AshyWalnutDesk.Interaction.DraftApprovalConcurrencyTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :drafting,
-          summary: "Need response",
-          recorded_by_id: operator.id
-        },
+        %{conversation_id: conversation.id, summary: "Need response"},
         action: :record_inbox,
         actor: operator
       )

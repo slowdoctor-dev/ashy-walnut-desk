@@ -34,9 +34,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.New do
              Inbox,
              %{
                conversation_id: conversation.id,
-               status: :open,
-               summary: "Operator initiated",
-               recorded_by_id: actor.id
+               summary: "Operator initiated"
              },
              action: :record_inbox,
              actor: actor

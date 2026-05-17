@@ -54,12 +54,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.IndexTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :open,
-          summary: "Question from customer",
-          recorded_by_id: admin.id
-        },
+        %{conversation_id: conversation.id, summary: "Question from customer"},
         action: :record_inbox,
         actor: admin
       )

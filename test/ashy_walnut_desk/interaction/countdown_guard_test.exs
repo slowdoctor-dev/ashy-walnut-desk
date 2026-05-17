@@ -15,8 +15,8 @@ defmodule AshyWalnutDesk.Interaction.CountdownGuardTest do
 
       {:ok, _} =
         Ash.update(draft, %{approved_at: DateTime.add(DateTime.utc_now(), -seconds, :second)},
-          action: :edit_draft,
-          actor: operator
+          action: :backdate_approval_for_tests,
+          authorize?: false
         )
 
       assert {:error, error} = Ash.update(action, %{}, action: :execute, actor: operator)
@@ -28,8 +28,8 @@ defmodule AshyWalnutDesk.Interaction.CountdownGuardTest do
 
       {:ok, _} =
         Ash.update(draft, %{approved_at: DateTime.add(DateTime.utc_now(), -seconds, :second)},
-          action: :edit_draft,
-          actor: operator
+          action: :backdate_approval_for_tests,
+          authorize?: false
         )
 
       assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
@@ -72,12 +72,7 @@ defmodule AshyWalnutDesk.Interaction.CountdownGuardTest do
     {:ok, inbox} =
       Ash.create(
         Inbox,
-        %{
-          conversation_id: conversation.id,
-          status: :drafting,
-          summary: "Need response",
-          recorded_by_id: operator.id
-        },
+        %{conversation_id: conversation.id, summary: "Need response"},
         action: :record_inbox,
         actor: operator
       )

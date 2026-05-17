@@ -1,130 +1,67 @@
 defmodule AshyWalnutDesk.Interaction.Changes.CountdownGuard do
-  @moduledoc false
+  @moduledoc """
+  Pre-action guard on `Action.:execute`. Loads the related draft and
+  verifies that at least 5 seconds (ADR-013) have elapsed since
+  `approved_at`. On violation, adds an error to the changeset so the
+  update fails before the adapter is invoked.
+
+  Side effect: stashes the loaded `%Draft{}` (with inbox preloaded)
+  into the changeset context under `:draft` so `ExecuteOutbound`
+  doesn't have to re-query.
+
+  This change is intentionally narrow: no adapter call, no Message
+  creation, no Inbox transition. Those belong to `ExecuteOutbound`.
+  """
 
   use Ash.Resource.Change
 
   alias Ash.Changeset
-  alias AshyWalnutDesk.Interaction.{Channel, Draft, Message}
+  alias AshyWalnutDesk.Interaction.Draft
+
+  @countdown_seconds 5
 
   @impl true
-  def change(changeset, _opts, context) do
-    changeset
-    |> Changeset.before_action(fn changeset ->
-      if Map.get(changeset.context, :from_draft_approve, false) do
+  def change(changeset, _opts, _context) do
+    Changeset.before_action(changeset, fn changeset ->
+      if Enum.any?(changeset.errors) do
         changeset
       else
-        run_countdown_and_execute(changeset)
+        guard(changeset)
       end
-    end)
-    |> Changeset.after_action(fn changeset, action ->
-      maybe_record_outbound(changeset, action, context)
     end)
   end
 
-  defp run_countdown_and_execute(changeset) do
+  defp guard(changeset) do
     with {:ok, draft} <- load_draft_with_inbox(changeset.data.draft_id),
-         :ok <- countdown_ok?(draft),
-         {:ok, channel} <- Ash.get(Channel, changeset.data.channel_id, authorize?: false),
-         {:ok, adapter} <- resolve_adapter(channel.adapter_module),
-         {:ok, payload} <- adapter.send_outbound(draft.body, channel) do
-      changeset
-      |> Changeset.force_change_attribute(:status, :executed)
-      |> Changeset.force_change_attribute(:executed_at, DateTime.utc_now())
-      |> Changeset.force_change_attribute(:adapter_response, payload)
-      |> Changeset.set_context(%{
-        outbound_message: %{
-          conversation_id: draft.inbox.conversation_id,
-          body: draft.body,
-          approved_by_id: draft.approved_by_id
-        }
-      })
+         :ok <- countdown_ok?(draft) do
+      Changeset.set_context(changeset, %{draft: draft})
     else
       {:error, :countdown_violation} ->
         Changeset.add_error(changeset, field: :draft_id, message: "countdown_violation")
 
-      {:error, error} ->
-        changeset
-        |> Changeset.force_change_attribute(:status, :failed)
-        |> Changeset.force_change_attribute(:error, error_text(error))
+      {:error, reason} ->
+        Changeset.add_error(changeset, field: :draft_id, message: error_text(reason))
     end
   end
 
-  defp maybe_record_outbound(changeset, action, context) do
-    if action.status == :executed do
-      %{outbound_message: outbound} = changeset.context
+  defp countdown_ok?(%Draft{approved_at: nil}), do: {:error, :countdown_violation}
 
-      with {:ok, _message} <-
-             Ash.create(
-               Message,
-               %{
-                 conversation_id: outbound.conversation_id,
-                 direction: :outbound,
-                 body: outbound.body,
-                 sent_at: action.executed_at,
-                 approved_by_id: outbound.approved_by_id
-               },
-               action: :record_message,
-               authorize?: false,
-               context: %{from_action_execute: true}
-             ),
-           {:ok, draft} <- load_draft_with_inbox(action.draft_id),
-           {:ok, _inbox} <-
-             Ash.update(
-               draft.inbox,
-               %{status: :executed},
-               action: :update_inbox,
-               actor: context.actor
-             ) do
-        {:ok, action}
-      else
-        {:error, error} -> {:error, error}
-      end
+  defp countdown_ok?(%Draft{approved_at: approved_at}) do
+    if DateTime.diff(DateTime.utc_now(), approved_at, :second) >= @countdown_seconds do
+      :ok
     else
-      {:ok, action}
+      {:error, :countdown_violation}
     end
-  end
-
-  defp countdown_ok?(draft) do
-    cond do
-      is_nil(draft.approved_at) ->
-        {:error, :countdown_violation}
-
-      DateTime.diff(DateTime.utc_now(), draft.approved_at, :second) < 5 ->
-        {:error, :countdown_violation}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp resolve_adapter(module_name) when is_binary(module_name) do
-    module = Module.concat([module_name])
-
-    if Code.ensure_loaded?(module) and function_exported?(module, :send_outbound, 2) do
-      {:ok, module}
-    else
-      {:error, "channel misconfigured: adapter has no send_outbound/2"}
-    end
-  rescue
-    ArgumentError ->
-      {:error, "channel misconfigured: adapter module not loaded"}
   end
 
   defp load_draft_with_inbox(draft_id) do
     case Ash.get(Draft, draft_id, authorize?: false) do
-      {:ok, draft} ->
-        {:ok, Ash.load!(draft, [:inbox], authorize?: false)}
-
-      {:error, error} ->
-        {:error, error}
+      {:ok, draft} -> {:ok, Ash.load!(draft, [:inbox], authorize?: false)}
+      {:error, error} -> {:error, error}
     end
   end
 
   defp error_text(error) do
-    if is_exception(error) do
-      Exception.message(error)
-    else
-      inspect(error)
-    end
+    if is_exception(error), do: Exception.message(error), else: inspect(error)
   end
 end

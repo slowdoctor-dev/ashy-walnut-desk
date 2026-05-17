@@ -73,7 +73,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.CompensationAtApproval do
   end
 
   defp create_action(draft_id, channel_id, context) do
-    attrs = %{draft_id: draft_id, channel_id: channel_id, status: :pending}
+    attrs = %{draft_id: draft_id, channel_id: channel_id}
 
     opts =
       [
@@ -105,7 +105,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.CompensationAtApproval do
       ]
       |> maybe_put(:actor, context.actor)
 
-    Ash.create(Compensation, %{action_id: action_id, status: :registered, body: body}, opts)
+    Ash.create(Compensation, %{action_id: action_id, body: body}, opts)
   end
 
   defp maybe_put(opts, _key, nil), do: opts

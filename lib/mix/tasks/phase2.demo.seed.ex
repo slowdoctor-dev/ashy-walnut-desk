@@ -43,6 +43,7 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
     conversation = create_conversation(admin, identity, channel)
     open_inbox = create_inbox(admin, conversation, display_name, :open)
     drafting_inbox = create_inbox(admin, conversation, display_name, :drafting)
+    drafting_inbox = mark_drafting(admin, drafting_inbox)
     _draft = create_draft(admin, drafting_inbox)
 
     Mix.shell().info("""
@@ -137,13 +138,17 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
       :record_inbox,
       %{
         conversation_id: conversation.id,
-        status: status,
-        summary: "#{display_name} requested a callback this week (#{status}).",
-        recorded_by_id: admin.id
+        summary: "#{display_name} requested a callback this week (#{status})."
       },
       actor: admin
     )
     |> Ash.create!()
+  end
+
+  defp mark_drafting(admin, inbox) do
+    inbox
+    |> Ash.Changeset.for_update(:mark_drafting, %{}, actor: admin)
+    |> Ash.update!()
   end
 
   defp create_draft(admin, inbox) do

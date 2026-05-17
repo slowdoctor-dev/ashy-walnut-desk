@@ -1,7 +1,9 @@
 defmodule AshyWalnutDesk.Interaction.Action do
   @moduledoc false
 
-  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CountdownGuard}
+  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CountdownGuard, ExecuteOutbound}
+  alias AshyWalnutDesk.Interaction.Checks.FromDraftApprove
+  alias AshyWalnutDesk.Interaction.Validations.StatusTransition
 
   use Ash.Resource,
     otp_app: :ashy_walnut_desk,
@@ -29,13 +31,19 @@ defmodule AshyWalnutDesk.Interaction.Action do
     defaults([:read])
 
     create :register_pending do
-      accept([:draft_id, :channel_id, :status])
+      accept([:draft_id, :channel_id])
+      change(set_attribute(:status, :pending))
     end
 
     update :execute do
       accept([])
       require_atomic?(false)
+      # A1: prevent replay-execute. Without this guard, calling :execute
+      # twice would re-invoke the adapter, double-billing or duplicating
+      # the outbound message.
+      validate({StatusTransition, from: [:pending]})
       change(CountdownGuard)
+      change(ExecuteOutbound)
       change({ChainLink, event_type: :action_executed})
     end
   end
@@ -52,9 +60,12 @@ defmodule AshyWalnutDesk.Interaction.Action do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
+    # S2: internal-only. Must originate from `Draft.approve`'s
+    # `CompensationAtApproval` change. An operator calling this
+    # directly would create an Action without the matching Compensation
+    # row — breaking the four-stage chain (ADR-016).
     policy action(:register_pending) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(FromDraftApprove)
     end
   end
 
