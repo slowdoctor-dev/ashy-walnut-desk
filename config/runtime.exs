@@ -65,11 +65,9 @@ if config_env() == :prod do
   if System.get_env("PHX_HOST", "localhost") != "localhost" do
     base = Application.get_env(:ashy_walnut_desk, :session_options, [])
 
-    config :ashy_walnut_desk, :session_options,
-      Keyword.merge(base, secure: true, http_only: true)
+    config :ashy_walnut_desk, :session_options, Keyword.merge(base, secure: true, http_only: true)
 
-    config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
-      force_ssl: [hsts: true]
+    config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint, force_ssl: [hsts: true]
   end
 
   database_url =

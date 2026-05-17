@@ -14,10 +14,14 @@ corresponding commit / ADR).
 
 ## TO-1 — `User.session_identifier(:unsafe)` instead of `:jti`
 
-**Status**: ✅ resolved by ADR-020 (Phase 2 prep). Implementing
-story is the first Phase 2 story — flips `session_identifier` back
-to `:jti` and adds the cookie-loading `on_mount` in the same merge.
+**Status**: ✅ resolved by ADR-020 + Story 2.1 implementation.
 Historical context below preserved for the audit trail.
+
+**Resolution**: Story 2.1 implementation on
+`feat/story-2.1-security-entry-gate` (commit `04472ab`, squash SHA:
+`TBD-on-merge`) lands `LiveUserAuth.on_mount(:load_from_cookie)` and
+flips `Accounts.User.session_identifier` back to `:jti`, restoring
+per-session revocation on the LiveView path.
 
 **Decision**: `lib/ashy_walnut_desk/accounts/user.ex` sets
 `session_identifier(:unsafe)`. Set by commit `85c6bfb` (story 0.8).
@@ -66,12 +70,14 @@ should confirm the JTI fix landed upstream before relaxing the pin.
 
 ## TO-2 — Session cookie `secure` flag + `force_ssl` not enforced
 
-**Status**: ✅ resolved by ADR-021 (Phase 2 prep). Implementing
-story is the first Phase 2 story (same one that lands ADR-020) —
-`config/runtime.exs` prod block keyed on `PHX_HOST != "localhost"`
-sets `force_ssl: [hsts: true]` and `secure: true` on the session
-cookie. Dev fallback unchanged. Historical context below preserved
-for the audit trail.
+**Status**: ✅ resolved by ADR-021 + Story 2.1 implementation.
+Historical context below preserved for the audit trail.
+
+**Resolution**: Story 2.1 implementation on
+`feat/story-2.1-security-entry-gate` (commit `04472ab`, squash SHA:
+`TBD-on-merge`) adds the `config/runtime.exs` prod block keyed on
+`PHX_HOST != "localhost"` and applies `force_ssl: [hsts: true]` plus
+secure `session_options` flags at runtime. Dev fallback unchanged.
 
 **Decision**: `lib/ashy_walnut_desk_web/endpoint.ex`'s `@session_options`
 does not set `secure: true`, and `config/runtime.exs`'s prod block
