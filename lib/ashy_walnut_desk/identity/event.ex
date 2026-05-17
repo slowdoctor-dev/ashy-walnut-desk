@@ -134,7 +134,11 @@ defmodule AshyWalnutDesk.Identity.Event do
 
     belongs_to :recorded_by, AshyWalnutDesk.Accounts.User do
       allow_nil?(false)
-      attribute_writable?(true)
+      # FK set exclusively via `change(relate_actor(:recorded_by))` on
+      # :record_event. Marked non-writable so a future caller adding
+      # `:recorded_by_id` to an accept list cannot bypass the
+      # actor-relation pattern.
+      attribute_writable?(false)
       public?(true)
     end
   end
