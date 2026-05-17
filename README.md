@@ -9,9 +9,10 @@
 
 ## Status
 
-**Phase 0 (foundation) and Phase 1 (Identity-axis core domain) are
-shipped.** Next phase boundary: Phase 2 (Interaction-axis messaging).
-Run `./scripts/status.sh` for the live picture.
+**Phase 0 (foundation), Phase 1 (Identity-axis core domain), and
+Phase 2 (Interaction-axis messaging — four-stage record chain) are
+all shipped.** Next phase boundary: Phase 3 (first real channel
+adapter integration). Run `./scripts/status.sh` for the live picture.
 
 For the full picture, start with [`BASELINE.md`](BASELINE.md) — single
 entry point covering identity, architecture, methodology, and current state.
