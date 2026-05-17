@@ -16,7 +16,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.CountdownGuard do
   use Ash.Resource.Change
 
   alias Ash.Changeset
-  alias AshyWalnutDesk.Interaction.Draft
+  alias AshyWalnutDesk.Interaction.{Draft, ErrorHelpers}
 
   @countdown_seconds 5
 
@@ -61,7 +61,5 @@ defmodule AshyWalnutDesk.Interaction.Changes.CountdownGuard do
     end
   end
 
-  defp error_text(error) do
-    if is_exception(error), do: Exception.message(error), else: inspect(error)
-  end
+  defp error_text(error), do: ErrorHelpers.error_to_string(error)
 end

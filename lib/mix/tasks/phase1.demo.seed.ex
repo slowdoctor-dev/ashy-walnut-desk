@@ -16,7 +16,6 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
 
   use Mix.Task
 
-  alias AshyWalnutDesk.Accounts.User
   alias AshyWalnutDesk.Identity.Appointment
   alias AshyWalnutDesk.Identity.Event
   alias AshyWalnutDesk.Identity.Identity
@@ -24,20 +23,11 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
 
   @switches [email: :string, display_name: :string]
 
+  alias AshyWalnutDesk.DemoSeedHelpers
+
   @impl Mix.Task
   def run(argv) do
-    # The seed bypasses `User.:register`'s `forbid_if always()` policy and
-    # auto-promotes to `:admin` via `authorize?: false` (intentional for
-    # deterministic screenshot fixtures). That same shape is a
-    # privilege-escalation path if invoked against a prod DB, so refuse
-    # to run anywhere except dev/test.
-    unless Mix.env() in [:dev, :test] do
-      Mix.raise(
-        "phase1.demo.seed is dev/test-only — it bypasses `User.:register` " <>
-          "policy and auto-grants :admin. Refusing to run in Mix.env=" <>
-          inspect(Mix.env()) <> "."
-      )
-    end
+    DemoSeedHelpers.guard_env!("phase1.demo.seed")
 
     {opts, _, _} = OptionParser.parse(argv, switches: @switches)
 
@@ -46,7 +36,7 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
 
     Mix.Task.run("app.start")
 
-    admin = ensure_admin(email)
+    admin = DemoSeedHelpers.ensure_admin(email)
     identity = create_identity(admin, display_name)
     seed_timeline(admin, identity)
 
@@ -57,27 +47,6 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
       identity id     : #{identity.id}
       identity name   : #{display_name}
     """)
-  end
-
-  defp ensure_admin(email) do
-    case Ash.read_one(User, action: :get_by_email, arguments: %{email: email}, authorize?: false) do
-      {:ok, %User{} = user} ->
-        promote_if_needed(user)
-
-      _ ->
-        User
-        |> Ash.Changeset.for_create(:register, %{email: email}, authorize?: false)
-        |> Ash.create!()
-        |> promote_if_needed()
-    end
-  end
-
-  defp promote_if_needed(%User{role: :admin} = user), do: user
-
-  defp promote_if_needed(%User{} = user) do
-    user
-    |> Ash.Changeset.for_update(:assign_role, %{role: :admin}, authorize?: false)
-    |> Ash.update!()
   end
 
   defp create_identity(admin, display_name) do

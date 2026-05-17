@@ -1,12 +1,12 @@
 defmodule AshyWalnutDesk.Interaction.DraftApprovalTest do
   use AshyWalnutDesk.DataCase, async: false
 
-  alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Action, Channel, Compensation, Conversation, Draft, Inbox}
+  alias AshyWalnutDesk.AccountsFixtures
+  alias AshyWalnutDesk.Interaction.{Action, Compensation}
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
   test "approve sets metadata and registers action + compensation" do
-    %{operator: operator, draft: draft} = seed_chain()
+    %{operator: operator, draft: draft} = drafting_chain()
 
     assert {:ok, approved} =
              Ash.update(draft, %{compensation_body: "Offer remediation"},
@@ -29,7 +29,7 @@ defmodule AshyWalnutDesk.Interaction.DraftApprovalTest do
   end
 
   test "approve rejects blank compensation and non-drafting statuses" do
-    %{operator: operator, draft: draft} = seed_chain()
+    %{operator: operator, draft: draft} = drafting_chain()
 
     assert {:error, error} =
              Ash.update(draft, %{compensation_body: nil}, action: :approve, actor: operator)
@@ -45,67 +45,19 @@ defmodule AshyWalnutDesk.Interaction.DraftApprovalTest do
     assert Exception.message(non_drafting_error) =~ "draft_not_drafting"
   end
 
-  defp seed_chain do
-    admin = create_user(:admin)
-    operator = create_user(:operator)
-    unique = System.unique_integer([:positive])
-
-    {:ok, identity} =
-      Ash.create(
-        Identity,
-        %{display_name: "Identity #{unique}", primary_identifier: "+1555#{unique}"},
-        action: :register_identity,
-        actor: admin
-      )
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-#{unique}",
-          display_name: "Stub #{unique}",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Thread", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: operator
-      )
-
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "Need response"},
-        action: :record_inbox,
-        actor: operator
-      )
-
-    {:ok, draft} =
-      Ash.create(
-        Draft,
-        %{inbox_id: inbox.id, body: "Draft body", status: :drafting},
-        action: :compose_draft,
-        actor: operator
-      )
+  # The shared `Fixtures.seed_approved_chain/1` returns an
+  # already-approved draft; this test exercises `:approve` directly,
+  # so we want a draft still at `:drafting`. Build the chain pieces
+  # but stop before approval.
+  defp drafting_chain do
+    admin = AccountsFixtures.create_user(:admin)
+    operator = AccountsFixtures.create_user(:operator)
+    identity = Fixtures.seed_identity(admin)
+    channel = Fixtures.seed_channel(admin)
+    conversation = Fixtures.seed_conversation(operator, identity, channel)
+    inbox = Fixtures.seed_inbox(operator, conversation)
+    draft = Fixtures.seed_draft(operator, inbox, body: "Draft body", compensation_body: nil)
 
     %{operator: operator, draft: draft}
-  end
-
-  defp create_user(role) do
-    {:ok, user} =
-      Ash.create(
-        User,
-        %{email: "#{role}-#{System.unique_integer([:positive])}@example.com", role: role},
-        action: :register,
-        authorize?: false
-      )
-
-    user
   end
 end

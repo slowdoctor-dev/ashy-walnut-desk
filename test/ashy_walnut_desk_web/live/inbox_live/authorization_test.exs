@@ -4,8 +4,8 @@ defmodule AshyWalnutDeskWeb.InboxLive.AuthorizationTest do
   alias AshAuthentication.Info
   alias AshAuthentication.Strategy.MagicLink
   alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Channel, Conversation, Inbox}
+  alias AshyWalnutDesk.Interaction.Inbox
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
   defp sign_in_as(conn, role) do
     email = "inbox-auth-#{role}-#{System.unique_integer([:positive])}@example.com"
@@ -24,31 +24,9 @@ defmodule AshyWalnutDeskWeb.InboxLive.AuthorizationTest do
     {conn, admin} = sign_in_as(conn, :admin)
     {_viewer_conn, viewer} = sign_in_as(build_conn(), :viewer)
 
-    {:ok, identity} =
-      Ash.create(Identity, %{display_name: "Lee", primary_identifier: "+155502"},
-        action: :register_identity,
-        actor: admin
-      )
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-2",
-          display_name: "Stub 2",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Topic", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: admin
-      )
+    identity = Fixtures.seed_identity(admin, display_name: "Lee", primary_identifier: "+155502")
+    channel = Fixtures.seed_channel(admin, slug: "stub-2", display_name: "Stub 2")
+    conversation = Fixtures.seed_conversation(admin, identity, channel, subject: "Topic")
 
     assert {:error, %Ash.Error.Forbidden{}} =
              Ash.create(

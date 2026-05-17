@@ -15,10 +15,9 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
     Compensation,
     Conversation,
     Draft,
-    Inbox
+    Inbox,
+    Locks
   }
-
-  alias AshyWalnutDesk.Repo
 
   @impl true
   def change(changeset, opts, _context) do
@@ -41,7 +40,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
 
   defp write_event_rows(chain_topic, events) do
     Enum.reduce_while(events, :ok, fn event, :ok ->
-      with {:ok, prev_hash} <- lock_prev_hash(chain_topic),
+      with {:ok, prev_hash} <- Locks.lock_prev_audit_hash(chain_topic),
            payload = maybe_normalize_outcome(event.payload),
            {:ok, canonical} <- AuditChain.canonicalize_payload(event.event_type, payload),
            {:ok, canonical_json} <- Jason.encode(canonical),
@@ -53,23 +52,6 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
         {:error, reason} -> {:halt, {:error, reason}}
       end
     end)
-  end
-
-  defp lock_prev_hash(chain_topic) do
-    sql = """
-    SELECT hash
-    FROM audit_events
-    WHERE chain_topic = $1
-    ORDER BY inserted_at DESC, id DESC
-    LIMIT 1
-    FOR UPDATE
-    """
-
-    case Repo.query(sql, [chain_topic]) do
-      {:ok, %{rows: []}} -> {:ok, nil}
-      {:ok, %{rows: [[prev_hash]]}} -> {:ok, prev_hash}
-      {:error, error} -> {:error, error}
-    end
   end
 
   defp create_audit_event(chain_topic, event, payload, prev_hash, hash) do
@@ -122,9 +104,13 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
      ]}
   end
 
-  defp event_specs(_changeset, %Draft{} = draft, :draft_approved) do
-    with {:ok, action} <- action_for_draft(draft.id),
-         {:ok, compensation} <- compensation_for_action(action.id) do
+  defp event_specs(changeset, %Draft{} = draft, :draft_approved) do
+    # S4: prefer the action+compensation rows stashed by
+    # `CompensationAtApproval`. Falls back to a DB lookup so this
+    # change stays independently invokable (e.g. from direct
+    # `ChainLink` tests or a future approve-like action that builds
+    # its own chain payload).
+    with {:ok, action, compensation} <- fetch_chain_payload(changeset, draft) do
       {:ok,
        [
          %{
@@ -169,6 +155,24 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
 
   defp event_specs(_changeset, _record, event_type),
     do: {:error, {:unsupported_chain_event, event_type}}
+
+  # S4: pull the chain payload from the changeset context if
+  # `CompensationAtApproval` stashed it; fall back to a DB read.
+  # Falling back keeps `ChainLink` independently invokable from
+  # direct tests / future actions that don't go through the
+  # approval path.
+  defp fetch_chain_payload(changeset, draft) do
+    case Map.get(changeset.context || %{}, :chain_payload) do
+      %{action: %Action{} = action, compensation: %Compensation{} = compensation} ->
+        {:ok, action, compensation}
+
+      _ ->
+        with {:ok, action} <- action_for_draft(draft.id),
+             {:ok, compensation} <- compensation_for_action(action.id) do
+          {:ok, action, compensation}
+        end
+    end
+  end
 
   defp chain_topic_for(%Inbox{id: inbox_id}), do: {:ok, to_string(inbox_id)}
 

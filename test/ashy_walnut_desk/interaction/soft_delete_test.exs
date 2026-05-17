@@ -1,55 +1,16 @@
 defmodule AshyWalnutDesk.Interaction.SoftDeleteTest do
   use AshyWalnutDesk.DataCase, async: false
 
-  alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Channel, Conversation, Draft, Inbox, Message}
+  alias AshyWalnutDesk.AccountsFixtures
+  alias AshyWalnutDesk.Interaction.Message
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
-  defp create_user(role) do
-    {:ok, user} =
-      Ash.create(
-        User,
-        %{email: "#{role}-#{System.unique_integer([:positive])}@example.com", role: role},
-        action: :register,
-        authorize?: false
-      )
-
-    user
-  end
-
-  defp create_baseline(admin, operator) do
-    {:ok, identity} =
-      Ash.create(
-        Identity,
-        %{
-          display_name: "Identity #{System.unique_integer([:positive])}",
-          primary_identifier: "+1555#{System.unique_integer([:positive])}"
-        },
-        action: :register_identity,
-        actor: admin
-      )
-
-    unique = System.unique_integer([:positive])
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-#{unique}",
-          display_name: "Stub #{unique}",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "subject", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: operator
-      )
+  test "conversation/message/inbox/draft follow archive-read_with_archived-recover flow" do
+    admin = AccountsFixtures.create_user(:admin)
+    operator = AccountsFixtures.create_user(:operator)
+    identity = Fixtures.seed_identity(admin)
+    channel = Fixtures.seed_channel(admin)
+    conversation = Fixtures.seed_conversation(operator, identity, channel, subject: "subject")
 
     {:ok, message} =
       Ash.create(
@@ -59,30 +20,10 @@ defmodule AshyWalnutDesk.Interaction.SoftDeleteTest do
         actor: operator
       )
 
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "summary"},
-        action: :record_inbox,
-        actor: operator
-      )
+    inbox = Fixtures.seed_inbox(operator, conversation, summary: "summary")
+    draft = Fixtures.seed_draft(operator, inbox, body: "draft", compensation_body: nil)
 
-    {:ok, draft} =
-      Ash.create(
-        Draft,
-        %{inbox_id: inbox.id, body: "draft", status: :drafting},
-        action: :compose_draft,
-        actor: operator
-      )
-
-    %{conversation: conversation, message: message, inbox: inbox, draft: draft}
-  end
-
-  test "conversation/message/inbox/draft follow archive-read_with_archived-recover flow" do
-    admin = create_user(:admin)
-    operator = create_user(:operator)
-
-    records = create_baseline(admin, operator)
+    records = %{conversation: conversation, message: message, inbox: inbox, draft: draft}
 
     Enum.each(records, fn {resource_name, record} ->
       {:ok, archived} = Ash.update(record, %{}, action: :archive, actor: operator)

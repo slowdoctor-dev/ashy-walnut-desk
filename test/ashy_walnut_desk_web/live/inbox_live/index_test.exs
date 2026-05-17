@@ -6,8 +6,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.IndexTest do
   alias AshAuthentication.Info
   alias AshAuthentication.Strategy.MagicLink
   alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Channel, Conversation, Inbox}
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
   defp sign_in_as(conn, role) do
     email = "inbox-index-#{role}-#{System.unique_integer([:positive])}@example.com"
@@ -25,39 +24,10 @@ defmodule AshyWalnutDeskWeb.InboxLive.IndexTest do
   test "operator sees inbox progression rows", %{conn: conn} do
     {conn, admin} = sign_in_as(conn, :admin)
 
-    {:ok, identity} =
-      Ash.create(Identity, %{display_name: "Alex", primary_identifier: "+155501"},
-        action: :register_identity,
-        actor: admin
-      )
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub",
-          display_name: "Stub",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Need update", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: admin
-      )
-
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "Question from customer"},
-        action: :record_inbox,
-        actor: admin
-      )
+    identity = Fixtures.seed_identity(admin, display_name: "Alex", primary_identifier: "+155501")
+    channel = Fixtures.seed_channel(admin, slug: "stub", display_name: "Stub")
+    conversation = Fixtures.seed_conversation(admin, identity, channel, subject: "Need update")
+    inbox = Fixtures.seed_inbox(admin, conversation, summary: "Question from customer")
 
     {:ok, view, html} = live(conn, ~p"/inbox?status=open")
 

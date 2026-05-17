@@ -3,18 +3,14 @@ defmodule AshyWalnutDesk.Interaction.ActionExecuteTest do
   import Ash.Expr
   require Ash.Query
 
-  alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Action, Channel, Conversation, Draft, Inbox, Message}
+  alias AshyWalnutDesk.Interaction.{Inbox, Message}
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
   test "execute marks action executed, writes outbound message with approver, and marks inbox executed" do
-    %{operator: operator, draft: draft, inbox: inbox, action: action} = seed_approved_chain()
+    %{operator: operator, draft: draft, inbox: inbox, action: action} =
+      Fixtures.seed_approved_chain()
 
-    {:ok, _} =
-      Ash.update(draft, %{approved_at: DateTime.add(DateTime.utc_now(), -6, :second)},
-        action: :backdate_approval_for_tests,
-        authorize?: false
-      )
+    Fixtures.backdate_approval!(draft, 6)
 
     assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
     assert executed.status == :executed
@@ -31,77 +27,5 @@ defmodule AshyWalnutDesk.Interaction.ActionExecuteTest do
 
     {:ok, reloaded_inbox} = Ash.get(Inbox, inbox.id, actor: operator)
     assert reloaded_inbox.status == :executed
-  end
-
-  defp seed_approved_chain do
-    admin = create_user(:admin)
-    operator = create_user(:operator)
-    unique = System.unique_integer([:positive])
-
-    {:ok, identity} =
-      Ash.create(
-        Identity,
-        %{display_name: "Identity #{unique}", primary_identifier: "+1555#{unique}"},
-        action: :register_identity,
-        actor: admin
-      )
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-#{unique}",
-          display_name: "Stub #{unique}",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Thread", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: operator
-      )
-
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "Need response"},
-        action: :record_inbox,
-        actor: operator
-      )
-
-    {:ok, draft} =
-      Ash.create(
-        Draft,
-        %{
-          inbox_id: inbox.id,
-          body: "Draft body",
-          compensation_body: "Compensate",
-          status: :drafting
-        },
-        action: :compose_draft,
-        actor: operator
-      )
-
-    {:ok, approved} = Ash.update(draft, %{}, action: :approve, actor: operator)
-    [action] = Ash.read!(Action, authorize?: false)
-
-    %{operator: operator, draft: approved, action: action, inbox: inbox}
-  end
-
-  defp create_user(role) do
-    {:ok, user} =
-      Ash.create(
-        User,
-        %{email: "#{role}-#{System.unique_integer([:positive])}@example.com", role: role},
-        action: :register,
-        authorize?: false
-      )
-
-    user
   end
 end

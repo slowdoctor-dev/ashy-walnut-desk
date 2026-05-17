@@ -6,8 +6,8 @@ defmodule AshyWalnutDeskWeb.InboxLive.ShowTest do
   alias AshAuthentication.Info
   alias AshAuthentication.Strategy.MagicLink
   alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Action, Channel, Compensation, Conversation, Draft, Inbox}
+  alias AshyWalnutDesk.Interaction.{Action, Compensation, Draft}
+  alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
   require Ash.Query
 
   defp sign_in_as(conn, role) do
@@ -25,42 +25,15 @@ defmodule AshyWalnutDeskWeb.InboxLive.ShowTest do
 
   test "compose, revise, approve, countdown, execute", %{conn: conn} do
     {conn, operator} = sign_in_as(conn, :operator)
-    {admin_conn, admin} = sign_in_as(build_conn(), :admin)
-    _ = admin_conn
+    {_admin_conn, admin} = sign_in_as(build_conn(), :admin)
 
-    {:ok, identity} =
-      Ash.create(Identity, %{display_name: "Case", primary_identifier: "+155503"},
-        action: :register_identity,
-        actor: admin
-      )
+    identity = Fixtures.seed_identity(admin, display_name: "Case", primary_identifier: "+155503")
+    channel = Fixtures.seed_channel(admin)
 
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-3",
-          display_name: "Stub 3",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
+    conversation =
+      Fixtures.seed_conversation(operator, identity, channel, subject: "Need callback")
 
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Need callback", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: operator
-      )
-
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "Need callback"},
-        action: :record_inbox,
-        actor: operator
-      )
+    inbox = Fixtures.seed_inbox(operator, conversation, summary: "Need callback")
 
     {:ok, view, _html} = live(conn, ~p"/inbox/#{inbox.id}")
 

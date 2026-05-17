@@ -356,7 +356,14 @@ transition."
 
 ## TO-9 — `ChainLink.event_specs/3` for `:draft_approved` re-queries Action + Compensation
 
-**Status**: active, accepted for Phase 2.
+**Status**: ✅ resolved by the simplicity-hardening pass (S4 in
+`/tmp/phase2-simplicity-review.md`). `CompensationAtApproval` now
+stashes the just-created Action + Compensation under
+`changeset.context.chain_payload`; `ChainLink.fetch_chain_payload/2`
+reads them on `:draft_approved` instead of re-querying. The
+DB-fallback is retained so `ChainLink` stays independently invokable
+from tests / future actions that don't go through `Draft.:approve`.
+Historical context below preserved for the audit trail.
 
 **Decision**: `lib/ashy_walnut_desk/interaction/changes/chain_link.ex`
 handles the `:draft_approved` event by running two
@@ -484,3 +491,97 @@ time; documented in BASELINE.
 
 **Tracking**: surfaced as F8 in the Phase 2 security review;
 spec-governance question, not a fix-now finding.
+
+---
+
+## TO-12 — Edge-case test fixtures still inline (Pass B follow-up)
+
+**Status**: active, accepted as scope split.
+
+**Decision**: The simplicity-hardening pass extracted
+`test/support/{accounts,interaction}_fixtures.ex` with the
+`seed_approved_chain` / `seed_identity` / `seed_channel` / etc.
+helpers reused by most Interaction tests. Concurrency-leaning
+tests still build their own fixtures inline:
+
+- `test/ashy_walnut_desk/interaction/audit_chain_concurrency_test.exs`
+- `test/ashy_walnut_desk/interaction/draft_approval_concurrency_test.exs`
+- `test/ashy_walnut_desk/interaction/properties/chain_invariants_test.exs`
+- `test/ashy_walnut_desk/interaction/paper_trail_coverage_test.exs`
+- `test/ashy_walnut_desk/interaction/audit_redaction_test.exs`
+- `test/ashy_walnut_desk/interaction/channel_allowlist_test.exs`
+- `test/ashy_walnut_desk/interaction/conversation_test.exs`
+- `test/ashy_walnut_desk/interaction/message_test.exs`
+- `test/ashy_walnut_desk_web/live/phase2_e2e_test.exs`
+
+Several of these need shapes the shared helpers don't yet
+support (per-iteration drafts in property tests, custom
+adapter modules, multi-conversation fixtures, etc.).
+
+**Why**: Codex's R2 in the simplicity review (`/tmp/phase2-
+simplicity-review.md`) flagged that forcing full unification in
+one PR risks reducing readability of edge-case tests. Splitting
+into Pass A (this PR — common chain) and Pass B (next phase
+boundary) keeps the diff reviewable and lets Phase 3's new
+adapter-fixture shapes inform the helper design.
+
+**What we lose**:
+- ~400 lines of inline seed boilerplate remain across nine
+  files — the same maintenance hazard that motivated S1 in the
+  first place, just at a smaller scale than before this PR.
+
+**Compensating controls**:
+- Each remaining file still imports
+  `AshyWalnutDesk.Interaction.Adapter` so the
+  `stub_module_string()` constant is one alias away when those
+  files get touched.
+
+**Revisit trigger**: Phase 3's first BMAD pass. The real channel
+adapter integration will need new fixture shapes
+(`seed_channel(admin, adapter: :real)`-style); doing Pass B at
+that boundary aligns the helper redesign with the next phase's
+real needs.
+
+**Tracking**: hardening-checklist concern; no ADR.
+
+---
+
+## TO-13 — `AssignFirstUserAdmin.maybe_retry_as_operator/3` retry band-aid
+
+**Status**: active, accepted as pragmatic race hardening.
+
+**Decision**: `lib/ashy_walnut_desk/accounts/changes/assign_first_user_admin.ex`
+catches the `users_one_admin_idx` partial unique constraint
+violation in an `after_transaction` hook and rebuilds the changeset
+with `:operator` role via a fresh `Ash.create/3` call. This defends
+against the rare race where two simultaneous first-user sign-ups
+both attempt `:admin`.
+
+**Why**: the retry path rebuilds the changeset by re-running every
+change in the action pipeline (`MagicLink.SignInChange`,
+`AssignFirstUserAdmin` itself with a retry-context flag,
+`RegistrationGate` from PR #38). It's hard to reason about because
+the failure mode is non-local, but it works correctly today and
+ripping it out would trade deterministic recovery for occasional
+sign-in failures during the first-user window.
+
+**What we lose**:
+- Non-local failure-mode reasoning. A change-pipeline reorder or a
+  new before_action could subtly interact with the retry.
+
+**Compensating controls**:
+- The retry only fires when `admin_index_conflict?/1` matches, so
+  it can't escalate non-conflict errors.
+- The conflict path is exercised by the existing
+  AssignFirstUserAdmin tests.
+
+**Revisit trigger**: whichever comes first:
+1. The retry actually misfires (mistakenly retrying a non-conflict
+   error) — there's a documented hardening of
+   `admin_index_conflict?/1` in PR #38 to tolerate non-Exception
+   errors; another non-Exception error shape would warrant
+   re-examination.
+2. A simpler alternative emerges (e.g. an Ash-native uniqueness
+   pre-check that races more cleanly).
+
+**Tracking**: surfaced as S7 in the simplicity review; no ADR.

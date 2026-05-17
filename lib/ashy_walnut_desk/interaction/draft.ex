@@ -11,6 +11,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CompensationAtApproval}
+  alias AshyWalnutDesk.Interaction.Validations.NotApprovingViaRevise
 
   postgres do
     table("drafts")
@@ -66,6 +67,9 @@ defmodule AshyWalnutDesk.Interaction.Draft do
         :ai_response,
         :ai_validator_output
       ])
+
+      require_atomic?(false)
+      validate(NotApprovingViaRevise)
     end
 
     update :approve do

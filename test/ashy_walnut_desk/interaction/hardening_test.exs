@@ -2,31 +2,28 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
   @moduledoc """
   Regression tests for the Phase 2 implementation hardening pass.
   Each test pins a specific bypass that was open after the original
-  Phase 2 implementation merged and was closed by this PR.
+  Phase 2 implementation merged and was closed by the merged PRs.
 
-  Findings indexed by their R1/R2 review ID; see PR description.
+  Findings indexed by their R1/R2 review ID; see PR descriptions
+  for #37 (implementation) and #38 (security).
   """
 
   use AshyWalnutDesk.DataCase, async: false
   import Ash.Expr
   require Ash.Query
 
-  alias AshyWalnutDesk.Accounts.User
-  alias AshyWalnutDesk.Identity.Identity
+  alias AshyWalnutDesk.{AccountsFixtures, InteractionFixtures}
 
   alias AshyWalnutDesk.Interaction.{
     Action,
-    Channel,
     Compensation,
-    Conversation,
-    Draft,
     Inbox,
     Message
   }
 
   describe "S1: Draft.:revise cannot stamp approval fields" do
     test "rejects :approved_at and :approved_by_id as inputs (countdown bypass)" do
-      %{operator: operator, draft: draft} = seed_drafting_chain()
+      %{operator: operator, draft: draft} = drafting_chain()
 
       assert {:error, %Ash.Error.Invalid{} = error} =
                Ash.update(draft, %{approved_at: DateTime.utc_now()},
@@ -54,7 +51,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
   describe "S2/R2-3: register_pending + register are internal-only" do
     test "operator cannot create Action.:register_pending directly" do
-      %{operator: operator, draft: draft, channel: channel} = seed_drafting_chain()
+      %{operator: operator, draft: draft, channel: channel} = drafting_chain()
 
       assert {:error, %Ash.Error.Forbidden{}} =
                Ash.create(
@@ -66,7 +63,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
     end
 
     test "operator cannot create Compensation.:register directly" do
-      %{operator: operator, draft: draft, channel: channel} = seed_drafting_chain()
+      %{operator: operator, draft: draft, channel: channel} = drafting_chain()
 
       {:ok, action} =
         Ash.create(
@@ -89,8 +86,10 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
   describe "A1: Action.:execute is not replay-able" do
     test "second execute on an already-executed Action fails the StatusTransition guard" do
-      %{operator: operator, draft: draft, action: action} = seed_approved_chain()
-      backdate!(draft)
+      %{operator: operator, draft: draft, action: action} =
+        InteractionFixtures.seed_approved_chain()
+
+      InteractionFixtures.backdate_approval!(draft)
 
       assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
       assert executed.status == :executed
@@ -107,7 +106,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
   describe "R2-1: Inbox.:record_inbox refuses :status and :recorded_by_id as inputs" do
     test ":status is not on the accept list" do
-      %{operator: operator, conversation: conversation} = seed_conversation()
+      %{operator: operator, conversation: conversation} = conversation_only()
 
       assert {:error, %Ash.Error.Invalid{} = error} =
                Ash.create(
@@ -124,8 +123,8 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
     end
 
     test ":recorded_by_id is not on the accept list (and the relationship is non-writable)" do
-      %{operator: operator, conversation: conversation} = seed_conversation()
-      other_user = create_user(:operator)
+      %{operator: operator, conversation: conversation} = conversation_only()
+      other_user = AccountsFixtures.create_user(:operator)
 
       assert {:error, %Ash.Error.Invalid{} = error} =
                Ash.create(
@@ -144,28 +143,21 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
                &match?(%Ash.Error.Invalid.NoSuchInput{input: :recorded_by_id}, &1)
              )
 
-      {:ok, inbox} =
-        Ash.create(
-          Inbox,
-          %{conversation_id: conversation.id, summary: "S"},
-          action: :record_inbox,
-          actor: operator
-        )
-
+      inbox = InteractionFixtures.seed_inbox(operator, conversation, summary: "S")
       assert inbox.recorded_by_id == operator.id
     end
   end
 
   describe "R2-2: Inbox state machine cannot be bypassed by operators" do
     test "operator cannot Ash.update an Inbox to :executed without going through Action.execute" do
-      %{operator: operator, inbox: inbox} = seed_open_inbox()
+      %{operator: operator, inbox: inbox} = open_inbox()
 
       assert {:error, %Ash.Error.Forbidden{}} =
                Ash.update(inbox, %{}, action: :mark_executed, actor: operator)
     end
 
     test "operator cannot un-dismiss an inbox" do
-      %{operator: operator, inbox: inbox} = seed_open_inbox()
+      %{operator: operator, inbox: inbox} = open_inbox()
 
       {:ok, dismissed} = Ash.update(inbox, %{}, action: :dismiss, actor: operator)
       assert dismissed.status == :dismissed
@@ -180,9 +172,9 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
   describe "F4: Action.:execute respects channel.enabled? (security review)" do
     test "disabled channel produces :failed action with a clear error and no outbound Message" do
       %{admin: admin, operator: operator, channel: channel, draft: draft, action: action} =
-        seed_approved_chain()
+        InteractionFixtures.seed_approved_chain()
 
-      backdate!(draft)
+      InteractionFixtures.backdate_approval!(draft)
 
       {:ok, _} = Ash.update(channel, %{}, action: :disable, actor: admin)
 
@@ -204,9 +196,9 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
   describe "S3: adapter receives %Message{} struct, not a raw body string" do
     test "Action.execute writes outbound Message with conversation_id + approver populated" do
       %{operator: operator, conversation: conversation, draft: draft, action: action} =
-        seed_approved_chain()
+        InteractionFixtures.seed_approved_chain()
 
-      backdate!(draft)
+      InteractionFixtures.backdate_approval!(draft)
 
       assert {:ok, _executed} = Ash.update(action, %{}, action: :execute, actor: operator)
 
@@ -222,106 +214,29 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
     end
   end
 
-  defp backdate!(draft) do
-    Ash.update!(
-      draft,
-      %{approved_at: DateTime.add(DateTime.utc_now(), -10, :second)},
-      action: :backdate_approval_for_tests,
-      authorize?: false
-    )
-  end
+  # The shared fixtures don't stop at "just a conversation" or
+  # "just an open inbox" — but these tests exercise pre-chain
+  # states. Build the chain in pieces here.
 
-  defp seed_conversation do
-    admin = create_user(:admin)
-    operator = create_user(:operator)
-    unique = System.unique_integer([:positive])
-
-    {:ok, identity} =
-      Ash.create(
-        Identity,
-        %{display_name: "Identity #{unique}", primary_identifier: "+1555#{unique}"},
-        action: :register_identity,
-        actor: admin
-      )
-
-    {:ok, channel} =
-      Ash.create(
-        Channel,
-        %{
-          slug: "stub-#{unique}",
-          display_name: "Stub #{unique}",
-          adapter_module: "AshyWalnutDesk.Interaction.Adapters.Stub"
-        },
-        action: :register_channel,
-        actor: admin
-      )
-
-    {:ok, conversation} =
-      Ash.create(
-        Conversation,
-        %{subject: "Thread", identity_id: identity.id, channel_id: channel.id},
-        action: :open_conversation,
-        actor: operator
-      )
+  defp conversation_only do
+    admin = AccountsFixtures.create_user(:admin)
+    operator = AccountsFixtures.create_user(:operator)
+    identity = InteractionFixtures.seed_identity(admin)
+    channel = InteractionFixtures.seed_channel(admin)
+    conversation = InteractionFixtures.seed_conversation(operator, identity, channel)
 
     %{admin: admin, operator: operator, channel: channel, conversation: conversation}
   end
 
-  defp seed_open_inbox do
-    %{operator: operator, conversation: conversation} = ctx = seed_conversation()
-
-    {:ok, inbox} =
-      Ash.create(
-        Inbox,
-        %{conversation_id: conversation.id, summary: "S"},
-        action: :record_inbox,
-        actor: operator
-      )
-
-    Map.merge(ctx, %{inbox: inbox})
+  defp open_inbox do
+    ctx = conversation_only()
+    inbox = InteractionFixtures.seed_inbox(ctx.operator, ctx.conversation, summary: "S")
+    Map.put(ctx, :inbox, inbox)
   end
 
-  defp seed_drafting_chain do
-    ctx = seed_open_inbox()
-
-    {:ok, draft} =
-      Ash.create(
-        Draft,
-        %{
-          inbox_id: ctx.inbox.id,
-          body: "Draft body",
-          compensation_body: "Compensate",
-          status: :drafting
-        },
-        action: :compose_draft,
-        actor: ctx.operator
-      )
-
-    Map.merge(ctx, %{draft: draft})
-  end
-
-  defp seed_approved_chain do
-    ctx = seed_drafting_chain()
-    {:ok, approved} = Ash.update(ctx.draft, %{}, action: :approve, actor: ctx.operator)
-
-    action =
-      Action
-      |> Ash.Query.for_read(:read, %{}, authorize?: false)
-      |> Ash.Query.filter(expr(draft_id == ^approved.id))
-      |> Ash.read_one!(authorize?: false)
-
-    Map.merge(ctx, %{draft: approved, action: action})
-  end
-
-  defp create_user(role) do
-    {:ok, user} =
-      Ash.create(
-        User,
-        %{email: "#{role}-#{System.unique_integer([:positive])}@example.com", role: role},
-        action: :register,
-        authorize?: false
-      )
-
-    user
+  defp drafting_chain do
+    ctx = open_inbox()
+    draft = InteractionFixtures.seed_draft(ctx.operator, ctx.inbox)
+    Map.put(ctx, :draft, draft)
   end
 end
