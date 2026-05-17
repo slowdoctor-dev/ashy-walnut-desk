@@ -36,6 +36,8 @@ config :ashy_walnut_desk, :session_options,
 config :ash_paper_trail,
   repo: AshyWalnutDesk.Repo
 
+config :ashy_walnut_desk, :channel_adapters, [AshyWalnutDesk.Interaction.Adapters.Stub]
+
 # Configures the endpoint
 config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   url: [host: "localhost"],

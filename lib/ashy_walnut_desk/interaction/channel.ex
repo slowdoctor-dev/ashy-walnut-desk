@@ -10,6 +10,7 @@ defmodule AshyWalnutDesk.Interaction.Channel do
     primary_read_warning?: false
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
+  alias AshyWalnutDesk.Interaction.Validations.AdapterAllowed
 
   postgres do
     table("channels")
@@ -41,6 +42,7 @@ defmodule AshyWalnutDesk.Interaction.Channel do
 
     create :register_channel do
       accept([:slug, :display_name, :adapter_module, :enabled?])
+      validate(AdapterAllowed)
     end
 
     update :disable do
@@ -49,7 +51,9 @@ defmodule AshyWalnutDesk.Interaction.Channel do
     end
 
     update :enable do
-      accept([])
+      accept([:adapter_module])
+      require_atomic?(false)
+      validate(AdapterAllowed)
       change(set_attribute(:enabled?, true))
     end
 
