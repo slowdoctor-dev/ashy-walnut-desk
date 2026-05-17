@@ -20,6 +20,19 @@ defmodule AshyWalnutDesk.Interaction.AuditEvent do
   actions do
     default_accept([])
     defaults([:read])
+
+    create :create do
+      accept([
+        :chain_topic,
+        :event_type,
+        :subject_kind,
+        :subject_id,
+        :payload,
+        :prev_hash,
+        :hash,
+        :actor_id
+      ])
+    end
   end
 
   policies do

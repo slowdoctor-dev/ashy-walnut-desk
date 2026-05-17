@@ -1,7 +1,7 @@
 defmodule AshyWalnutDesk.Interaction.Action do
   @moduledoc false
 
-  alias AshyWalnutDesk.Interaction.Changes.CountdownGuard
+  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CountdownGuard}
 
   use Ash.Resource,
     otp_app: :ashy_walnut_desk,
@@ -36,6 +36,7 @@ defmodule AshyWalnutDesk.Interaction.Action do
       accept([])
       require_atomic?(false)
       change(CountdownGuard)
+      change({ChainLink, event_type: :action_executed})
     end
   end
 
