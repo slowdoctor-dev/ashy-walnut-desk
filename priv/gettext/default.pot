@@ -36,11 +36,13 @@ msgstr ""
 msgid "Project"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/components/layouts/app.html.heex:26
 #: lib/ashy_walnut_desk_web/live/welcome_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Sign in"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/components/layouts/app.html.heex:22
 #: lib/ashy_walnut_desk_web/live/welcome_live.ex:40
 #, elixir-autogen, elixir-format
 msgid "Sign out"
@@ -102,7 +104,7 @@ msgstr ""
 msgid "Archive this identity?"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:99
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:269
 #, elixir-autogen, elixir-format
 msgid "Archived"
@@ -176,6 +178,7 @@ msgstr ""
 msgid "Hide archived"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/components/layouts/app.html.heex:14
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:46
 #, elixir-autogen, elixir-format
 msgid "Identities"
@@ -218,7 +221,7 @@ msgstr ""
 msgid "New identity"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:99
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:113
 #, elixir-autogen, elixir-format
 msgid "No identities yet."
 msgstr ""
@@ -320,4 +323,14 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:362
 #, elixir-autogen, elixir-format
 msgid "Type"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:90
+#, elixir-autogen, elixir-format
+msgid "Created"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/index.ex:106
+#, elixir-autogen, elixir-format
+msgid "View"
 msgstr ""

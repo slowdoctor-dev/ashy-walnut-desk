@@ -1,7 +1,8 @@
 import Config
 
 config :ashy_walnut_desk,
-  identifier_hash_salt: System.get_env("IDENTIFIER_HASH_SALT") || "dev-only-identifier-hash-salt"
+  identifier_hash_salt: System.get_env("IDENTIFIER_HASH_SALT") || "dev-only-identifier-hash-salt",
+  ash_authentication_secret: System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
@@ -35,13 +36,26 @@ if config_env() == :prod do
 
   config :ashy_walnut_desk, identifier_hash_salt: identifier_hash_salt
 
-  System.get_env("ASH_AUTHENTICATION_SECRET") ||
+  ash_authentication_secret =
+    System.get_env("ASH_AUTHENTICATION_SECRET") ||
+      raise """
+      environment variable ASH_AUTHENTICATION_SECRET is missing.
+      The Accounts.User.JwtSecret module reads it at runtime; without it,
+      all JWTs would be signed with the dev-only fallback constant.
+      Generate one with: mix phx.gen.secret
+      """
+
+  if byte_size(ash_authentication_secret) < 64 do
     raise """
-    environment variable ASH_AUTHENTICATION_SECRET is missing.
-    The Accounts.User.JwtSecret module reads it at runtime; without it,
-    all JWTs would be signed with the dev-only fallback constant.
-    Generate one with: mix phx.gen.secret
+    environment variable ASH_AUTHENTICATION_SECRET is too short
+    (got #{byte_size(ash_authentication_secret)} bytes; require >= 64).
+    Phoenix.gen.secret produces 64-byte values. A short signing secret
+    weakens JWT signature strength even though presence is enforced.
+    Generate a fresh one with: mix phx.gen.secret
     """
+  end
+
+  config :ashy_walnut_desk, ash_authentication_secret: ash_authentication_secret
 
   database_url =
     System.get_env("DATABASE_URL") ||

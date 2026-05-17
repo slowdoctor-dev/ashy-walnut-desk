@@ -3,7 +3,7 @@ defmodule AshyWalnutDeskWeb.AuthController do
   use AshAuthentication.Phoenix.Controller
 
   def success(conn, activity, user, _token) do
-    return_to = get_session(conn, :return_to) || ~p"/"
+    return_to = safe_return_to(get_session(conn, :return_to))
 
     message =
       case activity do
@@ -45,11 +45,28 @@ defmodule AshyWalnutDeskWeb.AuthController do
   end
 
   def sign_out(conn, _params) do
-    return_to = get_session(conn, :return_to) || ~p"/"
+    return_to = safe_return_to(get_session(conn, :return_to))
 
     conn
     |> clear_session(:ashy_walnut_desk)
     |> put_flash(:info, "You are now signed out")
     |> redirect(to: return_to)
   end
+
+  # Only accept relative same-origin paths. Reject protocol-relative
+  # (`//evil.com`) and backslash-prefixed paths some browsers normalize
+  # to URLs. Defense-in-depth: today AshAuthentication only writes
+  # `Phoenix.Controller.current_path/1` into `:return_to` (path-only),
+  # but any future plug/controller setting it from user input would
+  # become an open-redirect without this guard.
+  defp safe_return_to("/" <> rest = path) when byte_size(rest) > 0 do
+    case String.first(rest) do
+      "/" -> ~p"/"
+      "\\" -> ~p"/"
+      _ -> path
+    end
+  end
+
+  defp safe_return_to("/"), do: "/"
+  defp safe_return_to(_), do: ~p"/"
 end

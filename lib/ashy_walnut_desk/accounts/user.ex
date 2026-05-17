@@ -211,7 +211,11 @@ defmodule AshyWalnutDesk.Accounts.User do
 
     @impl true
     def secret_for([:authentication, :tokens, :signing_secret], _resource, _opts, _context) do
-      {:ok, System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"}
+      # Read from app env (set in config/runtime.exs). Prod runtime block
+      # raises if missing and rejects values < 64 bytes; dev/test get a
+      # dev-only fallback set at the top of runtime.exs. Same shape as
+      # :identifier_hash_salt — one secret-read path across all envs.
+      {:ok, Application.fetch_env!(:ashy_walnut_desk, :ash_authentication_secret)}
     end
   end
 end
