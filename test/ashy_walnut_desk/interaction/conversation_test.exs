@@ -58,11 +58,13 @@ defmodule AshyWalnutDesk.Interaction.ConversationTest do
     {:ok, archived_identity} = Ash.update(identity, %{}, action: :archive, actor: admin)
     {:ok, channel} = create_channel(admin)
 
+    subject = "Need follow up"
+
     assert {:error, error} =
              Ash.create(
                Conversation,
                %{
-                 subject: "Need follow up",
+                 subject: subject,
                  identity_id: archived_identity.id,
                  channel_id: channel.id
                },
@@ -71,5 +73,12 @@ defmodule AshyWalnutDesk.Interaction.ConversationTest do
              )
 
     assert Exception.message(error) =~ "cannot reference archived identity"
+
+    persisted =
+      Conversation
+      |> Ash.read!(action: :read_with_archived, authorize?: false)
+      |> Enum.filter(&(&1.identity_id == archived_identity.id and &1.subject == subject))
+
+    assert persisted == []
   end
 end
