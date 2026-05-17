@@ -675,4 +675,19 @@ defmodule AshyWalnutDeskWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Formats a `DateTime` for operator display.
+
+  Output shape: `"YYYY-MM-DD HH:MM UTC"` — no seconds, explicit timezone
+  marker so screenshots and audit views are deterministic across hosts.
+  `nil` returns an empty string.
+  """
+  def format_timestamp(nil), do: ""
+
+  def format_timestamp(%DateTime{} = dt) do
+    dt
+    |> DateTime.shift_zone!("Etc/UTC")
+    |> Calendar.strftime("%Y-%m-%d %H:%M UTC")
+  end
 end

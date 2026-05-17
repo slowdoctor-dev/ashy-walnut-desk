@@ -40,8 +40,4 @@ defmodule AshyWalnutDeskWeb.IdentityLive.TimelineComponent do
   defp kind_label(:event), do: gettext("Event")
   defp kind_label(:appointment), do: gettext("Appointment")
   defp kind_label(:note), do: gettext("Note")
-
-  defp format_timestamp(%DateTime{} = ts) do
-    ts |> DateTime.truncate(:second) |> DateTime.to_string()
-  end
 end

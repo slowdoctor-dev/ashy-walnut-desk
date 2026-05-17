@@ -79,19 +79,33 @@ defmodule AshyWalnutDeskWeb.IdentityLive.Index do
           data-archived={to_string(archived?(identity))}
           class="flex items-center justify-between gap-4 py-3"
         >
-          <.link
-            navigate={~p"/identities/#{identity.id}"}
-            class="font-semibold text-zinc-900 hover:text-zinc-700"
-          >
-            {to_string(identity.display_name)}
-          </.link>
-          <span
-            :if={archived?(identity)}
-            class="rounded bg-zinc-200 px-2 text-xs uppercase tracking-wide text-zinc-700"
-            data-role="archived-badge"
-          >
-            {gettext("Archived")}
-          </span>
+          <div class="min-w-0 flex-1">
+            <.link
+              navigate={~p"/identities/#{identity.id}"}
+              class="font-semibold text-zinc-900 hover:text-zinc-700"
+            >
+              {to_string(identity.display_name)}
+            </.link>
+            <p class="mt-0.5 text-xs text-zinc-500" data-role="identity-created-at">
+              {gettext("Created")} {format_timestamp(identity.created_at)}
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-3">
+            <span
+              :if={archived?(identity)}
+              class="rounded bg-zinc-200 px-2 text-xs uppercase tracking-wide text-zinc-700"
+              data-role="archived-badge"
+            >
+              {gettext("Archived")}
+            </span>
+            <.link
+              navigate={~p"/identities/#{identity.id}"}
+              class="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+              data-role="identity-view"
+            >
+              {gettext("View")} <span aria-hidden="true">→</span>
+            </.link>
+          </div>
         </li>
       </ul>
 
