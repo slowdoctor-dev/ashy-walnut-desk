@@ -10,6 +10,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     primary_read_warning?: false
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
+  alias AshyWalnutDesk.Interaction.Changes.CompensationAtApproval
 
   postgres do
     table("drafts")
@@ -67,6 +68,15 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       ])
     end
 
+    update :approve do
+      accept([:compensation_body])
+      require_atomic?(false)
+      change(CompensationAtApproval)
+      change(set_attribute(:status, :approved))
+      change(set_attribute(:approved_at, &DateTime.utc_now/0))
+      change(relate_actor(:approved_by))
+    end
+
     update :archive do
       accept([])
       require_atomic?(false)
@@ -97,6 +107,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     policy action(:edit_draft) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:approve) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
     end

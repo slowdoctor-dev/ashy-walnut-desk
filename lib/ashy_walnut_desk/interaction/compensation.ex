@@ -24,6 +24,10 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
   actions do
     default_accept([])
     defaults([:read])
+
+    create :register do
+      accept([:action_id, :status, :body, :triggered_at])
+    end
   end
 
   policies do
@@ -31,6 +35,11 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
       authorize_if(actor_attribute_equals(:role, :viewer))
+    end
+
+    policy action(:register) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
     end
   end
 
