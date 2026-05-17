@@ -10,7 +10,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     primary_read_warning?: false
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
-  alias AshyWalnutDesk.Interaction.Changes.CompensationAtApproval
+  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CompensationAtApproval}
 
   postgres do
     table("drafts")
@@ -52,6 +52,8 @@ defmodule AshyWalnutDesk.Interaction.Draft do
         :ai_response,
         :ai_validator_output
       ])
+
+      change({ChainLink, event_type: :draft_started})
     end
 
     update :edit_draft do
@@ -75,6 +77,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change(set_attribute(:status, :approved))
       change(set_attribute(:approved_at, &DateTime.utc_now/0))
       change(relate_actor(:approved_by))
+      change({ChainLink, event_type: :draft_approved})
     end
 
     update :archive do

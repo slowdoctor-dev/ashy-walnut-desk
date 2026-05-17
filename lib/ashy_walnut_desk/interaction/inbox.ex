@@ -10,6 +10,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     primary_read_warning?: false
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
+  alias AshyWalnutDesk.Interaction.Changes.ChainLink
 
   postgres do
     table("inboxes")
@@ -42,6 +43,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
     create :record_inbox do
       accept([:conversation_id, :status, :summary, :recorded_by_id])
+      change({ChainLink, event_type: :inbox_opened})
     end
 
     update :update_inbox do
