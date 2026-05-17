@@ -250,7 +250,7 @@ with `direction: :outbound` from the LV — only from `Action.execute`).
 | `id` | uuid | — | |
 | `slug` | string | — | Unique, deployer-defined (e.g. `"sms-twilio"`, `"stub"`) |
 | `display_name` | string | — | |
-| `adapter_module` | string | — | Module name string (looked up at runtime) |
+| `adapter_module` | string | — | Module name string (looked up at runtime). **Allowlist-validated** — see security note below. |
 | `enabled?` | boolean | — | Default true |
 | `deleted_at` | utc_datetime_usec | — | Soft-delete |
 | timestamps | | | |
@@ -261,6 +261,18 @@ Actions: `read` (filtered), `register_channel` (create — admin only),
 
 Policies: `:viewer` read; `:admin` only for create/enable/disable
 (channels are deployment infra, not operator routine).
+
+**Security — adapter allowlist (R2-1 review finding).** `adapter_module`
+is a string converted to an atom at runtime, then dispatched via
+`apply/3`. Without constraint this is an RCE vector if any admin (or
+a future admin compromise) sets the module to e.g. `Elixir.System`.
+`register_channel` and `enable` therefore validate `adapter_module`
+against an allowlist read from
+`Application.get_env(:ashy_walnut_desk, :channel_adapters, [])`. In
+Phase 2 the allowlist is `[AshyWalnutDesk.Interaction.Adapters.Stub]`.
+Phase 3 (first real adapter) extends the allowlist via deployer
+config. Validation lives in a custom `Ash.Resource.Validation`
+asserted in story 2.4.
 
 Phase 2 deployer-seed creates one row: `slug: "stub"`, pointing at
 `AshyWalnutDesk.Interaction.Adapters.Stub`. No others until Phase 3.
@@ -308,13 +320,15 @@ The second stage. Operator-composed in Phase 2; AI-filled in Phase 4.
 | timestamps | | | |
 
 Actions: `read` (filtered), `compose_draft` (create — `:drafting`;
-requires `body` and `compensation_body`), `revise` (update body /
-compensation_body; only while `:drafting`), `approve` (transitions
-to `:approved`; sets `approved_at` + `approved_by_id` via
-`relate_actor` + `:approved_by`; triggers
-`CompensationAtApproval` change which creates the Compensation row;
-writes AuditEvent), `reject`, `supersede`, `archive`, `recover`,
-`read_with_archived`.
+requires `body`; `compensation_body` settable but not required),
+`revise` (update body / compensation_body; only while `:drafting`),
+`approve` (transitions to `:approved`; sets `approved_at` +
+`approved_by_id` via `relate_actor` + `:approved_by`; **validates
+non-null `compensation_body` at this point per ADR-016** — operator
+can leave it blank during early iteration but cannot approve without
+it; triggers `CompensationAtApproval` change which creates the
+Compensation row; writes AuditEvent), `reject`, `supersede`,
+`archive`, `recover`, `read_with_archived`.
 
 Policies: `:operator`+`:admin` compose / revise / approve / reject;
 `:admin` recover.
@@ -374,12 +388,31 @@ Immutable, hash-chained log of every chain transition.
 | `chain_topic` | string | — | `"inbox:<uuid>"` — groups events for one chain instance |
 | `event_type` | atom | — | `:inbox_opened \| :draft_started \| :draft_approved \| :action_executed \| :compensation_registered` (extensible per phase) |
 | `subject_kind` | atom | — | `:inbox \| :draft \| :action \| :compensation` |
-| `subject_id` | uuid | — | Polymorphic FK (no DB FK; integrity checked by `mix audit.verify`) |
+| `subject_id` | uuid | — | Polymorphic FK (no DB FK; write-time integrity enforced because every chain-writing change loads the subject first. Hard-delete is forbidden across all axes per ADR-019 + AGENTS.md §7.3, so soft-deleted subjects remain referenceable forever — by design.) |
 | `actor_id` | uuid | — | FK → `users.id`. Nullable for system-initiated events |
-| `payload` | map | — | Event-specific JSON (e.g. `{"status": "approved"}`) |
+| `payload` | map | — | Event-specific JSON. **Closed shape per `event_type`** — see "Payload contract" below; no free text. |
 | `prev_hash` | string | — | hex sha256 of previous event in `chain_topic`, or `nil` for genesis |
 | `hash` | string | — | hex sha256 of `prev_hash || canonical_payload` |
 | `inserted_at` | | | (no `updated_at`, no `deleted_at`) |
+
+**Payload contract (closed shape).** Each `event_type` has a fixed
+allow-list of payload keys; the `ChainLink` change's
+`canonicalize_payload/2` rejects any key outside the list before
+hashing. This prevents an implementer from accidentally including
+sensitive content (e.g. `Draft.body`) in the payload.
+
+| `event_type` | Allowed payload keys |
+|---|---|
+| `:inbox_opened` | `inbox_id`, `conversation_id`, `identity_id` |
+| `:draft_started` | `inbox_id`, `draft_id` |
+| `:draft_approved` | `draft_id`, `approved_at`, `approved_by_id` |
+| `:action_executed` | `action_id`, `draft_id`, `channel_id`, `outcome` (atom: `:executed \| :failed`) |
+| `:compensation_registered` | `compensation_id`, `action_id` |
+
+All values are non-sensitive identifiers / timestamps / status atoms.
+No `body`, `summary`, `subject`, or other free text ever lands in
+payload — those stay in the resource rows where PaperTrail's
+`:redact` already protects them.
 
 Actions: `read` (admin only), `record_event` (called only via
 `ChainLink` change; never from LV directly).
@@ -475,30 +508,47 @@ Operator clicks "Open Inbox" on IdentityLive.Show
 
 ```text
 Operator types in CountdownSendButton's composer
-  → submit "compose_draft" with %{body, compensation_body}
+  → submit "compose_draft" with %{body, compensation_body?}
   → Draft.compose_draft → status: :drafting
+    (compensation_body optional at compose, required at approve)
   → AuditEvent written (event_type: :draft_started)
   → operator clicks "Approve & send"
   → submit "approve_draft"
-  → Draft.approve runs:
-       1. CompensationAtApproval change creates Compensation
+  → Draft.approve runs in a single DB transaction:
+       0. SELECT * FROM drafts WHERE id = $1 AND status = 'drafting'
+              FOR UPDATE                ← prevents concurrent approve race
+          (zero rows → {:error, :draft_not_drafting} for the loser)
+       1. validate compensation_body non-null (per ADR-016)
+       2. CompensationAtApproval change creates Compensation
           (status: :registered, body: copied from compensation_body)
-       2. Draft.status → :approved, approved_at = now()
-       3. AuditEvent for :draft_approved
-       4. AuditEvent for :compensation_registered
+       3. Draft.status → :approved, approved_at = now()
+       4. AuditEvent for :draft_approved
+       5. AuditEvent for :compensation_registered
   → CountdownSendButton starts the 5s server-side timer
   → after 5s, Process.send_after fires Action.execute
 ```
 
+**Concurrent approval race (S3 review finding).** Without the
+`SELECT … FOR UPDATE` at step 0, two operators clicking "Approve &
+send" within milliseconds could both transition `:drafting` →
+`:approved`. The unique constraint on `Action.draft_id` would let
+one Action insert win and the other fail with a constraint error —
+but by then two Compensations have been written and the audit chain
+has duplicate `:draft_approved` events. The row-level lock at
+transaction start makes the second approver hit `:draft_not_drafting`
+cleanly with no side effects.
+
 ### 6.3 Action execute (countdown-guarded)
 
 ```text
-Action.execute runs (5s after :approve)
-  → CountdownGuard change checks
-    (NOW() - draft.approved_at) >= interval '5 seconds'
-    via expr() against the loaded Draft
-    → if not, returns {:error, :countdown_violation}
+Action.execute runs (5s after :approve) inside a DB transaction:
+  → CountdownGuard change (before_action) performs a
+    server-authoritative elapsed-time check against
+    draft.approved_at — 5-second floor. Failure returns a
+    typed :countdown_violation error via Ash.Changeset.add_error/2.
+    (Exact API surface is implementer's choice; story 2.5 commits it.)
   → Channel.Adapter resolved from channel.adapter_module
+    (allowlist-validated at Channel write time per §3.3)
   → adapter.send_outbound(message, channel) called
   → stub returns {:ok, %{stub: true}}
   → Action created with status: :executed,
@@ -508,6 +558,14 @@ Action.execute runs (5s after :approve)
     approved_by_id (copied from draft), sent_at = now()
   → AuditEvent for :action_executed
 ```
+
+**Idempotency / replay (S2 review finding).** `Action.execute` runs
+in a single DB transaction. The Phase 2 stub adapter is synchronous
+and side-effect-free, so transaction success implies "send success";
+no idempotency key is needed yet. **Phase 3** (first real adapter)
+MUST add an idempotency key derived from `action_id` and pass it to
+the external API so retries don't double-send. The Phase 3 ADR
+will commit the contract.
 
 ### 6.4 AuditEvent insert (concurrency)
 
@@ -526,19 +584,30 @@ ChainLink change runs in a DB transaction:
                                 prev_hash, hash) VALUES (...)
 ```
 
-Property test (StreamData): N concurrent operators approve drafts
-on the same Inbox chain; assert (a) all events have valid hash
-links to their declared `prev_hash`, (b) walking the chain from
-genesis reaches all events, (c) `mix audit.verify` exits 0.
+**Concurrency test (T2 review finding).** ExUnitProperties iterations
+share one Sandbox transaction, so they can't simulate true concurrent
+writers. Chain-continuity-under-load uses `Task.async_stream/3`
+where each task takes its own Sandbox checkout via
+`Ecto.Adapters.SQL.Sandbox.allow/3` and runs a single approve+execute.
+After the stream completes, the test asserts (a) every event has
+valid `prev_hash` continuity, (b) walking from genesis reaches every
+event, (c) `mix audit.verify` exits 0. Story 2.6 owns this test.
+
+StreamData property tests cover single-writer invariants only
+(payload canonicalization deterministic; every Action has a
+Compensation; every Compensation has an Action) — these run fine
+in single-transaction mode.
 
 ## 7. Migration plan
 
-1. Hand-authored migration enabling the `audit_events`
-   composite indexes (chain_topic + inserted_at; prev_hash).
-   *Earlier timestamp than Ash-generated migrations so the indexes
-   are in place when Ash creates the table.*
-2. `mix ash_postgres.generate_migrations --name phase_2_interaction_axis`
-   produces 8 resource migrations.
+1. `mix ash_postgres.generate_migrations --name phase_2_interaction_axis`
+   produces 8 resource migrations (one per resource).
+2. **After** the `audit_events` table migration, a hand-authored
+   migration adds composite indexes:
+   - `audit_events(chain_topic, inserted_at)` — for chain traversal
+   - `audit_events(prev_hash)` — for `mix audit.verify` walk
+   Same-or-later timestamp than the Ash-generated `audit_events`
+   create migration (indexes cannot exist before the table).
 3. Seed: insert the `stub` Channel row via a versioned data
    migration (separate from Ash's structural migration so deployers
    can replace the seed in their private repo).
@@ -583,21 +652,51 @@ story.
 
 ### 9.2 TO-2 resolution: prod cookie + force_ssl (ADR-021)
 
-`config/runtime.exs` `:prod` block:
+Phase 0 set `@session_options` as a module attribute in
+`endpoint.ex`, which bakes session config in at compile time and
+defeats any `runtime.exs` override. Phase 2 replaces that with a
+runtime-resolved plug so the prod hardening actually takes effect.
+
+**Three coordinated changes (T1 review-corrected):**
 
 ```elixir
+# config/config.exs — base defaults stored in app env
+config :ashy_walnut_desk, :session_options,
+  store: :cookie,
+  key: "_ashy_walnut_desk_key",
+  signing_salt: System.get_env("SESSION_SIGNING_SALT") || "dev-only-salt",
+  same_site: "Lax"
+
+# config/runtime.exs `:prod` block
 if System.get_env("PHX_HOST", "localhost") != "localhost" do
+  base = Application.get_env(:ashy_walnut_desk, :session_options, [])
+
+  config :ashy_walnut_desk, :session_options,
+    Keyword.merge(base, secure: true, http_only: true)
+
   config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
-    force_ssl: [hsts: true],
-    session_options:
-      [secure: true]
-      |> Keyword.merge(Application.get_env(:ashy_walnut_desk, :session_options, []))
+    force_ssl: [hsts: true]
+end
+
+# lib/ashy_walnut_desk_web/endpoint.ex — runtime-resolved plug
+plug :put_session_options
+defp put_session_options(conn, _opts) do
+  opts =
+    Application.fetch_env!(:ashy_walnut_desk, :session_options)
+    |> Plug.Session.init()
+
+  Plug.Session.call(conn, opts)
 end
 ```
 
-Dev (`PHX_HOST` unset or `localhost`) keeps plain HTTP. Prod (real
-hostname) gets `force_ssl` + `secure` cookie. Test env is
-unaffected. See ADR-021 for the full reasoning.
+Replaces the previous `plug Plug.Session, @session_options` line.
+Per-request cost is microseconds (one Application env lookup +
+Plug.Session.init); story 2.1 includes a benchmark check.
+
+Dev (`PHX_HOST` unset or `"localhost"`) keeps the unmerged base
+config — plain HTTP, no `secure`. Prod (real hostname) inherits
+`force_ssl` + `secure` + `http_only`. Test env unaffected.
+See ADR-021 for full reasoning.
 
 ### 9.3 Send authorization
 
@@ -631,9 +730,12 @@ The four-stage chain enforces that every outbound `Message` carries
   `Draft.ai_response` all marked `sensitive? true`.
 - PaperTrail with `:redact` on all of the above (same Phase 0
   pattern that protected `User.email`).
-- `AuditEvent.payload` is a map; sensitive fields are stored as
-  `"<redacted>"` in the canonical hashed form (so the hash still
-  proves "this transition happened" without exposing content).
+- `AuditEvent.payload` is **never** a free-form map of sensitive
+  content. Per §3.8's closed payload contract, each `event_type`
+  carries only non-sensitive identifiers / timestamps / status
+  atoms. `ChainLink.canonicalize_payload/2` rejects unknown keys
+  before hashing so a future implementer can't accidentally smuggle
+  `body` content into an event payload.
 
 ## 10. Safety review
 
@@ -645,7 +747,7 @@ Per AGENTS.md §7 (INVIOLABLE rules):
 | §7.2 Human-in-the-loop for ALL sends | `Action.execute` is reachable only via `Draft.approve` → `CountdownSendButton`. No autonomous path exists. Property test asserts `Action` rows without a `Draft.approved_by_id` predecessor are unreachable. |
 | §7.3 Audit trail mandatory | `AuditEvent` writes on every chain transition. Hash chain verifiable via `mix audit.verify`. |
 | §7.4 Sensitive data handling | Marked + PaperTrail-redacted per §9.5. Raw `body` content never enters AuditEvent payload (only status / metadata). |
-| §7.5 Disclosure | N/A — no AI in Phase 2. Phase 4 wires the disclosure footer on AI-generated drafts. |
+| §7.5 Disclosure | Partial. AI-assistance disclosure is N/A in Phase 2 (no AI; Phase 4 wires the footer). **Honest-framing disclosure (ADR-016) IS in scope** — compensation UI strings cannot frame remediation as "unsend." Phase 2 enforces this via the grep test from requirements §2 (owned by story 2.8). |
 
 ## 11. Testing strategy
 
@@ -655,10 +757,17 @@ Per AGENTS.md §7 (INVIOLABLE rules):
 - **Integration** (LiveView): the full chain open-inbox →
   compose → approve → execute end-to-end, run against
   `Channel.Adapter.Stub`.
-- **Property** (StreamData): chain invariants — every Action has a
-  Compensation; every Compensation has an Action; hash continuity
-  holds under N concurrent approvers; chain replays are
-  deterministic.
+- **Property** (StreamData, single-transaction): single-writer
+  chain invariants only — every Action has a Compensation; every
+  Compensation has an Action; payload canonicalization is
+  deterministic. These run fine inside one Sandbox transaction.
+- **Concurrency** (separate test type, NOT StreamData): chain
+  continuity under load uses `Task.async_stream/3` where each task
+  takes its own Sandbox checkout via
+  `Ecto.Adapters.SQL.Sandbox.allow/3` and runs one approve+execute.
+  After the stream completes, assert chain integrity (every
+  `prev_hash` resolves; `mix audit.verify` exits 0). Owned by
+  story 2.6.
 - **Audit chain verification**: `mix audit.verify` exits 0 against
   the test DB after every chain integration test. CI gate added
   to `just verify`.
@@ -666,25 +775,31 @@ Per AGENTS.md §7 (INVIOLABLE rules):
   drafting, countdown, executed). Same pattern as Phase 1, lives
   under `docs/phase-2-screenshots/`.
 
-## 12. Open technical questions
+## 12. Resolved technical decisions
 
-- [ ] **`Process.send_after` for the 5s server timer — is the timer
-  authoritative or just convenience?** Proposed: the timer is
-  convenience (fires the `:execute`), but `CountdownGuard`'s
-  `approved_at` check is the authoritative gate. If the LV process
-  dies during the 5s, the operator must re-trigger; the guard still
-  prevents a sub-5s execute.
+These questions were open in the first architect draft; resolved
+during the R1/R2 BMAD review pass.
 
-- [ ] **AuditEvent canonical payload encoding — `Jason` with sorted
-  keys, or a custom canonicalizer?** Proposed: `Jason.encode!(payload,
-  pretty: false)` with map keys pre-sorted via a `payload_canonical/1`
-  helper. Sufficient for SHA-256 stability; switch to RFC 8785
-  if/when a deployer requests stricter canonical JSON.
+- [x] **`Process.send_after` for the 5s server timer — authoritative
+  or convenience?** **Decision:** timer is convenience (fires the
+  `:execute`); `CountdownGuard`'s `approved_at` elapsed-time check
+  is the authoritative gate. If the LV process dies during the 5s,
+  the operator must re-trigger; the guard still prevents a sub-5s
+  execute via any path. Story 2.5 implements; story 2.7 owns the
+  LV-side timer.
 
-- [ ] **Database-level prevention of `UPDATE`/`DELETE` on
-  `audit_events`?** Proposed: defer to a Phase 3 hardening story.
-  `mix audit.verify` is the Phase 2 detection mechanism; DB
-  triggers add complexity the framework doesn't yet need.
+- [x] **AuditEvent canonical payload encoding — `Jason` with sorted
+  keys, or a custom canonicalizer?** **Decision:** `Jason.encode!`
+  with map keys pre-sorted via a `payload_canonical/1` helper.
+  Sufficient for SHA-256 stability given the closed payload
+  contract (§3.8). Switch to RFC 8785 only if/when a deployer
+  requests stricter canonical JSON. Story 2.6 implements.
+
+- [x] **Database-level prevention of `UPDATE`/`DELETE` on
+  `audit_events`?** **Decision:** defer to a Phase 3 hardening
+  story. `mix audit.verify` is the Phase 2 detection mechanism;
+  Postgres triggers add complexity the framework doesn't yet need.
+  No story owns this in Phase 2.
 
 ---
 

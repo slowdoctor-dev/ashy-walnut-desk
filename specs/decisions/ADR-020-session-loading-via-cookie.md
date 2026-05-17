@@ -92,15 +92,21 @@ Reasoning:
   from TO-1 ("no privileged surface yet") before Phase 2 ships the
   first privileged surface.
 
-Implementation sketch (see `specs/phase-2/architecture.md §9.1` for
-the full integration):
+Implementation sketch (**indicative only** — story 2.1 implementer
+confirms the exact `ash_authentication` 4.13.7 API surface against
+hex docs; the function/module names below may not match verbatim).
+See `specs/phase-2/architecture.md §9.1` for the full integration:
 
 ```elixir
 defmodule AshyWalnutDeskWeb.LiveUserAuth do
+  # Indicative — verify the actual API at implementation time.
+  # Candidate paths: AshAuthentication.subject_to_user/2,
+  # AshAuthentication.Plug.Helpers.retrieve_from_session/2, or the
+  # token-based load via Accounts.Token + AshAuthentication.Jwt.
   def on_mount(:load_from_cookie, _params, session, socket) do
     case session do
       %{"user_token" => token} ->
-        case AshAuthentication.subject_to_user(token, User) do
+        case load_user_from_token(token) do
           {:ok, user} ->
             {:cont, Phoenix.Component.assign(socket, :current_user, user)}
 
@@ -114,6 +120,10 @@ defmodule AshyWalnutDeskWeb.LiveUserAuth do
   end
 end
 ```
+
+See AGENTS.md §10's existing gotcha on
+`ash_authentication_phoenix` `LiveSession.generate_session/3`
+jti-stripping for the trap surface that motivated this ADR.
 
 Wire-up: every LiveView that previously used
 `AshAuthentication.Phoenix.LiveSession`'s default `on_mount` switches
@@ -145,6 +155,15 @@ and the implementing commit.
   freshly signed-in user, a test that asserts it gracefully handles
   a stale cookie, and a test that asserts it does not regress to
   `current_user=nil` after a `LiveView.connected?` boundary.
+- **Phoenix LiveView mounts twice per page load** — once over HTTP
+  (full conn context), once over WebSocket (only session arg + LV
+  params). Our `on_mount` receives `session` as an arg in both
+  invocations, so the read path is uniform. But tests **must** cover
+  both: `LiveView.connected?(socket) == false` (HTTP) and `== true`
+  (WebSocket). A bug that only manifests on the WebSocket mount
+  (e.g. session-arg shape difference, missing key) will pass a
+  single-mount test silently. Story 2.1 AC requires explicit
+  coverage of both paths.
 - If upstream eventually fixes `LiveSession.generate_session/3`,
   we have to decide whether to keep our loader (recommended) or
   remove it. Captured as a Phase 2 retrospective question.
