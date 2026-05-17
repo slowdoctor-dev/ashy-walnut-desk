@@ -38,6 +38,13 @@ config :ash_paper_trail,
 
 config :ashy_walnut_desk, :channel_adapters, [AshyWalnutDesk.Interaction.Adapters.Stub]
 
+# Framework default: registration disabled. Flipped to `true` in
+# `config/dev.exs` and `config/test.exs` for local workflow. In prod,
+# `config/runtime.exs` reads `AWD_REGISTRATION_ENABLED` (1/true). When
+# off, `Accounts.Changes.RegistrationGate` rejects magic-link sign-in
+# attempts from unknown emails — see F1 in the Phase 2 security review.
+config :ashy_walnut_desk, :registration_enabled?, false
+
 # Configures the endpoint
 config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   url: [host: "localhost"],

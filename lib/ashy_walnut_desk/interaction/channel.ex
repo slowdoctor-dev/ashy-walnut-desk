@@ -60,6 +60,11 @@ defmodule AshyWalnutDesk.Interaction.Channel do
     update :archive do
       accept([])
       require_atomic?(false)
+      # F9: archive implicitly disables. A future `Action.:execute` may
+      # short-circuit on `enabled? == false` (see F4); even today,
+      # archived channels showing `enabled?: true` to an admin via
+      # `:read_with_archived` is semantically misleading.
+      change(set_attribute(:enabled?, false))
       change(SoftDelete)
     end
 

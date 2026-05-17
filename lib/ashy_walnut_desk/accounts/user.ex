@@ -9,7 +9,7 @@ defmodule AshyWalnutDesk.Accounts.User do
     extensions: [AshAuthentication, AshPaperTrail.Resource]
 
   alias Ash.Changeset
-  alias AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdmin
+  alias AshyWalnutDesk.Accounts.Changes.{AssignFirstUserAdmin, RegistrationGate}
 
   postgres do
     table("users")
@@ -55,6 +55,7 @@ defmodule AshyWalnutDesk.Accounts.User do
 
       change(AshAuthentication.Strategy.MagicLink.SignInChange)
       change(AssignFirstUserAdmin)
+      change(RegistrationGate)
 
       metadata :token, :string do
         allow_nil?(false)
@@ -128,6 +129,21 @@ defmodule AshyWalnutDesk.Accounts.User do
       enabled?(true)
       token_resource(AshyWalnutDesk.Accounts.Token)
       signing_secret(AshyWalnutDesk.Accounts.User.JwtSecret)
+      # F3: session tokens persisted + presence-checked on every
+      # authenticated request. Without `store_all_tokens?(true)`, the
+      # session JWT issued at sign-in isn't written to the Token
+      # table at all — so `require_token_presence_for_authentication?`
+      # blocks every request (no row to find). Without
+      # `require_token_presence_for_authentication?(true)`, sign-out
+      # clears the cookie for *this* browser but a captured cookie
+      # remains valid until the JWT naturally expires (default 14
+      # days). Together they make sign-out → Token row revoke → all
+      # subsequent replays fail. Cost: one extra Token-table read per
+      # authenticated request, mitigated by the daily
+      # `:expunge_tokens` AshOban trigger keeping the table small
+      # (TO-3 resolution).
+      store_all_tokens?(true)
+      require_token_presence_for_authentication?(true)
     end
 
     strategies do

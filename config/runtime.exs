@@ -27,6 +27,16 @@ end
 config :ashy_walnut_desk, Oban, queues: [default: 10, messages: 10, ai: 5, reindex: 5, tokens: 5]
 
 if config_env() == :prod do
+  # F1 — registration gate. Default false; deployer opts in by setting
+  # AWD_REGISTRATION_ENABLED=1 once their allowlist / invite flow / SSO
+  # replacement is in place. Without this, the magic-link strategy
+  # admits any email to the `:operator` role on first sign-in, which is
+  # materially unsafe for the regulated-services target domain
+  # (BASELINE §3).
+  if System.get_env("AWD_REGISTRATION_ENABLED") in ~w(1 true) do
+    config :ashy_walnut_desk, :registration_enabled?, true
+  end
+
   identifier_hash_salt =
     System.get_env("IDENTIFIER_HASH_SALT") ||
       raise """

@@ -5,8 +5,14 @@ defmodule AshyWalnutDesk.Application do
 
   use Application
 
+  alias AshyWalnutDeskWeb.Plugs.RateLimit
+
   @impl true
   def start(_type, _args) do
+    # F2/A2: ensure the per-IP rate-limit ETS table exists before any
+    # request can reach `AshyWalnutDeskWeb.Plugs.RateLimit`. Idempotent.
+    RateLimit.start_table()
+
     children = [
       AshyWalnutDeskWeb.Telemetry,
       AshyWalnutDesk.Repo,

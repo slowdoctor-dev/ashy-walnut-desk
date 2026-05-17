@@ -11,7 +11,25 @@ defmodule AshyWalnutDeskWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {AshyWalnutDeskWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    # F6: defense-in-depth against XSS. Single XSS bug (e.g. a misused
+    # `raw/1`, an unescaped operator-authored draft string) becomes
+    # full operator-account takeover without CSP. Tailwind/LV emit
+    # inline styles (style-src 'unsafe-inline'); LV WebSocket needs
+    # ws:/wss: on connect-src. The deployer can override per their
+    # CDN / asset hosting in their own deployment repo.
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" =>
+        "default-src 'self'; " <>
+          "script-src 'self'; " <>
+          "style-src 'self' 'unsafe-inline'; " <>
+          "img-src 'self' data:; " <>
+          "font-src 'self' data:; " <>
+          "connect-src 'self' ws: wss:; " <>
+          "frame-ancestors 'none'; " <>
+          "form-action 'self'; " <>
+          "base-uri 'self'"
+    }
+
     plug :load_from_session
   end
 
@@ -19,6 +37,16 @@ defmodule AshyWalnutDeskWeb.Router do
     plug :accepts, ["json"]
     plug :load_from_bearer
     plug :set_actor, :user
+  end
+
+  # F2/A2: per-IP throttle for unauthenticated, abuse-prone auth
+  # routes (magic-link request + confirm). Conservative defaults:
+  # 10 requests per minute. Tune at deployer scale.
+  pipeline :auth_throttled do
+    plug AshyWalnutDeskWeb.Plugs.RateLimit,
+      scope: :auth,
+      max_requests: 10,
+      window_ms: 60_000
   end
 
   scope "/", AshyWalnutDeskWeb do
@@ -39,7 +67,7 @@ defmodule AshyWalnutDeskWeb.Router do
   end
 
   scope "/", AshyWalnutDeskWeb do
-    pipe_through :browser
+    pipe_through [:browser, :auth_throttled]
 
     auth_routes AuthController, AshyWalnutDesk.Accounts.User, path: "/auth"
     sign_out_route AuthController

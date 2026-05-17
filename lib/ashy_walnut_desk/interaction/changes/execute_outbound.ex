@@ -37,6 +37,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ExecuteOutbound do
     draft = Map.fetch!(changeset.context, :draft)
 
     with {:ok, channel} <- Ash.get(Channel, changeset.data.channel_id, authorize?: false),
+         :ok <- channel_enabled?(channel),
          {:ok, adapter} <- resolve_adapter(channel.adapter_module),
          message = build_outbound_message(draft),
          {:ok, payload} <- adapter.send_outbound(message, channel) do
@@ -52,6 +53,13 @@ defmodule AshyWalnutDesk.Interaction.Changes.ExecuteOutbound do
         |> Changeset.force_change_attribute(:error, error_text(error))
     end
   end
+
+  # F4: respect operator/admin takedown. `Channel.:disable` is the
+  # operational lever for vendor incidents, rate-limit responses,
+  # etc.; without this guard, an Action against a disabled channel
+  # still hits the adapter on execute.
+  defp channel_enabled?(%{enabled?: true}), do: :ok
+  defp channel_enabled?(_channel), do: {:error, "channel disabled"}
 
   defp build_outbound_message(draft) do
     %Message{

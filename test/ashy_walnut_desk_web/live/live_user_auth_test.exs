@@ -39,8 +39,13 @@ defmodule AshyWalnutDeskWeb.LiveUserAuthTest do
 
     conn = recycle(conn)
 
+    # `require_token_presence_for_authentication?(true)` (F3) stores
+    # the JWT under `"user_token"`. Pass it through to live_isolated
+    # in the same shape so the LV's on_mount can decode it.
     {:ok, view, _html} =
-      live_isolated(conn, ProbeLive, session: %{"parent_pid" => self(), "user" => session_user})
+      live_isolated(conn, ProbeLive,
+        session: %{"parent_pid" => self(), "user_token" => session_user}
+      )
 
     assert_receive {:probe_mount, false, loaded_email_http}
     assert to_string(loaded_email_http) == email
@@ -62,7 +67,7 @@ defmodule AshyWalnutDeskWeb.LiveUserAuthTest do
   test "load_from_cookie assigns nil when cookie token is malformed", %{conn: conn} do
     {:ok, view, _html} =
       live_isolated(conn, ProbeLive,
-        session: %{"parent_pid" => self(), "user" => "not-a-valid-session-subject"}
+        session: %{"parent_pid" => self(), "user_token" => "not-a-valid-jwt"}
       )
 
     assert_receive {:probe_mount, false, nil}
@@ -90,7 +95,11 @@ defmodule AshyWalnutDeskWeb.LiveUserAuthTest do
     conn = post(conn, ~p"/auth/user/magic_link", %{"user" => %{"token" => token}})
     assert redirected_to(conn) == "/"
 
-    session_user = get_session(conn, :user)
+    # With `require_token_presence_for_authentication?(true)` (F3),
+    # the session value is stored under `"user_token"`. AshAuthentication
+    # used to key on `:user` (subject string). Read both for forward
+    # compatibility.
+    session_user = get_session(conn, :user_token) || get_session(conn, :user)
     assert is_binary(session_user)
 
     {conn, session_user, email}

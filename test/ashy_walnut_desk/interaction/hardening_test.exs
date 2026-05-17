@@ -177,6 +177,30 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
     end
   end
 
+  describe "F4: Action.:execute respects channel.enabled? (security review)" do
+    test "disabled channel produces :failed action with a clear error and no outbound Message" do
+      %{admin: admin, operator: operator, channel: channel, draft: draft, action: action} =
+        seed_approved_chain()
+
+      backdate!(draft)
+
+      {:ok, _} = Ash.update(channel, %{}, action: :disable, actor: admin)
+
+      assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+      assert executed.status == :failed
+      assert is_binary(executed.error) and executed.error =~ "disabled"
+
+      outbound =
+        Message
+        |> Ash.Query.for_read(:read, %{}, authorize?: false)
+        |> Ash.Query.filter(expr(direction == :outbound))
+        |> Ash.read!(authorize?: false)
+
+      assert outbound == [],
+             "disabled channel still produced an outbound Message — F4 regression"
+    end
+  end
+
   describe "S3: adapter receives %Message{} struct, not a raw body string" do
     test "Action.execute writes outbound Message with conversation_id + approver populated" do
       %{operator: operator, conversation: conversation, draft: draft, action: action} =

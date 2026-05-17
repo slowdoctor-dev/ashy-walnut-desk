@@ -403,3 +403,84 @@ another except `changeset.context`.
    approval latency under load.
 
 **Tracking**: hardening-checklist concern; no ADR planned.
+
+---
+
+## TO-10 — `ConversationIdentityAlive` bypasses Identity read policy
+
+**Status**: active, accepted as single-tenant.
+
+**Decision**: `lib/ashy_walnut_desk/interaction/validations/conversation_identity_alive.ex`
+runs `Ash.get(Identity, identity_id, action: :read_with_archived,
+authorize?: false)` to detect archived identities before allowing a
+`Conversation.:open_conversation`. The `authorize?: false` skips the
+caller-actor's `Identity.:read` (or `:read_with_archived`) policy.
+
+**Why**: the validation needs to distinguish "doesn't exist" from
+"archived" — `:read_with_archived` is admin-only, but the
+operator-callable `:open_conversation` must still detect both. Two
+lookups (first `:read` with actor → if not found, second
+`:read_with_archived` with `authorize?: false`) would fix it cleanly
+but the validation runs synchronously on every `Conversation` create
+and double-queries the Identity table.
+
+**What we lose**:
+- An operator can open a `Conversation` against an `identity_id` they
+  might not be allowed to read (single-tenant: moot — operator can
+  read all Identities; multi-tenant: real horizontal-privilege bypass).
+
+**Compensating controls**:
+- Single-tenant deployment model (BASELINE §10) means all operators
+  see all identities today.
+- The `authorize?: false` query is read-only and doesn't expose any
+  data — it only short-circuits to a validation error string.
+
+**Revisit trigger**: first multi-tenant deployer hardening story.
+Split the lookup as described above (or add a typed
+`Identity.exists_for_tenant?/2` calculation that handles archived
+identities at the data layer with policy enforced).
+
+**Tracking**: surfaced as F7 in the Phase 2 security review; no ADR.
+
+---
+
+## TO-11 — `:viewer` role reads sensitive Draft and Compensation text
+
+**Status**: active, accepted as spec-governance decision pending.
+
+**Decision**: `lib/ashy_walnut_desk/interaction/draft.ex` and
+`lib/ashy_walnut_desk/interaction/compensation.ex` both admit
+`:viewer` to their `:read` policies. Their `body` /
+`compensation_body` attributes are marked `sensitive? true` (which
+controls log redaction / paper-trail redaction) but not gated to
+the operator+admin subset.
+
+**Why**: `:viewer` is intended as a full-fidelity read-only operator
+role (think on-call shadower, supervisor, auditor). Restricting
+their view to non-sensitive metadata would defeat the purpose of
+the role. BASELINE doesn't explicitly define the boundary, so the
+current policy is "viewer sees what operator sees, minus action
+verbs."
+
+**What we lose**:
+- A `:viewer` account can read draft bodies (operator-authored or
+  AI-drafted text in flight) and compensation plans (operator's
+  contingency text). For a compliance-focused deployment that
+  wants to expose `:viewer` to a narrower audience (e.g. external
+  auditor with limited clearance), the boundary may need to move.
+
+**Compensating controls**:
+- `:viewer` cannot mutate anything (no create/update/destroy actions
+  policy-allow `:viewer`).
+- `AshPaperTrail` `sensitive_attributes(:redact)` plus
+  `mixin(AshyWalnutDesk.AdminOnlyVersions)` means a `:viewer` cannot
+  read version-history changes — only current state.
+
+**Revisit trigger**: first deployer who needs a narrower
+`:viewer` role. Either tighten policies framework-wide (drop
+`:viewer` from sensitive resources) or split into
+`:viewer_minimal` / `:viewer_full` roles. New ADR at decision
+time; documented in BASELINE.
+
+**Tracking**: surfaced as F8 in the Phase 2 security review;
+spec-governance question, not a fix-now finding.
