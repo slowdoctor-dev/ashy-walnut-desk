@@ -2,22 +2,34 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
   @moduledoc """
   Orchestrates the inbound webhook → chain rows flow per ADR-024:
 
-  1. Resolve / create Identity by `primary_identifier` hash.
-  2. Thread or open `Conversation` on `(identity_id, channel_id)`.
-  3. Create internal `Inbox.:record_inbound`.
-  4. Create inbound `Message.:record_message` with
-     `direction: :inbound`.
+  1. Check `InboundDelivery` ledger for dedupe (story 3.4). If we
+     already processed this `(provider, provider_message_id)`,
+     return `{:ok, %{outcome: :duplicate}}` without re-processing.
+  2. Resolve / create Identity by `primary_identifier` hash.
+  3. Thread or open `Conversation` on `(identity_id, channel_id)`.
+  4. Create internal `Inbox.:record_inbound`.
+  5. Create inbound `Message.:record_message` with `:inbound`.
+  6. Record `InboundDelivery` with outcome `:processed`.
 
-  All steps run as the system actor inside a single DB transaction.
-  Idempotency / replay protection (the `InboundDelivery` ledger) is
-  added by story 3.4 — story 3.3 may double-process a Twilio retry.
+  Steps 2-6 run as the system actor inside a single DB transaction.
+  Failures record `InboundDelivery` with `:failed_intake` outside
+  the rolled-back transaction so admin can triage out-of-band.
 
-  See `specs/phase-3/architecture.md §6.2`.
+  See `specs/phase-3/architecture.md §6.2` and ADR-024 C1.
   """
 
   alias AshyWalnutDesk.Accounts.SystemActor
   alias AshyWalnutDesk.Identity.Identity
-  alias AshyWalnutDesk.Interaction.{Channel, Conversation, InboundMessage, Inbox, Message}
+
+  alias AshyWalnutDesk.Interaction.{
+    Channel,
+    Conversation,
+    InboundDelivery,
+    InboundMessage,
+    Inbox,
+    Message
+  }
+
   alias AshyWalnutDesk.Repo
 
   require Ash.Query
@@ -25,14 +37,17 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
 
   @ctx %{from_inbound_webhook: true}
 
+  @type intake_outcome :: :processed | :duplicate | :failed_intake
+
   @type intake_result ::
           {:ok,
            %{
-             identity: Identity.t(),
-             conversation: Conversation.t(),
-             inbox: Inbox.t(),
-             message: Message.t(),
-             provisional?: boolean()
+             optional(:identity) => Identity.t(),
+             optional(:conversation) => Conversation.t(),
+             optional(:inbox) => Inbox.t(),
+             optional(:message) => Message.t(),
+             optional(:provisional?) => boolean(),
+             outcome: intake_outcome()
            }}
           | {:error, atom()}
 
@@ -40,22 +55,42 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
   def intake(%InboundMessage{} = msg, %Channel{} = channel) do
     actor = SystemActor.ensure!()
 
+    case existing_delivery(msg) do
+      {:ok, %InboundDelivery{outcome: :processed}} ->
+        # Already-processed delivery → 2nd+ retry is a duplicate.
+        {:ok, %{outcome: :duplicate}}
+
+      {:ok, %InboundDelivery{outcome: previous_outcome}} ->
+        # Previous attempt failed (failed_intake). Don't auto-retry;
+        # surface the original outcome so admin can triage.
+        {:ok, %{outcome: previous_outcome}}
+
+      :missing ->
+        do_intake(msg, channel, actor)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp do_intake(%InboundMessage{} = msg, %Channel{} = channel, actor) do
     Repo.transaction(fn ->
       with {:ok, %{identity: identity, provisional?: provisional?}} <-
              resolve_identity(msg, actor),
            {:ok, conversation} <- thread_or_open(identity, channel, actor),
            {:ok, inbox} <- record_inbound_inbox(conversation, msg, actor),
-           {:ok, message} <- record_inbound_message(conversation, msg, actor) do
+           {:ok, message} <- record_inbound_message(conversation, msg, actor),
+           {:ok, _delivery} <- record_delivery(msg, :processed, nil) do
         %{
           identity: identity,
           conversation: conversation,
           inbox: inbox,
           message: message,
-          provisional?: provisional?
+          provisional?: provisional?,
+          outcome: :processed
         }
       else
-        {:error, reason} ->
-          Repo.rollback(reason)
+        {:error, reason} -> Repo.rollback(reason)
       end
     end)
     |> case do
@@ -63,6 +98,7 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
         {:ok, result}
 
       {:error, reason} when is_atom(reason) ->
+        record_delivery_outside_transaction(msg, reason)
         {:error, reason}
 
       {:error, reason} ->
@@ -73,7 +109,9 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
             if(is_exception(reason), do: Exception.message(reason), else: inspect(reason))
         )
 
-        {:error, classify(reason)}
+        classified = classify(reason)
+        record_delivery_outside_transaction(msg, classified)
+        {:error, classified}
     end
   end
 
@@ -144,10 +182,7 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
   defp record_inbound_inbox(%Conversation{} = conversation, %InboundMessage{} = msg, actor) do
     Ash.create(
       Inbox,
-      %{
-        conversation_id: conversation.id,
-        summary: inbox_summary(msg)
-      },
+      %{conversation_id: conversation.id, summary: inbox_summary(msg)},
       action: :record_inbound,
       actor: actor,
       authorize?: false,
@@ -190,4 +225,46 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
 
   defp classify(reason) when is_atom(reason), do: reason
   defp classify(_), do: :intake_failed
+
+  defp existing_delivery(%InboundMessage{provider: provider, provider_message_id: sid}) do
+    InboundDelivery
+    |> Ash.Query.filter(provider == ^provider)
+    |> Ash.Query.filter(provider_message_id == ^sid)
+    |> Ash.read(authorize?: false)
+    |> case do
+      {:ok, [delivery]} -> {:ok, delivery}
+      {:ok, []} -> :missing
+      {:ok, _multiple} -> {:error, :ambiguous_delivery_match}
+      {:error, _} -> :missing
+    end
+  end
+
+  defp record_delivery(
+         %InboundMessage{provider: provider, provider_message_id: sid},
+         outcome,
+         reason
+       ) do
+    Ash.create(
+      InboundDelivery,
+      %{
+        provider: provider,
+        provider_message_id: sid,
+        outcome: outcome,
+        intake_failure_reason: reason && to_string(reason)
+      },
+      action: :record_delivery,
+      authorize?: false,
+      context: @ctx
+    )
+  end
+
+  # Record a delivery row for an intake that failed inside the
+  # transaction (which rolled back). Runs in a fresh transaction so
+  # the failure is auditable even after rollback.
+  defp record_delivery_outside_transaction(msg, reason) do
+    case record_delivery(msg, :failed_intake, reason) do
+      {:ok, _} -> :ok
+      {:error, _} -> :ok
+    end
+  end
 end
