@@ -3,7 +3,7 @@
 **Phase**: 3
 **Estimate**: 2h
 **Depends on**: —
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -24,10 +24,10 @@ Phase 3 introduces real external sends and public webhook intake. Before adapter
 
 ## Acceptance criteria
 
-- [ ] AC1: `mix phase3.webhook.preflight` exists and fails fast (non-zero exit) when required Twilio env vars are missing. — Verify: `mix phase3.webhook.preflight; echo $?` (expect non-zero with missing env)
-- [ ] AC2: `mix phase3.webhook.preflight` passes when required Twilio env vars and a `twilio-sms` Channel row are present. — Verify: `TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_FROM_NUMBER=... mix phase3.webhook.preflight`
-- [ ] AC3: Phase 3 compliance envelope decisions are documented in phase specs (send-window policy input, consent prerequisite input, retry envelope input, dedupe retention input). — Verify: `rg -n "send-window|consent|retry envelope|dedupe" specs/phase-3/architecture.md specs/phase-3/requirements.md`
-- [ ] AC4: Story-level verification gates are documented for later stories (preflight as prerequisite command). — Verify: `rg -n "phase3.webhook.preflight" specs/phase-3/stories/story-3.*.md`
+- [x] AC1: `mix phase3.webhook.preflight` exists and fails fast (non-zero exit) when required Twilio env vars are missing. — Verify: `mix phase3.webhook.preflight; echo $?` (expect non-zero with missing env)
+- [x] AC2: `mix phase3.webhook.preflight` passes when required Twilio env vars and a `twilio-sms` Channel row are present. — Verify: `TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_FROM_NUMBER=... mix phase3.webhook.preflight`
+- [x] AC3: Phase 3 compliance envelope decisions are documented in phase specs (send-window policy input, consent prerequisite input, retry envelope input, dedupe retention input). — Verify: `rg -n "send-window|consent|retry envelope|dedupe" specs/phase-3/architecture.md specs/phase-3/requirements.md`
+- [x] AC4: Story-level verification gates are documented for later stories (preflight as prerequisite command). — Verify: `rg -n "phase3.webhook.preflight" specs/phase-3/stories/story-3.*.md`
 
 ## Files to create
 
