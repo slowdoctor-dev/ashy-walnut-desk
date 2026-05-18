@@ -11,6 +11,7 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
     inbox_opened: [:inbox_id, :conversation_id, :identity_id],
     draft_started: [:inbox_id, :draft_id],
     draft_approved: [:draft_id, :approved_at, :approved_by_id],
+    action_scheduled: [:action_id, :draft_id, :channel_id],
     action_executed: [:action_id, :draft_id, :channel_id, :outcome],
     compensation_registered: [:compensation_id, :action_id]
   }

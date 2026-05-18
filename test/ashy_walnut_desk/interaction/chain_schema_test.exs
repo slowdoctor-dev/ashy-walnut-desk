@@ -12,7 +12,7 @@ defmodule AshyWalnutDesk.Interaction.ChainSchemaTest do
 
     assert unique_index?(Action, [:draft_id])
 
-    assert [:pending, :executed, :failed, :rolled_back] ==
+    assert [:pending, :scheduled, :executed, :failed, :rolled_back] ==
              Info.attribute(Action, :status).constraints[:one_of]
 
     assert Draft == Info.relationship(Action, :draft).destination

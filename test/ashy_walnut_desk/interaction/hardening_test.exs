@@ -91,7 +91,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
       InteractionFixtures.backdate_approval!(draft)
 
-      assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+      executed = InteractionFixtures.execute_action!(action, operator)
       assert executed.status == :executed
 
       assert {:error, %Ash.Error.Invalid{} = err} =
@@ -178,7 +178,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
       {:ok, _} = Ash.update(channel, %{}, action: :disable, actor: admin)
 
-      assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+      executed = InteractionFixtures.execute_action!(action, operator)
       assert executed.status == :failed
       assert is_binary(executed.error) and executed.error =~ "disabled"
 
@@ -200,7 +200,7 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
 
       InteractionFixtures.backdate_approval!(draft)
 
-      assert {:ok, _executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+      _executed = InteractionFixtures.execute_action!(action, operator)
 
       outbound =
         Message

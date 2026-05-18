@@ -77,6 +77,11 @@ defmodule AshyWalnutDeskWeb.Phase2E2ETest do
 
       :timer.sleep(5_500)
 
+      # Story 3.5: countdown elapse fires `Action.:execute` which now
+      # enqueues an Oban job (ADR-023). Drain the outbound queue so the
+      # job runs synchronously and writes the worker-side chain rows.
+      Oban.drain_queue(queue: :outbound, with_recursion: true)
+
       draft = Draft |> Ash.Query.filter(inbox_id == ^inbox.id) |> Ash.read_one!(authorize?: false)
 
       action =
@@ -108,13 +113,14 @@ defmodule AshyWalnutDeskWeb.Phase2E2ETest do
       assert inbox.status == :executed
 
       assert {:ok, events} = AuditChain.walk(to_string(inbox.id))
-      assert length(events) == 5
+      assert length(events) == 6
 
       assert Enum.map(events, & &1.event_type) == [
                :inbox_opened,
                :draft_started,
                :draft_approved,
                :compensation_registered,
+               :action_scheduled,
                :action_executed
              ]
 

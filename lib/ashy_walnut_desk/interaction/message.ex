@@ -41,7 +41,14 @@ defmodule AshyWalnutDesk.Interaction.Message do
     end
 
     create :record_message do
-      accept([:conversation_id, :direction, :body, :sent_at, :approved_by_id])
+      accept([
+        :conversation_id,
+        :direction,
+        :body,
+        :sent_at,
+        :approved_by_id,
+        :outbound_idempotency_key
+      ])
 
       validate(fn changeset, _context ->
         case Ash.Changeset.get_attribute(changeset, :direction) do
@@ -132,6 +139,17 @@ defmodule AshyWalnutDesk.Interaction.Message do
     end
 
     attribute :deleted_at, :utc_datetime_usec do
+      allow_nil?(true)
+      public?(true)
+    end
+
+    # Story 3.5 / ADR-023. For outbound messages: carries the Action's
+    # `outbound_idempotency_key` so the Twilio adapter can pass it as
+    # the `Idempotency-Key` header. Stamped on the in-memory struct by
+    # `Jobs.OutboundSend.build_outbound_message/2` *before* the adapter
+    # call; persisted on the row by `Changes.RecordOutbound` after the
+    # adapter accepts. Nil for inbound messages.
+    attribute :outbound_idempotency_key, :string do
       allow_nil?(true)
       public?(true)
     end

@@ -42,8 +42,14 @@ defmodule AshyWalnutDesk.Interaction.AuditChainConcurrencyTest do
     )
     |> Enum.each(fn {:ok, :ok} -> :ok end)
 
+    # Drain the Oban outbound queue so worker-side ChainLink writes the
+    # `:action_executed` events for each scheduled job.
+    Oban.drain_queue(queue: :outbound, with_recursion: true)
+
     assert {:ok, events} = AuditChain.walk(to_string(inbox.id))
-    assert length(events) == 1 + 4 * n
+    # 1 inbox_opened + 5 per-draft events (draft_started, draft_approved,
+    # compensation_registered, action_scheduled, action_executed).
+    assert length(events) == 1 + 5 * n
 
     hashes = MapSet.new(Enum.map(events, & &1.hash))
     prev_hashes = events |> Enum.map(& &1.prev_hash) |> Enum.reject(&is_nil/1)

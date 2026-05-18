@@ -63,6 +63,7 @@ defmodule AshyWalnutDesk.InteractionFixtures do
     unique = System.unique_integer([:positive])
     slug = Keyword.get(opts, :slug, "stub-#{unique}")
     display_name = Keyword.get(opts, :display_name, "Stub #{unique}")
+    adapter_module = Keyword.get(opts, :adapter_module, Adapter.stub_module_string())
 
     {:ok, channel} =
       Ash.create(
@@ -70,7 +71,7 @@ defmodule AshyWalnutDesk.InteractionFixtures do
         %{
           slug: slug,
           display_name: display_name,
-          adapter_module: Adapter.stub_module_string()
+          adapter_module: adapter_module
         },
         action: :register_channel,
         actor: admin
@@ -165,7 +166,9 @@ defmodule AshyWalnutDesk.InteractionFixtures do
       Keyword.get_lazy(opts, :operator, fn -> AccountsFixtures.create_user(:operator) end)
 
     identity = seed_identity(admin)
-    channel = seed_channel(admin)
+
+    channel_opts = Keyword.take(opts, [:adapter_module, :slug, :display_name])
+    channel = Keyword.get_lazy(opts, :channel, fn -> seed_channel(admin, channel_opts) end)
     conversation = seed_conversation(operator, identity, channel)
     inbox = seed_inbox(operator, conversation)
     draft = seed_draft(operator, inbox)
@@ -204,5 +207,35 @@ defmodule AshyWalnutDesk.InteractionFixtures do
       action: :backdate_approval_for_tests,
       authorize?: false
     )
+  end
+
+  @doc """
+  Story 3.5: `Action.:execute` enqueues an Oban job (`Jobs.OutboundSend`)
+  per ADR-023. Tests that want the synchronous Phase 2 behavior call
+  this helper:
+
+  1. `Ash.update(action, %{}, action: :execute, actor: operator)`
+     — flips status `:pending → :scheduled` and inserts the job.
+  2. `Oban.drain_queue(queue: :outbound, with_recursion: true, with_safety: false)`
+     — runs the worker in the calling process (Oban `testing: :manual`).
+  3. Reloads the Action so callers see the final `:executed | :failed`
+     status.
+
+  Pass `:expect_failure` to skip the drain failure-loud option (worker
+  raises only on bugs, not on adapter `{:error, _}` results — those
+  surface on the Action row, not the job).
+  """
+  def execute_action!(action, actor, opts \\ []) do
+    expect_failure? = Keyword.get(opts, :expect_failure, false)
+
+    {:ok, scheduled} = Ash.update(action, %{}, action: :execute, actor: actor)
+
+    Oban.drain_queue(
+      queue: :outbound,
+      with_recursion: true,
+      with_safety: expect_failure?
+    )
+
+    Ash.get!(AshyWalnutDesk.Interaction.Action, scheduled.id, authorize?: false)
   end
 end

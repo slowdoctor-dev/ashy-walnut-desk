@@ -11,7 +11,7 @@ defmodule Mix.Tasks.AuditVerifyTest do
     %{operator: operator, draft: draft, action: action} = Fixtures.seed_approved_chain()
     Fixtures.backdate_approval!(draft, 6)
 
-    {:ok, _} = Ash.update(action, %{}, action: :execute, actor: operator)
+    _executed = Fixtures.execute_action!(action, operator)
 
     Mix.Task.reenable("audit.verify")
 

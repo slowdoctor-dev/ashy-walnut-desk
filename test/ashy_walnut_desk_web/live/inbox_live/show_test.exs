@@ -52,6 +52,9 @@ defmodule AshyWalnutDeskWeb.InboxLive.ShowTest do
 
     :timer.sleep(5500)
 
+    # Story 3.5: drain the Oban outbound queue (ADR-023).
+    Oban.drain_queue(queue: :outbound, with_recursion: true)
+
     action =
       Action
       |> Ash.Query.filter(draft_id in ^draft_ids_for_inbox(inbox.id))
