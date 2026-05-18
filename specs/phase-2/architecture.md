@@ -120,16 +120,23 @@ lib/ashy_walnut_desk/interaction/
 ├── action.ex                            # Ash.Resource (IMMUTABLE)
 ├── compensation.ex                      # Ash.Resource (IMMUTABLE)
 ├── audit_event.ex                       # Ash.Resource (IMMUTABLE)
-├── adapter.ex                           # behaviour
+├── adapter.ex                           # behaviour + stub_module_string/0
 ├── adapters/
 │   └── stub.ex                          # no-op implementation
 ├── changes/
 │   ├── countdown_guard.ex               # rejects execute if < 5s since approve
+│   ├── execute_outbound.ex              # adapter call + outbound Message + Inbox.mark_executed
 │   ├── chain_link.ex                    # writes AuditEvent + hash on transition
 │   └── compensation_at_approval.ex      # creates Compensation row at approve
+├── checks/
+│   ├── from_draft_approve.ex            # internal-only policy gate
+│   └── from_action_execute.ex           # internal-only policy gate
 ├── validations/
+│   ├── adapter_allowed.ex               # Channel.adapter_module allowlist
 │   ├── conversation_identity_alive.ex   # Conversation FK Identity must not be soft-deleted
-│   └── chain_ordering.ex                # enforces valid status transitions
+│   └── status_transition.ex             # `from:`-list validation on per-transition actions
+├── error_helpers.ex                     # error-to-string for change/validation msgs
+├── locks.ex                             # named FOR UPDATE escape hatches (TO-7 workaround)
 └── audit_chain.ex                       # hash + verify helpers
 ```
 
@@ -154,12 +161,15 @@ lib/ashy_walnut_desk_web/live/inbox_live/
 ├── new.ex                               # Operator-initiated Inbox row
 └── chain_component.ex                   # Four-stage chain visualization
 
-lib/ashy_walnut_desk_web/live/audit_live/
-└── chain.ex                             # Admin-only hash-chain viewer
+# lib/ashy_walnut_desk_web/live/audit_live/  [DEFERRED to TO-14]
+# └── chain.ex                           # Admin-only hash-chain viewer
 
 lib/ashy_walnut_desk_web/components/
 └── countdown_send_button.ex             # Reusable LiveComponent
                                           # (5s server-confirmed countdown)
+
+lib/ashy_walnut_desk_web/plugs/
+└── rate_limit.ex                        # F2/A2: per-IP throttle on auth scope
 ```
 
 ### New (Migrations / config)
@@ -291,13 +301,20 @@ The first stage of the chain. Operator-initiated in Phase 2.
 | `deleted_at` | utc_datetime_usec | — | Soft-delete |
 | timestamps | | | |
 
-Actions: `read` (filtered), `open_inbox` (create — `:open`),
-`start_drafting` (transitions to `:drafting`; writes AuditEvent),
-`mark_executed` (transitions to `:executed`; called only from
-`Action.execute`), `dismiss`, `archive`, `recover`,
-`read_with_archived`.
+Actions: `read` (filtered), `record_inbox` (create — sets
+`status: :open` via `set_attribute`, `recorded_by_id` via
+`relate_actor`; accept list is `[:conversation_id, :summary]` —
+operators cannot pre-stamp `:status` or `:recorded_by_id` from
+client input), `mark_drafting` (transitions `:open` → `:drafting`;
+validates the transition via `StatusTransition`), `mark_executed`
+(transitions to `:executed`; gated by `FromActionExecute` policy
+check so only `Action.execute` can fire it, not an operator
+directly), `dismiss` (`:open` | `:drafting` → `:dismissed`),
+`edit_summary` (free-text summary edit, no status change),
+`archive`, `recover`, `read_with_archived`.
 
-Policies: same role pattern as Conversation.
+Policies: same role pattern as Conversation, with `:mark_executed`
+restricted to the `FromActionExecute` context check.
 
 ### 3.5 `AshyWalnutDesk.Interaction.Draft`
 
@@ -321,17 +338,24 @@ The second stage. Operator-composed in Phase 2; AI-filled in Phase 4.
 
 Actions: `read` (filtered), `compose_draft` (create — `:drafting`;
 requires `body`; `compensation_body` settable but not required),
-`revise` (update body / compensation_body; only while `:drafting`),
-`approve` (transitions to `:approved`; sets `approved_at` +
-`approved_by_id` via `relate_actor` + `:approved_by`; **validates
-non-null `compensation_body` at this point per ADR-016** — operator
-can leave it blank during early iteration but cannot approve without
+`revise` (update body / compensation_body / AI metadata only — no
+`:status` in the accept list; `StatusTransition from: [:drafting]`
+ensures it only fires on still-drafting drafts), `approve`
+(transitions to `:approved`; sets `approved_at` + `approved_by_id`
+via `relate_actor(:approved_by)`; **validates non-null
+`compensation_body` at this point per ADR-016** — operator can
+leave it blank during early iteration but cannot approve without
 it; triggers `CompensationAtApproval` change which creates the
-Compensation row; writes AuditEvent), `reject`, `supersede`,
+Compensation row + stashes them on `changeset.context.chain_payload`
+for `ChainLink` to read; writes AuditEvent), `reject` (`:drafting`
+→ `:rejected`), `supersede` (`:drafting` → `:superseded`),
+`backdate_approval_for_tests` (test-only fixture action gated by
+`forbid_if always()`; tests use `authorize?: false`),
 `archive`, `recover`, `read_with_archived`.
 
-Policies: `:operator`+`:admin` compose / revise / approve / reject;
-`:admin` recover.
+Policies: `:operator`+`:admin` compose / revise / approve / reject /
+supersede; `:admin` recover; `:backdate_approval_for_tests` forbid-
+if-always.
 
 ### 3.6 `AshyWalnutDesk.Interaction.Action`
 
@@ -414,8 +438,8 @@ No `body`, `summary`, `subject`, or other free text ever lands in
 payload — those stay in the resource rows where PaperTrail's
 `:redact` already protects them.
 
-Actions: `read` (admin only), `record_event` (called only via
-`ChainLink` change; never from LV directly).
+Actions: `read` (admin only), `create` (default-named; called only
+via `ChainLink` change; never from LV directly).
 
 Policies: `:admin` read; only-from-internal-change for create. No
 update, no destroy, no archive.
@@ -495,14 +519,25 @@ designing for SMS/email/etc. now.
 ### 6.1 Open Inbox (operator-initiated)
 
 ```text
-Operator clicks "Open Inbox" on IdentityLive.Show
-  → POST handle_event "open_inbox" with %{identity_id, summary}
+Operator clicks "Open inbox" on IdentityLive.Show
+  → navigates to InboxLive.New with ?identity_id=<uuid>
+  → operator confirms (button "Create inbox")
+  → POST handle_event "create"
   → Conversation.open_conversation(identity_id, channel: stub_channel)
-  → Inbox.open_inbox(conversation_id, summary)
+  → Inbox.record_inbox(conversation_id, summary: "Operator initiated")
   → ChainLink change writes AuditEvent (event_type: :inbox_opened,
     prev_hash: nil, hash: sha256(canonical))
   → push_navigate to InboxLive.Show
 ```
+
+The two-step flow (Identity → InboxLive.New → confirm) keeps the
+chain entry point explicit and gives the operator a moment to
+abort. Earlier drafts of this spec described a single-event POST
+from `IdentityLive.Show`; the actual implementation routes through
+`InboxLive.New` because the create transaction needs more
+operator-facing detail than a `phx-click` payload comfortably
+carries (channel selection in Phase 3, optional initial summary,
+etc.).
 
 ### 6.2 Compose + approve Draft
 
@@ -608,9 +643,16 @@ in single-transaction mode.
    - `audit_events(prev_hash)` — for `mix audit.verify` walk
    Same-or-later timestamp than the Ash-generated `audit_events`
    create migration (indexes cannot exist before the table).
-3. Seed: insert the `stub` Channel row via a versioned data
-   migration (separate from Ash's structural migration so deployers
-   can replace the seed in their private repo).
+3. **Stub Channel row**: created at app boot by
+   `mix phase2.demo.seed` in dev/test (slug `"stub-phase2"`).
+   Deployers register their own Channel rows via
+   `Ash.create(Channel, …, action: :register_channel)` in their
+   own seed task — the framework deliberately does NOT ship a
+   prod data migration for `slug: "stub"` because deployers
+   shouldn't be coupled to a default channel they may want to
+   replace. Earlier drafts of this spec required a framework
+   migration; the C5 finding in the consistency review walked
+   that back.
 4. No backfill needed — Phase 1 tables remain untouched.
 
 Rollback: `mix ecto.rollback` to the pre-Phase-2 timestamp. No

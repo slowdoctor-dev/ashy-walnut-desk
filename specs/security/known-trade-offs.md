@@ -585,3 +585,50 @@ sign-in failures during the first-user window.
    pre-check that races more cleanly).
 
 **Tracking**: surfaced as S7 in the simplicity review; no ADR.
+
+---
+
+## TO-14 — `AuditLive.Chain` admin viewer deferred to Phase 3
+
+**Status**: active, accepted as scope reduction at Phase 2 closeout.
+
+**Decision**: `specs/phase-2/architecture.md §4` originally specced
+an admin-only LiveView (`AuditLive.Chain`) that would render a
+paginated view of `AuditEvent` rows for a given `chain_topic` with
+hash-continuity highlighting, bound to `mix audit.verify`'s output
+format. The Phase 2 acceptance criteria in `requirements.md §2` did
+NOT mandate the LiveView — only `mix audit.verify` exit-code-based
+verification, which exists. The viewer was never built.
+
+**Why**: the LV view was always convenience for admins
+investigating a `mix audit.verify` failure; the operator surface is
+the CLI exit code + emitted broken-event id. Phase 2 closeout
+prioritized the chain integrity itself (hash continuity under
+concurrent writes, payload canonicalization, `mix audit.verify`
+correctness) over the read-side UI.
+
+**What we lose**:
+- Admins investigating a chain break must drop into psql or
+  `iex -S mix` to inspect specific `audit_events` rows. The
+  `mix audit.verify` exit message identifies the broken row by id
+  but doesn't render the surrounding chain context.
+
+**Compensating controls**:
+- `mix audit.verify` exits non-zero on tampering with the broken
+  `chain_topic` + event id in the stderr message — sufficient for
+  CI alerting.
+- The `audit_events` table has `audit_events_chain_topic_inserted_at_idx`
+  + `audit_events_prev_hash_idx` indexes, so ad-hoc psql queries
+  along the chain are O(log n).
+- `AshyWalnutDesk.Interaction.AuditChain.walk/1` is a callable
+  helper for direct shell inspection.
+
+**Revisit trigger**: Phase 3 admin tooling pass. The first real
+channel adapter (Phase 3) introduces operational surfaces an admin
+will want to investigate — channel-specific failures, adapter
+response payloads, idempotency-key conflicts. Bundling
+`AuditLive.Chain` with that pass aligns the admin UX work into one
+phase rather than two scattered LiveView additions.
+
+**Tracking**: surfaced as C3 in the consistency review; no ADR.
+Architecture spec §2 module tree marks the deferral inline.

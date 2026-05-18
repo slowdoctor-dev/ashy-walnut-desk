@@ -94,12 +94,12 @@ msgstr ""
 msgid "Appointment scheduled."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:288
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:296
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:285
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:293
 #, elixir-autogen, elixir-format
 msgid "Archive this identity?"
 msgstr ""
@@ -110,13 +110,13 @@ msgstr ""
 msgid "Archived"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:393
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:401
 #, elixir-autogen, elixir-format
 msgid "Back to identities"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:330
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:385
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:338
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:393
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:236
 #, elixir-autogen, elixir-format
 msgid "Body"
@@ -149,7 +149,7 @@ msgstr ""
 msgid "Display name"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:278
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:286
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
@@ -169,7 +169,7 @@ msgstr ""
 msgid "Event recorded."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:365
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:373
 #, elixir-autogen, elixir-format
 msgid "Follow up"
 msgstr ""
@@ -212,7 +212,7 @@ msgstr ""
 msgid "Identity updated."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:364
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:372
 #, elixir-autogen, elixir-format
 msgid "Initial"
 msgstr ""
@@ -249,7 +249,7 @@ msgstr ""
 msgid "Notes summary"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:326
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:334
 #, elixir-autogen, elixir-format
 msgid "Occurred at"
 msgstr ""
@@ -259,24 +259,24 @@ msgstr ""
 msgid "Primary identifier"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:315
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:332
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:323
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:340
 #, elixir-autogen, elixir-format
 msgid "Record event"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:377
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:387
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:385
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:395
 #, elixir-autogen, elixir-format
 msgid "Record note"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:297
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:305
 #, elixir-autogen, elixir-format
 msgid "Recover"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:366
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:374
 #, elixir-autogen, elixir-format
 msgid "Recurring"
 msgstr ""
@@ -291,17 +291,17 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:370
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:378
 #, elixir-autogen, elixir-format
 msgid "Schedule"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:339
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:347
 #, elixir-autogen, elixir-format
 msgid "Schedule appointment"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:350
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:358
 #, elixir-autogen, elixir-format
 msgid "Scheduled for"
 msgstr ""
@@ -312,8 +312,8 @@ msgstr ""
 msgid "Show archived"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:329
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:356
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:337
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:364
 #, elixir-autogen, elixir-format
 msgid "Summary"
 msgstr ""
@@ -323,7 +323,7 @@ msgstr ""
 msgid "Timeline"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:362
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:370
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr ""
@@ -459,4 +459,9 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:47
 #, elixir-autogen, elixir-format
 msgid "pending"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/show.ex:278
+#, elixir-autogen, elixir-format
+msgid "Open inbox"
 msgstr ""
