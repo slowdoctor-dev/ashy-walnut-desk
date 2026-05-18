@@ -130,6 +130,61 @@ just phase2-screenshots       # in another — seeds demo data + captures PNGs
 
 Uses the same Python/Playwright setup as Phase 1.
 
+## Phase 3 deployer runbook — Twilio SMS
+
+Phase 3 ships the first real-channel adapter (Twilio SMS). A
+deployer activating the channel needs three things:
+
+1. **Twilio credentials in the environment.** Set the following on
+   the host (or in the deployer's private repo's `.env`):
+
+   ```bash
+   export TWILIO_ACCOUNT_SID=AC…
+   export TWILIO_AUTH_TOKEN=…
+   export TWILIO_FROM_NUMBER=+1…
+   ```
+
+   The Phoenix endpoint refuses to boot in `:prod` without these.
+
+2. **Register the channel.** Once an admin is signed in, register a
+   `Channel` row pointing at the Twilio adapter:
+
+   ```elixir
+   Ash.create!(
+     AshyWalnutDesk.Interaction.Channel,
+     %{
+       slug: "twilio-sms",
+       display_name: "Twilio SMS",
+       adapter_module: "AshyWalnutDesk.Interaction.Adapters.Twilio"
+     },
+     action: :register_channel,
+     actor: admin
+   )
+   ```
+
+3. **Run the preflight check.**
+
+   ```bash
+   mix phase3.webhook.preflight
+   ```
+
+   This Mix task exits non-zero if any of `TWILIO_ACCOUNT_SID`,
+   `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, or the
+   `Channel{slug: "twilio-sms"}` row is missing. Wire it into the
+   deploy script before the first outbound send goes live.
+
+4. **Webhook URL.** Configure Twilio's "Messaging webhook" URL to
+   `https://<your-host>/webhook/twilio`. The endpoint is throttled
+   to 60 req/min/IP (`:webhook` pipeline in `router.ex`) and rejects
+   any payload whose `X-Twilio-Signature` HMAC does not match
+   `TWILIO_AUTH_TOKEN`.
+
+Operational visibility for chain continuity lives at
+`/audit/chain` (admin only — see story 3.7). Verify chain integrity
+from the CLI any time with `mix audit.verify`.
+
+Architecture details: [`specs/phase-3/architecture.md`](specs/phase-3/architecture.md).
+
 ## AI tool compatibility
 
 This project is **LLM-agnostic**. Any AGENTS.md-compatible AI coding tool
