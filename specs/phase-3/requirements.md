@@ -68,14 +68,14 @@ Safety implications in scope:
 
 | # | Story | Estimate | Depends on | Status |
 |---|---|---|---|---|
-| 3.1 | Phase 3 entry gate + compliance envelope + secrets/bootstrap preflight | TBD | — | planned |
-| 3.2 | Adapter boundary hardening + contract conformance suite (Twilio + Echo fixture) | TBD | 3.1 | planned |
-| 3.3 | Inbound webhook endpoint + authenticity checks + Inbox/Identity/Conversation defaults | TBD | 3.2 | planned |
-| 3.4 | Idempotency/replay controls (inbound + outbound) + action-key contract | TBD | 3.2, 3.3 | planned |
-| 3.5 | Outbound Twilio execution + Oban retry/terminal failure semantics | TBD | 3.4 | planned |
-| 3.6 | Compensation invocation operator flow + countdown parity | TBD | 3.5 | planned |
-| 3.7 | `AuditLive.Chain` admin viewer + policy gate | TBD | 3.4, 3.5 | planned |
-| 3.8 | Webhook throttle + deployer docs + phase integration/regression gate | TBD | 3.1-3.7 | planned |
+| 3.1 | Phase 3 entry gate + compliance envelope + secrets/bootstrap preflight | 2h | — | ready |
+| 3.2 | Adapter boundary hardening + contract conformance suite (Twilio + Echo fixture) | 3h | 3.1 | planned |
+| 3.3 | Inbound webhook endpoint + authenticity checks + Inbox/Identity/Conversation defaults | 3h | 3.2 | planned |
+| 3.4 | Idempotency/replay controls (inbound + outbound) + action-key contract | 2h | 3.2, 3.3 | planned |
+| 3.5 | Outbound Twilio execution + Oban retry/terminal failure semantics | 3h | 3.4 | planned |
+| 3.6 | Compensation invocation operator flow + countdown parity | 2h | 3.5 | planned |
+| 3.7 | `AuditLive.Chain` admin viewer + policy gate | 3h | 3.4, 3.5 | planned |
+| 3.8 | Webhook throttle + deployer docs + phase integration/regression gate | 3h | 3.1-3.7 | planned |
 
 ## 5. Dependencies
 
