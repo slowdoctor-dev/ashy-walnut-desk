@@ -39,7 +39,7 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
   require Logger
 
-  alias AshyWalnutDesk.Interaction.{Action, Channel, Draft, Message}
+  alias AshyWalnutDesk.Interaction.{Action, Channel, Compensation, Draft, Message}
 
   @transient_backoff [30, 120, 600, 1800, 7200]
 
@@ -65,6 +65,25 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
       {:error, reason} ->
         terminal_fail(action_id, error_text(reason))
+    end
+  end
+
+  def perform(
+        %Oban.Job{args: %{"compensation_id" => compensation_id, "kind" => "compensation"}} = job
+      ) do
+    case load_compensation(compensation_id) do
+      {:ok, compensation, channel, draft} ->
+        run_compensation_send(job, compensation, channel, draft)
+
+      {:error, :compensation_not_found} ->
+        Logger.warning(
+          "Jobs.OutboundSend: compensation #{compensation_id} not found; treating as success"
+        )
+
+        :ok
+
+      {:error, reason} ->
+        terminal_fail_compensation(compensation_id, error_text(reason))
     end
   end
 
@@ -182,4 +201,122 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
   defp error_text(reason) when is_binary(reason), do: reason
   defp error_text(reason), do: inspect(reason)
+
+  # ────────────────────────────────────────────────────────────────
+  # Compensation branch (story 3.6)
+  # ────────────────────────────────────────────────────────────────
+
+  defp load_compensation(compensation_id) do
+    with {:ok, compensation} <- Ash.get(Compensation, compensation_id, authorize?: false),
+         {:ok, action} <- Ash.get(Action, compensation.action_id, authorize?: false),
+         {:ok, channel} <- Ash.get(Channel, action.channel_id, authorize?: false),
+         {:ok, draft} <- Ash.get(Draft, action.draft_id, load: [:inbox], authorize?: false) do
+      {:ok, compensation, channel, draft}
+    else
+      {:error, %Ash.Error.Invalid{}} -> {:error, :compensation_not_found}
+      {:error, %Ash.Error.Query.NotFound{}} -> {:error, :compensation_not_found}
+      other -> other
+    end
+  end
+
+  defp run_compensation_send(job, compensation, channel, draft) do
+    cond do
+      compensation.status in [:triggered, :failed, :completed] -> :ok
+      not channel.enabled? -> terminal_fail_compensation(compensation.id, "channel disabled")
+      true -> dispatch_compensation_attempt(job, compensation, channel, draft)
+    end
+  end
+
+  defp dispatch_compensation_attempt(job, compensation, channel, draft) do
+    message = build_compensation_message(compensation, draft)
+    adapter = Module.concat([channel.adapter_module])
+
+    adapter.send_outbound(message, channel)
+    |> handle_compensation_result(job, compensation, draft)
+  end
+
+  defp handle_compensation_result({:ok, payload}, _job, compensation, draft) do
+    case complete_compensation(compensation, draft, payload) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, error_text(reason)}
+    end
+  end
+
+  defp handle_compensation_result({:error, :transient}, job, compensation, _draft) do
+    if job.attempt >= job.max_attempts do
+      terminal_fail_compensation(compensation.id, "retries exhausted (transient)")
+    else
+      {:error, :transient}
+    end
+  end
+
+  defp handle_compensation_result({:error, :permanent}, _job, compensation, _draft) do
+    terminal_fail_compensation(compensation.id, "permanent adapter failure")
+  end
+
+  defp handle_compensation_result({:error, reason}, _job, compensation, _draft) do
+    terminal_fail_compensation(compensation.id, error_text(reason))
+  end
+
+  defp build_compensation_message(compensation, draft) do
+    %Message{
+      conversation_id: draft.inbox.conversation_id,
+      direction: :outbound,
+      body: compensation.body,
+      approved_by_id: draft.approved_by_id,
+      outbound_idempotency_key: compensation.outbound_idempotency_key
+    }
+  end
+
+  defp complete_compensation(compensation, draft, payload) do
+    with {:ok, updated} <-
+           Ash.update(
+             compensation,
+             %{adapter_response: payload},
+             action: :complete_send,
+             authorize?: false,
+             context: %{from_action_worker: true}
+           ),
+         {:ok, _message} <- create_compensation_outbound_message(compensation, draft, updated) do
+      {:ok, updated}
+    end
+  end
+
+  defp create_compensation_outbound_message(compensation, draft, updated_compensation) do
+    Ash.create(
+      Message,
+      %{
+        conversation_id: draft.inbox.conversation_id,
+        direction: :outbound,
+        body: compensation.body,
+        sent_at: updated_compensation.triggered_at,
+        approved_by_id: draft.approved_by_id,
+        outbound_idempotency_key: compensation.outbound_idempotency_key
+      },
+      action: :record_message,
+      authorize?: false,
+      context: %{from_action_execute: true}
+    )
+  end
+
+  defp terminal_fail_compensation(compensation_id, error_str) do
+    with {:ok, compensation} <- Ash.get(Compensation, compensation_id, authorize?: false),
+         {:ok, _} <-
+           Ash.update(
+             compensation,
+             %{error: error_str},
+             action: :fail_send,
+             authorize?: false,
+             context: %{from_action_worker: true}
+           ) do
+      :ok
+    else
+      {:error, reason} ->
+        Logger.error(
+          "Jobs.OutboundSend: terminal_fail_compensation could not mark Compensation #{compensation_id} failed: #{inspect(reason)}"
+        )
+
+        :ok
+    end
+  end
 end

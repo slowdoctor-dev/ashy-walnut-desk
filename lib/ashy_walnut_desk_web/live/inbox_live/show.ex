@@ -16,7 +16,13 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
       {:ok, inbox} ->
         {:ok,
          socket
-         |> assign(inbox: inbox, countdown_active?: false, seconds_left: 5)
+         |> assign(
+           inbox: inbox,
+           countdown_active?: false,
+           seconds_left: 5,
+           comp_countdown_active?: false,
+           comp_seconds_left: 5
+         )
          |> assign_draft_form()}
 
       {:error, _} ->
@@ -70,6 +76,36 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     end
   end
 
+  # Story 3.6: operator triggers the compensation send through the
+  # same two-step initiate_trigger → trigger flow that mirrors
+  # Action.:approve → Action.:execute.
+  @impl true
+  def handle_event("trigger_compensation", _params, socket) do
+    actor = socket.assigns.current_user
+
+    with %Compensation{status: :registered} = compensation <- socket.assigns.inbox.compensation,
+         true <- ready_for_compensation_trigger?(socket.assigns.inbox),
+         {:ok, triggering} <-
+           Ash.update(compensation, %{}, action: :initiate_trigger, actor: actor) do
+      Process.send_after(self(), {:comp_countdown_tick, triggering.id, 4}, 1_000)
+      Process.send_after(self(), {:execute_compensation, triggering.id}, 5_000)
+
+      {:noreply,
+       socket
+       |> assign(comp_countdown_active?: true, comp_seconds_left: 5)
+       |> reload()}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, gettext("Compensation not ready."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not initiate compensation."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Compensation not ready."))}
+    end
+  end
+
   @impl true
   def handle_info({:countdown_tick, action_id, seconds_left}, socket) do
     if current_action_id(socket) == action_id and seconds_left >= 0 and
@@ -105,8 +141,59 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     end
   end
 
+  @impl true
+  def handle_info({:comp_countdown_tick, compensation_id, seconds_left}, socket) do
+    current_id = current_compensation_id(socket)
+
+    if current_id == compensation_id and seconds_left >= 0 and
+         socket.assigns.comp_countdown_active? do
+      if seconds_left > 0 do
+        Process.send_after(
+          self(),
+          {:comp_countdown_tick, compensation_id, seconds_left - 1},
+          1_000
+        )
+      end
+
+      {:noreply, assign(socket, :comp_seconds_left, seconds_left)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:execute_compensation, compensation_id}, socket) do
+    actor = socket.assigns.current_user
+
+    case Ash.get(Compensation, compensation_id, actor: actor) do
+      {:ok, compensation} ->
+        _ = Ash.update(compensation, %{}, action: :trigger, actor: actor)
+
+        {:noreply,
+         socket
+         |> assign(comp_countdown_active?: false, comp_seconds_left: 0)
+         |> reload()}
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> assign(comp_countdown_active?: false)
+         |> put_flash(:error, gettext("Could not trigger compensation."))}
+    end
+  end
+
   defp current_action_id(socket),
     do: socket.assigns.inbox.action && socket.assigns.inbox.action.id
+
+  defp current_compensation_id(socket),
+    do: socket.assigns.inbox.compensation && socket.assigns.inbox.compensation.id
+
+  defp ready_for_compensation_trigger?(inbox) do
+    case {inbox.action, inbox.compensation} do
+      {%Action{status: :executed}, %Compensation{status: :registered}} -> true
+      _ -> false
+    end
+  end
 
   defp ready_for_approval?(draft) do
     draft.status == :drafting and String.trim(draft.body || "") != "" and
@@ -256,6 +343,50 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
           countdown_active?={@countdown_active?}
           seconds_left={@seconds_left}
         />
+      </section>
+
+      <section
+        :if={ready_for_compensation_trigger?(@inbox) or @comp_countdown_active?}
+        class="rounded border border-amber-200 bg-amber-50 p-4"
+        data-role="compensation-section"
+      >
+        <h2 class="text-base font-semibold text-amber-900">
+          {gettext("Compensation follow-up")}
+        </h2>
+        <p class="text-sm text-amber-800">
+          {gettext("Send the compensation message tied to this conversation.")}
+        </p>
+
+        <p :if={@comp_countdown_active?} class="mt-2 text-sm text-amber-900">
+          {gettext("Sending in %{seconds}s",
+            seconds: @comp_seconds_left
+          )}
+        </p>
+
+        <.button
+          :if={!@comp_countdown_active?}
+          data-role="trigger-compensation"
+          phx-click="trigger_compensation"
+          disabled={!ready_for_compensation_trigger?(@inbox)}
+        >
+          {gettext("Trigger compensation")}
+        </.button>
+      </section>
+
+      <section
+        :if={@inbox.compensation && @inbox.compensation.status in [:triggered, :failed]}
+        class="rounded border border-zinc-200 p-4"
+        data-role="compensation-outcome"
+      >
+        <h2 class="text-base font-semibold text-zinc-900">
+          {gettext("Compensation outcome")}
+        </h2>
+        <p class="text-sm text-zinc-700">
+          {gettext("Status")}: {to_string(@inbox.compensation.status)}
+        </p>
+        <p :if={@inbox.compensation.error} class="text-xs text-red-700">
+          {@inbox.compensation.error}
+        </p>
       </section>
     </div>
     """
