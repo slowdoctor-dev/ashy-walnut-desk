@@ -25,7 +25,7 @@ defmodule AshyWalnutDesk.Interaction.ChainSchemaTest do
     assert unique_index?(Compensation, [:action_id])
     assert Info.attribute(Compensation, :body).sensitive?
 
-    assert [:registered, :triggered, :completed, :failed] ==
+    assert [:registered, :triggering, :scheduled, :triggered, :completed, :failed] ==
              Info.attribute(Compensation, :status).constraints[:one_of]
   end
 

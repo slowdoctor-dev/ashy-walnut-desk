@@ -13,7 +13,9 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
     draft_approved: [:draft_id, :approved_at, :approved_by_id],
     action_scheduled: [:action_id, :draft_id, :channel_id],
     action_executed: [:action_id, :draft_id, :channel_id, :outcome],
-    compensation_registered: [:compensation_id, :action_id]
+    compensation_registered: [:compensation_id, :action_id],
+    compensation_scheduled: [:compensation_id, :action_id],
+    compensation_executed: [:compensation_id, :action_id, :outcome]
   }
 
   def canonicalize_payload(event_type, payload) when is_map(payload) do

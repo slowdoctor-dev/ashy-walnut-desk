@@ -170,6 +170,39 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
      ]}
   end
 
+  defp event_specs(_changeset, %Compensation{} = compensation, :compensation_scheduled) do
+    {:ok,
+     [
+       %{
+         event_type: :compensation_scheduled,
+         subject_kind: :compensation,
+         subject_id: compensation.id,
+         actor_id: nil,
+         payload: %{
+           compensation_id: compensation.id,
+           action_id: compensation.action_id
+         }
+       }
+     ]}
+  end
+
+  defp event_specs(_changeset, %Compensation{} = compensation, :compensation_executed) do
+    {:ok,
+     [
+       %{
+         event_type: :compensation_executed,
+         subject_kind: :compensation,
+         subject_id: compensation.id,
+         actor_id: nil,
+         payload: %{
+           compensation_id: compensation.id,
+           action_id: compensation.action_id,
+           outcome: outcome_for(compensation.status)
+         }
+       }
+     ]}
+  end
+
   defp event_specs(_changeset, _record, event_type),
     do: {:error, {:unsupported_chain_event, event_type}}
 
@@ -204,6 +237,13 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
 
   defp chain_topic_for(%Action{draft_id: draft_id}) do
     with {:ok, draft} <- Ash.get(Draft, draft_id, authorize?: false) do
+      {:ok, to_string(draft.inbox_id)}
+    end
+  end
+
+  defp chain_topic_for(%Compensation{action_id: action_id}) do
+    with {:ok, action} <- Ash.get(Action, action_id, authorize?: false),
+         {:ok, draft} <- Ash.get(Draft, action.draft_id, authorize?: false) do
       {:ok, to_string(draft.inbox_id)}
     end
   end
@@ -248,6 +288,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
   # Worker-driven `:action_executed` audit event reports terminal
   # outcome relative to the Action's final state.
   defp outcome_for(:executed), do: :ok
+  defp outcome_for(:triggered), do: :ok
   defp outcome_for(:failed), do: :failed
   defp outcome_for(other), do: other
 
