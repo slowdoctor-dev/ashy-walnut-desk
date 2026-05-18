@@ -50,7 +50,9 @@ def request_magic_link(page: Page, base_url: str, email: str) -> None:
 
 def extract_magic_link_url(page: Page, base_url: str) -> str:
   page.goto(urljoin(base_url, "/dev/mailbox"))
-  page.wait_for_load_state("networkidle")
+  page.wait_for_load_state("domcontentloaded")
+  # The Swoosh mailbox preview iframe loads asynchronously; give it a moment.
+  page.wait_for_selector("body", state="attached")
   body = page.content()
   matches = re.findall(r"https?://[^\s\"<]+/magic_link/[A-Za-z0-9._\-]+", body)
   if not matches:
@@ -61,8 +63,11 @@ def extract_magic_link_url(page: Page, base_url: str) -> str:
 def sign_in(page: Page, base_url: str, email: str) -> None:
   request_magic_link(page, base_url, email)
   href = extract_magic_link_url(page, base_url)
+  # MagicSignInLive is a LiveView with a long-running WebSocket; "networkidle"
+  # never fires. Wait for the token input element instead — it's hidden in
+  # the form but Playwright can still locate it.
   page.goto(href)
-  page.wait_for_load_state("networkidle")
+  page.wait_for_selector("input[name='user[token]']", state="attached", timeout=10_000)
 
   token_input = page.locator("input[name='user[token]']").first
   if token_input.count() > 0:
@@ -78,7 +83,7 @@ def sign_in(page: Page, base_url: str, email: str) -> None:
     if response.status >= 400:
       raise RuntimeError(f"magic-link confirm failed: {response.status} {response.text()}")
     page.goto(urljoin(base_url, "/"))
-    page.wait_for_load_state("networkidle")
+    page.wait_for_load_state("domcontentloaded")
 
 
 def shot(page: Page, out_dir: Path, name: str) -> None:
@@ -118,29 +123,30 @@ def main() -> int:
       page.wait_for_selector("[data-role='approve-draft']", state="visible")
       shot(page, out_dir, "02-inbox-drafting.png")
 
+      # LiveView is joined only when the main view element carries the
+      # `phx-connected` class. (Not `<body>`: Phoenix LV writes the class
+      # to the `[data-phx-main]` element, not the document body.)
+      # `liveSocket.isConnected()` is true earlier (raw WS up) but
+      # `phx-click` is a no-op until the per-view join completes.
+      page.wait_for_function(
+        "() => { const m = document.querySelector('[data-phx-main]'); "
+        "return m && m.classList.contains('phx-connected'); }",
+        timeout=15_000,
+      )
+
       approve = page.locator("[data-role='approve-draft']")
-      live_connected = page.evaluate(
-        "() => !!window.liveSocket && typeof window.liveSocket.isConnected === 'function' && window.liveSocket.isConnected()"
-      )
-      if not live_connected:
-        page.evaluate(
-          "() => { if (window.liveSocket && typeof window.liveSocket.connect === 'function') window.liveSocket.connect(); }"
-        )
-        try:
-          page.wait_for_function(
-            "() => !!window.liveSocket && typeof window.liveSocket.isConnected === 'function' && window.liveSocket.isConnected()",
-            timeout=5_000,
-          )
-        except PWTimeout:
-          pass
-      approve.click(force=True)
-      page.evaluate(
-        "() => { const btn = document.querySelector('[data-role=\"approve-draft\"]'); if (btn) btn.click(); }"
-      )
+      approve.click()
+
       try:
         page.wait_for_selector("[data-role='countdown-hint']", state="visible", timeout=10_000)
       except PWTimeout:
-        page.wait_for_selector("text=Sending in", state="visible", timeout=10_000)
+        # Surface the rendered chain/flash state so we can see WHY the
+        # countdown never appeared.
+        print("DEBUG: countdown-hint never appeared. Page snapshot:", flush=True)
+        print(page.locator("[data-role='draft-section']").inner_html()[:600], flush=True)
+        flash_html = page.locator("#flash-group").inner_html()[:300]
+        print(f"DEBUG flash: {flash_html}", flush=True)
+        raise
       # Capture in-flight countdown around mid-window to avoid edge race at 0s.
       time.sleep(2.5)
       shot(page, out_dir, "03-inbox-countdown.png")

@@ -5,31 +5,28 @@ defmodule AshyWalnutDeskWeb.Router do
 
   import AshAuthentication.Plug.Helpers
 
+  # F6: CSP for prod browsers. Dev / test serve CSP-less because:
+  # - Phoenix LiveReloader + LiveDashboard inject inline scripts +
+  #   iframes that violate `script-src 'self'` / `frame-ancestors
+  #   'none'` (silently — Chromium aborts the WS handshake with
+  #   "WebSocket is closed before connection established", which is
+  #   indistinguishable from a server-side close).
+  # - Playwright/headless Chromium honors CSP strictly. Screenshot
+  #   capture (`just phase2-screenshots`) needs WS / longpoll to
+  #   reach the server, which a `default-src 'self'` baseline
+  #   ironically blocks in some Chromium versions.
+  # Prod keeps the strict CSP; the deployer's prod env runs without
+  # LiveReloader / LiveDashboard so the inline-script problem is
+  # moot. See `secure_browser_headers/0` below.
+  @secure_browser_headers AshyWalnutDeskWeb.SecurityHeaders.browser_headers()
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {AshyWalnutDeskWeb.Layouts, :root}
     plug :protect_from_forgery
-    # F6: defense-in-depth against XSS. Single XSS bug (e.g. a misused
-    # `raw/1`, an unescaped operator-authored draft string) becomes
-    # full operator-account takeover without CSP. Tailwind/LV emit
-    # inline styles (style-src 'unsafe-inline'); LV WebSocket needs
-    # ws:/wss: on connect-src. The deployer can override per their
-    # CDN / asset hosting in their own deployment repo.
-    plug :put_secure_browser_headers, %{
-      "content-security-policy" =>
-        "default-src 'self'; " <>
-          "script-src 'self'; " <>
-          "style-src 'self' 'unsafe-inline'; " <>
-          "img-src 'self' data:; " <>
-          "font-src 'self' data:; " <>
-          "connect-src 'self' ws: wss:; " <>
-          "frame-ancestors 'none'; " <>
-          "form-action 'self'; " <>
-          "base-uri 'self'"
-    }
-
+    plug :put_secure_browser_headers, @secure_browser_headers
     plug :load_from_session
   end
 

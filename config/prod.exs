@@ -8,6 +8,10 @@ import Config
 config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json"
 
+# F6: enable strict CSP in prod (LiveReloader / LiveDashboard are
+# off in prod, so their inline-script CSP violations don't apply).
+config :ashy_walnut_desk, :strict_csp?, true
+
 # Do not print debug messages in production
 config :logger, level: :info
 

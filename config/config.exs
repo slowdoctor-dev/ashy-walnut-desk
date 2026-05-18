@@ -38,6 +38,13 @@ config :ash_paper_trail,
 
 config :ashy_walnut_desk, :channel_adapters, [AshyWalnutDesk.Interaction.Adapters.Stub]
 
+# F6: strict CSP is prod-only because Phoenix's dev tooling
+# (LiveReloader + LiveDashboard) injects inline scripts that
+# `script-src 'self'` blocks — Chromium silently aborts the
+# resulting LV WebSocket, breaking dev + headless screenshot capture.
+# Flipped on in `config/prod.exs`.
+config :ashy_walnut_desk, :strict_csp?, false
+
 # Framework default: registration disabled. Flipped to `true` in
 # `config/dev.exs` and `config/test.exs` for local workflow. In prod,
 # `config/runtime.exs` reads `AWD_REGISTRATION_ENABLED` (1/true). When
