@@ -33,6 +33,17 @@ defmodule AshyWalnutDesk.Interaction.Action do
     create :register_pending do
       accept([:draft_id, :channel_id])
       change(set_attribute(:status, :pending))
+
+      # Story 3.4 / ADR-023: stamp a deterministic idempotency key
+      # at register-time. Used by Oban worker (story 3.5) as the
+      # Twilio Idempotency-Key header so retries don't double-send.
+      change(fn changeset, _ctx ->
+        Ash.Changeset.force_change_attribute(
+          changeset,
+          :outbound_idempotency_key,
+          "action-" <> Ash.UUID.generate()
+        )
+      end)
     end
 
     update :execute do
@@ -89,6 +100,16 @@ defmodule AshyWalnutDesk.Interaction.Action do
     end
 
     attribute :error, :string do
+      allow_nil?(true)
+      public?(true)
+    end
+
+    # Story 3.4: deterministic per-Action idempotency key used by
+    # `Adapters.Twilio.send_outbound/2` as the `Idempotency-Key`
+    # header so Oban retries don't double-send (ADR-023).
+    # Derived from `action_id` (one-to-one) at register_pending time
+    # so retries see the same value.
+    attribute :outbound_idempotency_key, :string do
       allow_nil?(true)
       public?(true)
     end

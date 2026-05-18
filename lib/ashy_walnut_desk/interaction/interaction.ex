@@ -18,5 +18,6 @@ defmodule AshyWalnutDesk.Interaction do
     resource(AshyWalnutDesk.Interaction.Action)
     resource(AshyWalnutDesk.Interaction.Compensation)
     resource(AshyWalnutDesk.Interaction.AuditEvent)
+    resource(AshyWalnutDesk.Interaction.InboundDelivery)
   end
 end
