@@ -1,8 +1,16 @@
 defmodule AshyWalnutDesk.Interaction.Action do
   @moduledoc false
 
-  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CountdownGuard, ExecuteOutbound}
-  alias AshyWalnutDesk.Interaction.Checks.FromDraftApprove
+  alias Ash.Changeset
+
+  alias AshyWalnutDesk.Interaction.Changes.{
+    ChainLink,
+    CountdownGuard,
+    EnqueueOutboundSend,
+    RecordOutbound
+  }
+
+  alias AshyWalnutDesk.Interaction.Checks.{FromActionWorker, FromDraftApprove}
   alias AshyWalnutDesk.Interaction.Validations.StatusTransition
 
   use Ash.Resource,
@@ -35,10 +43,10 @@ defmodule AshyWalnutDesk.Interaction.Action do
       change(set_attribute(:status, :pending))
 
       # Story 3.4 / ADR-023: stamp a deterministic idempotency key
-      # at register-time. Used by Oban worker (story 3.5) as the
-      # Twilio Idempotency-Key header so retries don't double-send.
+      # at register-time. Used by Oban worker as the Twilio
+      # Idempotency-Key header so retries don't double-send.
       change(fn changeset, _ctx ->
-        Ash.Changeset.force_change_attribute(
+        Changeset.force_change_attribute(
           changeset,
           :outbound_idempotency_key,
           "action-" <> Ash.UUID.generate()
@@ -54,7 +62,34 @@ defmodule AshyWalnutDesk.Interaction.Action do
       # the outbound message.
       validate({StatusTransition, from: [:pending]})
       change(CountdownGuard)
-      change(ExecuteOutbound)
+      change(EnqueueOutboundSend)
+      change({ChainLink, event_type: :action_scheduled})
+    end
+
+    # Internal: invoked by `Jobs.OutboundSend` only (gated by
+    # `FromActionWorker` policy check). Persists the adapter response,
+    # transitions the Action to `:executed`, writes the outbound
+    # `Message` row + marks Inbox `:executed`, and emits the
+    # `:action_executed` audit event with `outcome: :ok`.
+    update :complete_outbound do
+      accept([:adapter_response])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:scheduled]})
+      change(set_attribute(:status, :executed))
+      change(set_attribute(:executed_at, &DateTime.utc_now/0))
+      change(RecordOutbound)
+      change({ChainLink, event_type: :action_executed})
+    end
+
+    # Internal: invoked by `Jobs.OutboundSend` on permanent adapter
+    # failure or exhausted retry budget. Stamps the error string,
+    # transitions to `:failed`, and emits the `:action_executed`
+    # audit event with `outcome: :failed`.
+    update :fail_outbound do
+      accept([:error])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:scheduled, :pending]})
+      change(set_attribute(:status, :failed))
       change({ChainLink, event_type: :action_executed})
     end
   end
@@ -78,6 +113,17 @@ defmodule AshyWalnutDesk.Interaction.Action do
     policy action(:register_pending) do
       authorize_if(FromDraftApprove)
     end
+
+    # Worker-only transitions. Operator cannot mark an Action
+    # `:executed` or `:failed` directly — only `Jobs.OutboundSend`
+    # sets the `from_action_worker` context flag.
+    policy action(:complete_outbound) do
+      authorize_if(FromActionWorker)
+    end
+
+    policy action(:fail_outbound) do
+      authorize_if(FromActionWorker)
+    end
   end
 
   attributes do
@@ -85,7 +131,7 @@ defmodule AshyWalnutDesk.Interaction.Action do
 
     attribute :status, :atom do
       allow_nil?(false)
-      constraints(one_of: [:pending, :executed, :failed, :rolled_back])
+      constraints(one_of: [:pending, :scheduled, :executed, :failed, :rolled_back])
       public?(true)
     end
 

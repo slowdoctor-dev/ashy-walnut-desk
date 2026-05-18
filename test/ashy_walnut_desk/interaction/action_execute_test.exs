@@ -12,7 +12,7 @@ defmodule AshyWalnutDesk.Interaction.ActionExecuteTest do
 
     Fixtures.backdate_approval!(draft, 6)
 
-    assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+    executed = Fixtures.execute_action!(action, operator)
     assert executed.status == :executed
     refute is_nil(executed.executed_at)
 

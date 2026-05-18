@@ -135,6 +135,23 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
     end
   end
 
+  defp event_specs(_changeset, %Action{} = action, :action_scheduled) do
+    {:ok,
+     [
+       %{
+         event_type: :action_scheduled,
+         subject_kind: :action,
+         subject_id: action.id,
+         actor_id: nil,
+         payload: %{
+           action_id: action.id,
+           draft_id: action.draft_id,
+           channel_id: action.channel_id
+         }
+       }
+     ]}
+  end
+
   defp event_specs(_changeset, %Action{} = action, :action_executed) do
     {:ok,
      [
@@ -147,7 +164,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
            action_id: action.id,
            draft_id: action.draft_id,
            channel_id: action.channel_id,
-           outcome: action.status
+           outcome: outcome_for(action.status)
          }
        }
      ]}
@@ -227,6 +244,12 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
   defp normalize_outcome(:executed), do: :executed
   defp normalize_outcome(:failed), do: :failed
   defp normalize_outcome(other), do: other
+
+  # Worker-driven `:action_executed` audit event reports terminal
+  # outcome relative to the Action's final state.
+  defp outcome_for(:executed), do: :ok
+  defp outcome_for(:failed), do: :failed
+  defp outcome_for(other), do: other
 
   defp maybe_normalize_outcome(payload) do
     case Map.fetch(payload, :outcome) do

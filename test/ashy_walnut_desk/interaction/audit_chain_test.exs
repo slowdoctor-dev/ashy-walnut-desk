@@ -4,22 +4,23 @@ defmodule AshyWalnutDesk.Interaction.AuditChainTest do
   alias AshyWalnutDesk.Interaction.AuditChain
   alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
-  test "chain writes five linked events for inbox -> draft -> approve -> execute" do
+  test "chain writes six linked events for inbox -> draft -> approve -> schedule -> execute" do
     %{operator: operator, inbox: inbox, draft: draft, action: action} =
       Fixtures.seed_approved_chain()
 
     Fixtures.backdate_approval!(draft, 6)
 
-    assert {:ok, _executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+    _executed = Fixtures.execute_action!(action, operator)
 
     assert {:ok, events} = AuditChain.walk(to_string(inbox.id))
-    assert length(events) == 5
+    assert length(events) == 6
 
     assert Enum.map(events, & &1.event_type) == [
              :inbox_opened,
              :draft_started,
              :draft_approved,
              :compensation_registered,
+             :action_scheduled,
              :action_executed
            ]
 
@@ -37,6 +38,7 @@ defmodule AshyWalnutDesk.Interaction.AuditChainTest do
           :inbox_opened,
           :draft_started,
           :draft_approved,
+          :action_scheduled,
           :action_executed,
           :compensation_registered
         ] do

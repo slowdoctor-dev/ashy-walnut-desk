@@ -25,7 +25,7 @@ defmodule AshyWalnutDesk.Interaction.CountdownGuardTest do
 
       Fixtures.backdate_approval!(draft, seconds)
 
-      assert {:ok, executed} = Ash.update(action, %{}, action: :execute, actor: operator)
+      executed = Fixtures.execute_action!(action, operator)
       assert executed.status == :executed
     end
   end
