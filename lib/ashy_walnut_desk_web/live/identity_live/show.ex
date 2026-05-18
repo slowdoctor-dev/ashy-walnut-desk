@@ -271,6 +271,14 @@ defmodule AshyWalnutDeskWeb.IdentityLive.Show do
         <:actions>
           <.link
             :if={can_write?(@current_user) and not archived?(@identity)}
+            navigate={~p"/inbox/new?identity_id=#{@identity.id}"}
+            data-role="open-inbox"
+            class="rounded border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100"
+          >
+            {gettext("Open inbox")}
+          </.link>
+          <.link
+            :if={can_write?(@current_user) and not archived?(@identity)}
             navigate={~p"/identities/#{@identity.id}/edit"}
             data-role="edit-identity"
             class="rounded border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100"

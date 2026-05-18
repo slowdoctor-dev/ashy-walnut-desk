@@ -37,7 +37,7 @@ defmodule AshyWalnutDesk.Interaction.DraftApprovalTest do
     assert Exception.message(error) =~ "is required when approving a draft"
 
     {:ok, rejected} =
-      Ash.update(draft, %{status: :rejected}, action: :revise, actor: operator)
+      Ash.update(draft, %{}, action: :reject, actor: operator)
 
     assert {:error, non_drafting_error} =
              Ash.update(rejected, %{compensation_body: "X"}, action: :approve, actor: operator)

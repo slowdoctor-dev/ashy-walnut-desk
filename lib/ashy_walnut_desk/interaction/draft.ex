@@ -11,7 +11,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CompensationAtApproval}
-  alias AshyWalnutDesk.Interaction.Validations.NotApprovingViaRevise
+  alias AshyWalnutDesk.Interaction.Validations.StatusTransition
 
   postgres do
     table("drafts")
@@ -57,11 +57,15 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change({ChainLink, event_type: :draft_started})
     end
 
+    # C2: per-transition status changes go through named actions
+    # (`:reject`, `:supersede`, `:approve`). `:revise` only edits
+    # body/compensation/AI metadata — no `:status` in the accept
+    # list, no chance of an operator backing into `:approved` via
+    # free-form attribute update.
     update :revise do
       accept([
         :body,
         :compensation_body,
-        :status,
         :ai_prompt,
         :ai_model,
         :ai_response,
@@ -69,7 +73,21 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       ])
 
       require_atomic?(false)
-      validate(NotApprovingViaRevise)
+      validate({StatusTransition, from: [:drafting]})
+    end
+
+    update :reject do
+      accept([])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:drafting]})
+      change(set_attribute(:status, :rejected))
+    end
+
+    update :supersede do
+      accept([])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:drafting]})
+      change(set_attribute(:status, :superseded))
     end
 
     update :approve do
@@ -121,6 +139,16 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     policy action(:revise) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:reject) do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:supersede) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
     end
