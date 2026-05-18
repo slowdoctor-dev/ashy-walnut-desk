@@ -36,7 +36,10 @@ config :ashy_walnut_desk, :session_options,
 config :ash_paper_trail,
   repo: AshyWalnutDesk.Repo
 
-config :ashy_walnut_desk, :channel_adapters, [AshyWalnutDesk.Interaction.Adapters.Stub]
+config :ashy_walnut_desk, :channel_adapters, [
+  AshyWalnutDesk.Interaction.Adapters.Stub,
+  AshyWalnutDesk.Interaction.Adapters.Twilio
+]
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that

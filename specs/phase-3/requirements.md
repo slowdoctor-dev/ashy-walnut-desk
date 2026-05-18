@@ -69,7 +69,7 @@ Safety implications in scope:
 | # | Story | Estimate | Depends on | Status |
 |---|---|---|---|---|
 | 3.1 | Phase 3 entry gate + compliance envelope + secrets/bootstrap preflight | 2h | — | done |
-| 3.2 | Adapter boundary hardening + contract conformance suite (Twilio + Echo fixture) | 3h | 3.1 | planned |
+| 3.2 | Adapter boundary hardening + contract conformance suite (Twilio + Echo fixture) | 3h | 3.1 | done |
 | 3.3 | Inbound webhook endpoint + authenticity checks + Inbox/Identity/Conversation defaults | 3h | 3.2 | planned |
 | 3.4 | Idempotency/replay controls (inbound + outbound) + action-key contract | 2h | 3.2, 3.3 | planned |
 | 3.5 | Outbound Twilio execution + Oban retry/terminal failure semantics | 3h | 3.4 | planned |

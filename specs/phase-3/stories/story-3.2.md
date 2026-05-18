@@ -3,7 +3,7 @@
 **Phase**: 3
 **Estimate**: 3h
 **Depends on**: 3.1
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -24,10 +24,10 @@ Phase 3 must ship Twilio while preserving future extensibility: later providers 
 
 ## Acceptance criteria
 
-- [ ] AC1: `Interaction.Adapter` behavior contract is explicit for inbound + outbound paths and used by both Twilio and Echo implementations. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_contract_test.exs`
-- [ ] AC2: A test-only `Interaction.Adapters.Echo` fixture exists and passes the same contract tests as Twilio. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_contract_test.exs --trace`
-- [ ] AC3: Contract tests assert extension-point isolation: adding a provider module + allowlist entry does not require edits to Twilio adapter module, `Interaction.Action`, or `Interaction.Compensation` resource action definitions. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_extension_isolation_test.exs`
-- [ ] AC4: Provider allowlist includes Twilio and can admit additional adapters by configuration only. — Verify: `mix test test/ashy_walnut_desk/interaction/adapter_allowed_test.exs`
+- [x] AC1: `Interaction.Adapter` behavior contract is explicit for inbound + outbound paths and used by both Twilio and Echo implementations. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_contract_test.exs`
+- [x] AC2: A test-only `Interaction.Adapters.Echo` fixture exists and passes the same contract tests as Twilio. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_contract_test.exs --trace`
+- [x] AC3: Contract tests assert extension-point isolation: adding a provider module + allowlist entry does not require edits to Twilio adapter module, `Interaction.Action`, or `Interaction.Compensation` resource action definitions. — Verify: `mix test test/ashy_walnut_desk/interaction/adapters/adapter_extension_isolation_test.exs`
+- [x] AC4: Provider allowlist includes Twilio and can admit additional adapters by configuration only. — Verify: `mix test test/ashy_walnut_desk/interaction/adapter_allowed_test.exs`
 
 ## Files to create
 
