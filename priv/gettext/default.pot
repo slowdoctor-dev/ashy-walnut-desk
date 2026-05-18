@@ -159,6 +159,7 @@ msgstr ""
 msgid "Edit identity"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:140
 #: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:40
 #, elixir-autogen, elixir-format
 msgid "Event"
@@ -502,6 +503,7 @@ msgstr ""
 msgid "Sending in %{seconds}s"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:139
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:385
 #, elixir-autogen, elixir-format
 msgid "Status"
@@ -510,4 +512,59 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:372
 #, elixir-autogen, elixir-format
 msgid "Trigger compensation"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:122
+#, elixir-autogen, elixir-format
+msgid "%{count} events"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:90
+#, elixir-autogen, elixir-format
+msgid "Admin only — read-only viewer"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:132
+#, elixir-autogen, elixir-format
+msgid "All topics"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:142
+#, elixir-autogen, elixir-format
+msgid "At"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:88
+#, elixir-autogen, elixir-format
+msgid "Audit chain"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:95
+#, elixir-autogen, elixir-format
+msgid "Chain topics"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:143
+#, elixir-autogen, elixir-format
+msgid "Hash"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:98
+#, elixir-autogen, elixir-format
+msgid "No chain topics yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:109
+#, elixir-autogen, elixir-format
+msgid "Open"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:141
+#, elixir-autogen, elixir-format
+msgid "Subject"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:119
+#, elixir-autogen, elixir-format
+msgid "Topic"
 msgstr ""

@@ -76,6 +76,12 @@ defmodule AshyWalnutDeskWeb.Router do
       live "/inbox", InboxLive.Index, :index
       live "/inbox/new", InboxLive.New, :new
       live "/inbox/:id", InboxLive.Show, :show
+
+      # Story 3.7: admin-only audit-chain viewer (resolves TO-14).
+      # `AuditLive.Chain` additionally enforces `:admin_required` on
+      # its own `on_mount` stack, so non-admin authenticated users
+      # are redirected back to `/sign-in`.
+      live "/audit/chain", AuditLive.Chain, :index
     end
   end
 
