@@ -5,6 +5,7 @@ defmodule AshyWalnutDesk.Application do
 
   use Application
 
+  alias AshyWalnutDesk.Accounts.SystemActor
   alias AshyWalnutDeskWeb.Plugs.RateLimit
 
   @impl true
@@ -32,7 +33,17 @@ defmodule AshyWalnutDesk.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: AshyWalnutDesk.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # ADR-024: the inbound-webhook system actor must exist before
+    # any /webhook/twilio request can land. The Repo child started
+    # above; this runs after it's up.
+    case result do
+      {:ok, _} -> _ = SystemActor.ensure!()
+      _ -> :noop
+    end
+
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration

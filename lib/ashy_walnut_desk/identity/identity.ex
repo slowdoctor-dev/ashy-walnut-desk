@@ -11,6 +11,8 @@ defmodule AshyWalnutDesk.Identity.Identity do
 
   alias AshyWalnutDesk.Identity.Changes.HashPrimaryIdentifier
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
+  alias AshyWalnutDesk.Identity.ProvisionalNamer
+  alias AshyWalnutDesk.Interaction.Checks.FromInboundWebhook
 
   postgres do
     table("identities")
@@ -43,6 +45,37 @@ defmodule AshyWalnutDesk.Identity.Identity do
         allow_nil?(false)
         sensitive?(true)
       end
+
+      change(relate_actor(:created_by))
+      change(HashPrimaryIdentifier)
+    end
+
+    # ADR-024: internal-only. Called from `Interaction.InboundIntake`
+    # when an inbound webhook arrives from an unknown identifier.
+    # Actor is the system actor; display name is deterministic via
+    # `ProvisionalNamer.name/1`.
+    create :register_provisional do
+      accept([])
+
+      argument :primary_identifier, :string do
+        allow_nil?(false)
+        sensitive?(true)
+      end
+
+      change(fn changeset, _ctx ->
+        case Ash.Changeset.get_argument(changeset, :primary_identifier) do
+          nil ->
+            changeset
+
+          raw ->
+            display = ProvisionalNamer.name(to_string(raw))
+
+            changeset
+            |> Ash.Changeset.force_change_attribute(:display_name, display)
+            |> Ash.Changeset.force_change_attribute(:provisional?, true)
+            |> Ash.Changeset.force_change_attribute(:discovered_via, :inbound_webhook)
+        end
+      end)
 
       change(relate_actor(:created_by))
       change(HashPrimaryIdentifier)
@@ -81,6 +114,10 @@ defmodule AshyWalnutDesk.Identity.Identity do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
+    policy action(:register_provisional) do
+      authorize_if(FromInboundWebhook)
+    end
+
     policy action(:update_profile) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
@@ -114,6 +151,21 @@ defmodule AshyWalnutDesk.Identity.Identity do
     attribute :notes_summary, :string do
       allow_nil?(true)
       sensitive?(true)
+      public?(true)
+    end
+
+    # ADR-024: true when the Identity row was auto-created from an
+    # inbound webhook with no prior operator confirmation. Operator
+    # can promote via `:update_profile`.
+    attribute :provisional?, :boolean do
+      allow_nil?(false)
+      default(false)
+      public?(true)
+    end
+
+    attribute :discovered_via, :atom do
+      allow_nil?(true)
+      constraints(one_of: [:inbound_webhook])
       public?(true)
     end
 

@@ -46,6 +46,22 @@ defmodule AshyWalnutDeskWeb.Router do
       window_ms: 60_000
   end
 
+  # Phase 3 / story 3.3: public webhook endpoint. No browser
+  # session, no CSRF (Twilio doesn't carry a CSRF token);
+  # signature verification is the auth boundary.
+  # Per-IP rate limit + signature verification are independent
+  # protections; the rate limit absorbs flood/abuse while the
+  # signature gate rejects forged payloads.
+  pipeline :webhook do
+    plug :accepts, ["html", "json"]
+    plug Plug.Parsers, parsers: [:urlencoded, :json], pass: ["*/*"], json_decoder: Jason
+
+    plug AshyWalnutDeskWeb.Plugs.RateLimit,
+      scope: :webhook,
+      max_requests: 60,
+      window_ms: 60_000
+  end
+
   scope "/", AshyWalnutDeskWeb do
     pipe_through :browser
 
@@ -61,6 +77,12 @@ defmodule AshyWalnutDeskWeb.Router do
       live "/inbox/new", InboxLive.New, :new
       live "/inbox/:id", InboxLive.Show, :show
     end
+  end
+
+  scope "/webhook", AshyWalnutDeskWeb.Webhook do
+    pipe_through :webhook
+
+    post "/twilio", TwilioController, :receive_inbound
   end
 
   scope "/", AshyWalnutDeskWeb do

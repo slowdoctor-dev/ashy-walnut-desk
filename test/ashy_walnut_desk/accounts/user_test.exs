@@ -20,9 +20,12 @@ defmodule AshyWalnutDesk.Accounts.UserTest do
     assert user2.email_hash == expected
   end
 
-  test "roles include admin/operator/viewer enum" do
+  test "roles include admin/operator/viewer/system enum" do
+    # `:system` added in story 3.3 (ADR-024) for the inbound-webhook
+    # system actor. Magic-link sign-in is blocked for `system+%`
+    # addresses by `RegistrationGate`.
     attr = Info.attribute(User, :role)
-    assert attr.constraints[:one_of] == [:admin, :operator, :viewer]
+    assert attr.constraints[:one_of] == [:admin, :operator, :viewer, :system]
   end
 
   test "unauthenticated can request magic link" do

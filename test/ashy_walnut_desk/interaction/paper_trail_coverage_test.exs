@@ -3,7 +3,7 @@ defmodule AshyWalnutDesk.Interaction.PaperTrailCoverageTest do
 
   require Ash.Query
 
-  alias AshyWalnutDesk.Accounts.User
+  alias AshyWalnutDesk.Accounts.{SystemActor, User}
   alias AshyWalnutDesk.Identity.Identity
   alias AshyWalnutDesk.Interaction.{Channel, Conversation, Draft, Inbox, Message}
 
@@ -14,12 +14,17 @@ defmodule AshyWalnutDesk.Interaction.PaperTrailCoverageTest do
     {:ok, channel} = create_channel(admin)
     {:ok, conversation} = create_conversation(admin, identity, channel)
 
+    # ADR-024: inbound rows require the webhook intake path.
+    system_actor = SystemActor.ensure!()
+
     {:ok, message} =
       Ash.create(
         Message,
         %{conversation_id: conversation.id, direction: :inbound, body: "sensitive-body"},
         action: :record_message,
-        actor: admin
+        actor: system_actor,
+        authorize?: false,
+        context: %{from_inbound_webhook: true}
       )
 
     {:ok, _archived_message} = Ash.update(message, %{}, action: :archive, actor: admin)
