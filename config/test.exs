@@ -37,6 +37,16 @@ config :phoenix_live_view,
 
 config :ashy_walnut_desk, AshyWalnutDesk.Mailer, adapter: Swoosh.Adapters.Test
 
+# Test-only: extend the prod allowlist with the Echo adapter so the
+# adapter-contract conformance suite (story 3.2) can drive both
+# Twilio and Echo through the same scenarios. Echo is forbidden in
+# prod by virtue of NOT being in config/config.exs's allowlist.
+config :ashy_walnut_desk, :channel_adapters, [
+  AshyWalnutDesk.Interaction.Adapters.Stub,
+  AshyWalnutDesk.Interaction.Adapters.Twilio,
+  AshyWalnutDesk.Interaction.Adapters.Echo
+]
+
 # Existing magic-link / fixture tests register fresh users. Tests that
 # pin the F1 gate flip this back to false on a per-test basis.
 config :ashy_walnut_desk, :registration_enabled?, true
