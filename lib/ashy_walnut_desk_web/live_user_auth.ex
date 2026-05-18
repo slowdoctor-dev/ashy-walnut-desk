@@ -56,6 +56,19 @@ defmodule AshyWalnutDeskWeb.LiveUserAuth do
     end
   end
 
+  # Story 3.7: gates admin-only LV routes (e.g. `AuditLive.Chain`).
+  # Sends non-admin or unauthenticated users to the sign-in page.
+  # Composes with `:load_from_cookie` upstream — assumes
+  # `current_user` is already assigned.
+  def on_mount(:admin_required, _params, session, socket) do
+    socket = assign_new(socket, :current_user, fn -> load_user(session) end)
+
+    case socket.assigns.current_user do
+      %User{role: :admin} -> {:cont, socket}
+      _ -> {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/sign-in")}
+    end
+  end
+
   defp load_user(session) when is_map(session) do
     case AshAuthHelpers.authenticate_resource_from_session(
            User,

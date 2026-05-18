@@ -44,14 +44,50 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
   end
 
   def walk(chain_topic) do
-    events =
-      AuditEvent
-      |> Ash.Query.for_read(:read, %{}, authorize?: false)
-      |> Ash.Query.filter(expr(chain_topic == ^chain_topic))
-      |> Ash.Query.sort([{:inserted_at, :asc}, {:id, :asc}])
-      |> Ash.read!(authorize?: false)
+    walk_events(load_events(chain_topic))
+  end
 
-    walk_events(events)
+  @doc """
+  Per-event hash-continuity check for the admin LV viewer (story 3.7).
+
+  Returns a list of `{event, status}` tuples where `status` is
+  `:ok` (computed hash matches the stored hash AND chains from the
+  prior event's hash), or `:broken` (mismatch — corresponds to the
+  same condition `mix audit.verify` exits non-zero on).
+
+  Unlike `walk/1`, this never halts: the LV needs to show subsequent
+  rows after a broken one with a "broken upstream" badge.
+  """
+  def walk_with_status(chain_topic) do
+    chain_topic
+    |> load_events()
+    |> Enum.map_reduce({:ok, nil}, fn event, {chain_state, prev_hash} ->
+      status = continuity_status(event, prev_hash, chain_state)
+      next_state = {if(status == :ok, do: :ok, else: :broken), event.hash}
+      {{event, status}, next_state}
+    end)
+    |> elem(0)
+  end
+
+  defp continuity_status(_event, _prev_hash, :broken), do: :broken
+
+  defp continuity_status(event, prev_hash, :ok) do
+    with {:ok, canonical} <- canonicalize_payload(event.event_type, event.payload),
+         {:ok, json} <- Jason.encode(canonical),
+         computed <- compute_hash(prev_hash, json),
+         true <- computed == event.hash do
+      :ok
+    else
+      _ -> :broken
+    end
+  end
+
+  defp load_events(chain_topic) do
+    AuditEvent
+    |> Ash.Query.for_read(:read, %{}, authorize?: false)
+    |> Ash.Query.filter(expr(chain_topic == ^chain_topic))
+    |> Ash.Query.sort([{:inserted_at, :asc}, {:id, :asc}])
+    |> Ash.read!(authorize?: false)
   end
 
   def all_chain_topics do
