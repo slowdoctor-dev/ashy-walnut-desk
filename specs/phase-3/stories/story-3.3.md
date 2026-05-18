@@ -3,7 +3,7 @@
 **Phase**: 3
 **Estimate**: 3h
 **Depends on**: 3.2
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -24,11 +24,11 @@ Inbound is a new public entry point. Phase 3 requires deterministic, auditable i
 
 ## Acceptance criteria
 
-- [ ] AC1: `POST /webhook/twilio` validates Twilio signature and rejects invalid signatures with non-success response; invalid attempts are auditable. — Verify: `mix test test/ashy_walnut_desk_web/controllers/webhook/twilio_signature_test.exs`
-- [ ] AC2: Valid webhook intake creates/links `Inbox`, `Conversation`, and inbound `Message` via named Ash actions only, using the internal inbound Inbox path (not operator `record_inbox`). — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_intake_test.exs`
-- [ ] AC3: Identity default behavior is enforced: existing identifier links existing Identity; unknown identifier creates deterministic provisional Identity; malformed/ambiguous signal lands in deterministic auditable intake-failure path. — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_identity_policy_test.exs`
-- [ ] AC4: Threading default is enforced: newest non-archived `(identity_id, channel_id)` Conversation is reused, otherwise new Conversation is created. — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_threading_test.exs`
-- [ ] AC5: System-actor/inbound-only policy boundaries are enforced (inbound path can create inbox; same actor/path cannot execute send actions). — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_actor_policy_test.exs`
+- [x] AC1: `POST /webhook/twilio` validates Twilio signature and rejects invalid signatures with non-success response; invalid attempts are auditable. — Verify: `mix test test/ashy_walnut_desk_web/controllers/webhook/twilio_signature_test.exs`
+- [x] AC2: Valid webhook intake creates/links `Inbox`, `Conversation`, and inbound `Message` via named Ash actions only, using the internal inbound Inbox path (not operator `record_inbox`). — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_intake_test.exs`
+- [x] AC3: Identity default behavior is enforced: existing identifier links existing Identity; unknown identifier creates deterministic provisional Identity; malformed/ambiguous signal lands in deterministic auditable intake-failure path. — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_identity_policy_test.exs`
+- [x] AC4: Threading default is enforced: newest non-archived `(identity_id, channel_id)` Conversation is reused, otherwise new Conversation is created. — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_threading_test.exs`
+- [x] AC5: System-actor/inbound-only policy boundaries are enforced (inbound path can create inbox; same actor/path cannot execute send actions). — Verify: `mix test test/ashy_walnut_desk/interaction/inbound_actor_policy_test.exs`
 
 ## Files to create
 

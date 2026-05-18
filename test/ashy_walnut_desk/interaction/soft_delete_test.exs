@@ -1,6 +1,7 @@
 defmodule AshyWalnutDesk.Interaction.SoftDeleteTest do
   use AshyWalnutDesk.DataCase, async: false
 
+  alias AshyWalnutDesk.Accounts.SystemActor
   alias AshyWalnutDesk.AccountsFixtures
   alias AshyWalnutDesk.Interaction.Message
   alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
@@ -12,12 +13,18 @@ defmodule AshyWalnutDesk.Interaction.SoftDeleteTest do
     channel = Fixtures.seed_channel(admin)
     conversation = Fixtures.seed_conversation(operator, identity, channel, subject: "subject")
 
+    # ADR-024: inbound rows require the webhook intake path. Use
+    # the system actor + context flag for fixture purposes.
+    system_actor = SystemActor.ensure!()
+
     {:ok, message} =
       Ash.create(
         Message,
         %{conversation_id: conversation.id, direction: :inbound, body: "inbound"},
         action: :record_message,
-        actor: operator
+        actor: system_actor,
+        authorize?: false,
+        context: %{from_inbound_webhook: true}
       )
 
     inbox = Fixtures.seed_inbox(operator, conversation, summary: "summary")

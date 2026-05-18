@@ -54,6 +54,18 @@ defmodule AshyWalnutDesk.Interaction.Message do
                message: "outbound messages must be created through the Action.execute path"}
             end
 
+          :inbound ->
+            # ADR-024: inbound rows are intake-only — they cannot
+            # be created via an operator path. Webhook controller
+            # passes `from_inbound_webhook: true`.
+            if Map.get(changeset.context, :from_inbound_webhook, false) do
+              :ok
+            else
+              {:error,
+               field: :direction,
+               message: "inbound messages must be created through the webhook intake path"}
+            end
+
           _ ->
             :ok
         end

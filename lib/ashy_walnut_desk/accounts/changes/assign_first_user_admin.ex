@@ -5,6 +5,8 @@ defmodule AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdmin do
 
   alias Ash.Changeset
   alias AshyWalnutDesk.Accounts.User
+  require Ash.Query
+  import Ash.Expr
 
   @retry_context_key :first_user_admin_retry
 
@@ -27,7 +29,14 @@ defmodule AshyWalnutDesk.Accounts.Changes.AssignFirstUserAdmin do
   end
 
   defp choose_role do
-    case Ash.exists(User, authorize?: false) do
+    # ADR-024: the inbound-webhook system actor is created at app
+    # boot (role `:system`). It shouldn't count as a "real" user for
+    # the first-admin election — the first human signup is the
+    # admin.
+    User
+    |> Ash.Query.filter(expr(role != :system))
+    |> Ash.exists(authorize?: false)
+    |> case do
       {:ok, true} -> :operator
       {:ok, false} -> :admin
       {:error, _} -> :operator

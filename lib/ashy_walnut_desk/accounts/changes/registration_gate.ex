@@ -34,11 +34,30 @@ defmodule AshyWalnutDesk.Accounts.Changes.RegistrationGate do
     Changeset.before_action(changeset, fn changeset ->
       cond do
         Enum.any?(changeset.errors) -> changeset
+        system_actor_email?(changeset) -> reject_system(changeset)
         registration_enabled?() -> changeset
         existing_user?(changeset) -> changeset
         true -> reject(changeset)
       end
     end)
+  end
+
+  # ADR-024: the `system+inbound@<host>` actor created by
+  # `Accounts.ensure_system_actor/0` must NEVER be reachable via
+  # magic-link sign-in. Reject the magic-link path for any address
+  # in the `system+` namespace regardless of the registration gate.
+  defp system_actor_email?(changeset) do
+    case Changeset.get_attribute(changeset, :email) do
+      nil -> false
+      email -> email |> to_string() |> String.downcase() |> String.starts_with?("system+")
+    end
+  end
+
+  defp reject_system(changeset) do
+    Changeset.add_error(changeset,
+      field: :email,
+      message: "system addresses cannot sign in via magic link"
+    )
   end
 
   defp registration_enabled? do

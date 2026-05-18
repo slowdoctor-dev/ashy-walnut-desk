@@ -11,7 +11,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.ChainLink
-  alias AshyWalnutDesk.Interaction.Checks.FromActionExecute
+  alias AshyWalnutDesk.Interaction.Checks.{FromActionExecute, FromInboundWebhook}
   alias AshyWalnutDesk.Interaction.Validations.StatusTransition
 
   postgres do
@@ -44,6 +44,17 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     end
 
     create :record_inbox do
+      accept([:conversation_id, :summary])
+      change(set_attribute(:status, :open))
+      change(relate_actor(:recorded_by))
+      change({ChainLink, event_type: :inbox_opened})
+    end
+
+    # ADR-024: internal inbound entry point. Same shape as
+    # `:record_inbox` but gated by `FromInboundWebhook` so it can
+    # only fire from `Interaction.InboundIntake` running under the
+    # system actor; operators must continue to use `:record_inbox`.
+    create :record_inbound do
       accept([:conversation_id, :summary])
       change(set_attribute(:status, :open))
       change(relate_actor(:recorded_by))
@@ -107,6 +118,10 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     policy action(:record_inbox) do
       authorize_if(actor_attribute_equals(:role, :admin))
       authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    policy action(:record_inbound) do
+      authorize_if(FromInboundWebhook)
     end
 
     policy action(:mark_drafting) do

@@ -176,7 +176,12 @@ defmodule AshyWalnutDesk.Accounts.User do
     end
 
     attribute :role, :atom do
-      constraints(one_of: [:admin, :operator, :viewer])
+      # `:system` is the inbound-webhook actor created by
+      # `Accounts.ensure_system_actor/0` at app boot (ADR-024). It
+      # cannot sign in (RegistrationGate rejects `system+%` emails)
+      # and can only invoke `FromInboundWebhook`-gated actions; a
+      # test asserts it cannot drive send-path actions.
+      constraints(one_of: [:admin, :operator, :viewer, :system])
       default(:operator)
       allow_nil?(false)
       public?(true)
