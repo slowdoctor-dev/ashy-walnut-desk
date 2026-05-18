@@ -75,7 +75,8 @@ def extract_magic_link_url(page: Page, base_url: str, email: str) -> str:
     # path on first visit; auto-selects the only message and renders the
     # text body inline as <div id="text-body-content">. Just regex it out.
     page.goto(urljoin(base_url, "/dev/mailbox"))
-    page.wait_for_load_state("networkidle")
+    # LV WS keeps the connection open in dev; networkidle never settles.
+    page.wait_for_load_state("domcontentloaded")
     body = page.content()
     matches = re.findall(r"https?://[^\s\"<]+/magic_link/[A-Za-z0-9._\-]+", body)
     if not matches:
@@ -88,7 +89,8 @@ def sign_in(page: Page, base_url: str, email: str) -> None:
     request_magic_link(page, base_url, email)
     href = extract_magic_link_url(page, base_url, email)
     page.goto(href)
-    page.wait_for_load_state("networkidle")
+    # MagicSignInLive holds a long-running LV WS; `networkidle` never settles.
+    page.wait_for_selector("input[name='user[token]']", state="attached", timeout=10_000)
 
     # `require_interaction?(true)` on the magic-link strategy means
     # /magic_link/<token> renders a LiveView confirmation form that POSTs
@@ -112,7 +114,7 @@ def sign_in(page: Page, base_url: str, email: str) -> None:
         # The POST set the session cookie on the request context; navigate
         # the page so the browser context picks it up.
         page.goto(urljoin(base_url, "/"))
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
 
 
 def shot(page: Page, out_dir: Path, name: str) -> Path:
