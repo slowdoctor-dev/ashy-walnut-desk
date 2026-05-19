@@ -64,8 +64,17 @@ defmodule AshyWalnutDesk.Interaction.AuditEvent do
       public?(true)
     end
 
+    # Sec-fix R1: mark the payload sensitive so Ash's default
+    # inspect/2 output and any future paper-trail extension on
+    # AuditEvent redacts it. The allowlist on
+    # `AuditChain.@payload_allowlist` keeps the structure clean, but
+    # the *values* are UUIDs of sensitive records (identity_id,
+    # action_id, etc.) — usable for enumeration if leaked. Admin
+    # `:read` policy is still the primary gate; this is
+    # defense-in-depth for logs / inspect output.
     attribute :payload, :map do
       allow_nil?(false)
+      sensitive?(true)
       public?(true)
     end
 

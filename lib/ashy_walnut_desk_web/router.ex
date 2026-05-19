@@ -56,9 +56,14 @@ defmodule AshyWalnutDeskWeb.Router do
     plug :accepts, ["html", "json"]
     plug Plug.Parsers, parsers: [:urlencoded, :json], pass: ["*/*"], json_decoder: Jason
 
+    # Sec-fix R1: lowered from 60→20 req/min. Twilio's own retry
+    # policy is exponential backoff (3–5 retries over ~30 min on
+    # 5xx), so 20/min is comfortably above legitimate traffic per
+    # number. The wider limit was a flood-absorption knob; deployers
+    # with high-volume A2P 10DLC campaigns can raise it explicitly.
     plug AshyWalnutDeskWeb.Plugs.RateLimit,
       scope: :webhook,
-      max_requests: 60,
+      max_requests: 20,
       window_ms: 60_000
   end
 

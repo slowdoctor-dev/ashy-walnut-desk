@@ -54,19 +54,37 @@ defmodule AshyWalnutDeskWeb.AuthController do
   end
 
   # Only accept relative same-origin paths. Reject protocol-relative
-  # (`//evil.com`) and backslash-prefixed paths some browsers normalize
-  # to URLs. Defense-in-depth: today AshAuthentication only writes
+  # (`//evil.com`), backslash-prefixed paths some browsers normalize
+  # to URLs, anything with a scheme/host, or whitespace prefixes that
+  # could bypass naive `String.first/1` checks.
+  #
+  # Defense-in-depth: today AshAuthentication only writes
   # `Phoenix.Controller.current_path/1` into `:return_to` (path-only),
-  # but any future plug/controller setting it from user input would
-  # become an open-redirect without this guard.
-  defp safe_return_to("/" <> rest = path) when byte_size(rest) > 0 do
-    case String.first(rest) do
-      "/" -> ~p"/"
-      "\\" -> ~p"/"
-      _ -> path
+  # but any future plug/controller setting it from user input must
+  # not become an open-redirect.
+  defp safe_return_to(target) when is_binary(target) do
+    cond do
+      target == "/" -> "/"
+      same_origin_path?(target) -> target
+      true -> ~p"/"
     end
   end
 
-  defp safe_return_to("/"), do: "/"
   defp safe_return_to(_), do: ~p"/"
+
+  # A safe path: starts with a single `/`, no scheme/host, no
+  # backslash, no whitespace, and either path or `/path?query` shape.
+  defp same_origin_path?("/" <> rest) when byte_size(rest) > 0 do
+    case String.first(rest) do
+      "/" -> false
+      "\\" -> false
+      "\t" -> false
+      "\n" -> false
+      "\r" -> false
+      " " -> false
+      _ -> !String.contains?(rest, ["://", "\\", "\t", "\n", "\r"])
+    end
+  end
+
+  defp same_origin_path?(_), do: false
 end

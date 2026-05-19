@@ -17,7 +17,6 @@ defmodule AshyWalnutDesk.Interaction.InboundActorPolicyTest do
 
   alias AshyWalnutDesk.Interaction.{
     Action,
-    Conversation,
     Inbox,
     Message
   }
@@ -94,6 +93,85 @@ defmodule AshyWalnutDesk.Interaction.InboundActorPolicyTest do
              )
 
     assert error.__struct__ in [Ash.Error.Forbidden, Ash.Error.Invalid]
+  end
+
+  # Sec-fix R1: explicit scope tests for the actions added in
+  # stories 3.5 / 3.6. The system actor must never reach the send
+  # path even through new attack surface introduced in Phase 3.
+
+  test "system actor cannot drive Inbox.:mark_executed (send-path internal)" do
+    system_actor = SystemActor.ensure!()
+    %{inbox: inbox} = drafting_chain()
+
+    assert {:error, %Ash.Error.Forbidden{}} =
+             Ash.update(inbox, %{}, action: :mark_executed, actor: system_actor)
+  end
+
+  test "system actor cannot drive Compensation.:initiate_trigger" do
+    system_actor = SystemActor.ensure!()
+    %{operator: operator, draft: draft} = drafting_chain()
+
+    {:ok, approved} =
+      Ash.update(draft, %{compensation_body: "Comp"}, action: :approve, actor: operator)
+
+    compensation =
+      AshyWalnutDesk.Interaction.Compensation
+      |> Ash.Query.for_read(:read, %{}, authorize?: false)
+      |> Ash.Query.filter(expr(action_id == ^action_for_draft(approved.id)))
+      |> Ash.read_one!()
+
+    assert {:error, %Ash.Error.Forbidden{}} =
+             Ash.update(compensation, %{}, action: :initiate_trigger, actor: system_actor)
+  end
+
+  test "system actor cannot drive Compensation.:trigger" do
+    system_actor = SystemActor.ensure!()
+    %{operator: operator, draft: draft} = drafting_chain()
+
+    {:ok, approved} =
+      Ash.update(draft, %{compensation_body: "Comp"}, action: :approve, actor: operator)
+
+    compensation =
+      AshyWalnutDesk.Interaction.Compensation
+      |> Ash.Query.for_read(:read, %{}, authorize?: false)
+      |> Ash.Query.filter(expr(action_id == ^action_for_draft(approved.id)))
+      |> Ash.read_one!()
+
+    # First flip to :triggering via the operator so :trigger's
+    # status-transition gate doesn't pre-empt the policy gate.
+    {:ok, triggering} =
+      Ash.update(compensation, %{}, action: :initiate_trigger, actor: operator)
+
+    assert {:error, %Ash.Error.Forbidden{}} =
+             Ash.update(triggering, %{}, action: :trigger, actor: system_actor)
+  end
+
+  test "system actor cannot drive Compensation.:reset_trigger (admin-only)" do
+    system_actor = SystemActor.ensure!()
+    %{operator: operator, draft: draft} = drafting_chain()
+
+    {:ok, approved} =
+      Ash.update(draft, %{compensation_body: "Comp"}, action: :approve, actor: operator)
+
+    compensation =
+      AshyWalnutDesk.Interaction.Compensation
+      |> Ash.Query.for_read(:read, %{}, authorize?: false)
+      |> Ash.Query.filter(expr(action_id == ^action_for_draft(approved.id)))
+      |> Ash.read_one!()
+
+    {:ok, triggering} =
+      Ash.update(compensation, %{}, action: :initiate_trigger, actor: operator)
+
+    assert {:error, %Ash.Error.Forbidden{}} =
+             Ash.update(triggering, %{}, action: :reset_trigger, actor: system_actor)
+  end
+
+  defp action_for_draft(draft_id) do
+    AshyWalnutDesk.Interaction.Action
+    |> Ash.Query.for_read(:read, %{}, authorize?: false)
+    |> Ash.Query.filter(expr(draft_id == ^draft_id))
+    |> Ash.read_one!()
+    |> Map.fetch!(:id)
   end
 
   defp conversation_only do
