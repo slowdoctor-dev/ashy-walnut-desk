@@ -188,6 +188,16 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
+    field_policy :ai_prompt do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :ai_response do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
     field_policy :* do
       authorize_if(always())
     end
