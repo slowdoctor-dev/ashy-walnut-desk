@@ -21,6 +21,16 @@ defmodule AshyWalnutDesk.Interaction.Conversation do
       reference(:identity, on_delete: :restrict)
       reference(:channel, on_delete: :restrict)
     end
+
+    # Perf-fix R1: `InboundIntake.thread_or_open/3` runs on every
+    # inbound webhook and filters by `(identity_id, channel_id)`.
+    # PG's auto-FK indexes on the columns individually let it
+    # bitmap-intersect, but a composite is cheaper and skips that
+    # planning step. Hot path: 10-100 webhooks/min in expected
+    # operator-scale load.
+    custom_indexes do
+      index([:identity_id, :channel_id])
+    end
   end
 
   paper_trail do
