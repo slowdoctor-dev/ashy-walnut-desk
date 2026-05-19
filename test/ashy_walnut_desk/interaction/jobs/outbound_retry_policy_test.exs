@@ -130,6 +130,73 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundRetryPolicyTest do
     assert reloaded.error =~ "permanent"
   end
 
+  # Test-fix R2: when the worker is dispatched against an Action
+  # that's ALREADY in a terminal state (:executed, :failed,
+  # :rolled_back), it must return `:ok` without re-invoking the
+  # adapter. Without this guard a stuck job in the Oban table
+  # could silently re-send a message after it was marked complete
+  # or after the operator gave up on a failed send. The
+  # `run_send/5` cond already enforces this; this test pins the
+  # behaviour so a future refactor that drops the head doesn't
+  # ship a re-send regression.
+
+  test "worker is a no-op when Action.status is already :failed" do
+    %{operator: operator, draft: draft, action: action} = Fixtures.seed_approved_chain()
+    Fixtures.backdate_approval!(draft, 6)
+
+    # Drive the Action to :scheduled (operator clicked send), then
+    # forcibly mark it :failed via the internal fail_outbound action
+    # — same path the worker uses on terminal failure.
+    {:ok, scheduled} = Ash.update(action, %{}, action: :execute, actor: operator)
+
+    {:ok, _failed} =
+      Ash.update(
+        scheduled,
+        %{error: "test forced failure"},
+        action: :fail_outbound,
+        authorize?: false,
+        context: %{from_action_worker: true}
+      )
+
+    # Now dispatch the worker as if Oban replayed the job.
+    result =
+      perform_job(
+        AshyWalnutDesk.Interaction.Jobs.OutboundSend,
+        %{"action_id" => action.id, "kind" => "action"},
+        attempt: 1,
+        max_attempts: 5
+      )
+
+    assert result == :ok
+
+    # Status unchanged; no message persisted from the no-op run.
+    reloaded = Ash.get!(Action, action.id, authorize?: false)
+    assert reloaded.status == :failed
+  end
+
+  test "worker is a no-op when Action.status is already :executed" do
+    %{operator: operator, draft: draft, action: action} = Fixtures.seed_approved_chain()
+    Fixtures.backdate_approval!(draft, 6)
+
+    # Use the chain fixture's execute_action! to fully complete it.
+    executed = Fixtures.execute_action!(action, operator)
+    assert executed.status == :executed
+
+    # Re-dispatch the same Oban-shaped args.
+    result =
+      perform_job(
+        AshyWalnutDesk.Interaction.Jobs.OutboundSend,
+        %{"action_id" => action.id, "kind" => "action"},
+        attempt: 1,
+        max_attempts: 5
+      )
+
+    assert result == :ok
+
+    reloaded = Ash.get!(Action, action.id, authorize?: false)
+    assert reloaded.status == :executed
+  end
+
   defp perform_job(worker, args, opts) do
     attempt = Keyword.get(opts, :attempt, 1)
     max_attempts = Keyword.get(opts, :max_attempts, 5)

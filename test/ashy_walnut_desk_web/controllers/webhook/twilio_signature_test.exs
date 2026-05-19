@@ -107,4 +107,78 @@ defmodule AshyWalnutDeskWeb.Webhook.TwilioSignatureTest do
     assert Adapter.stub_module_string() ==
              Atom.to_string(AshyWalnutDesk.Interaction.Adapters.Stub)
   end
+
+  # Test-fix R2: when `twilio_signature_required` is false (dev /
+  # fixture mode), the plug passes through without checking the
+  # X-Twilio-Signature header. That branch was never explicitly
+  # tested. A regression that flipped the default to "always
+  # require" would break local dev; the reverse — accidentally
+  # making prod permissive — would be a security boundary failure.
+  # This test pins the dev-bypass shape.
+  test "no signature required → 200 for unsigned request (dev mode)", %{conn: conn} do
+    # Dev bypass is the `:twilio_auth_token` UNSET path: when no
+    # secret is configured AND `:twilio_signature_required` is
+    # false, the plug passes the request through.
+    prev_token = Application.get_env(:ashy_walnut_desk, :twilio_auth_token)
+    prev_required = Application.get_env(:ashy_walnut_desk, :twilio_signature_required, false)
+    Application.delete_env(:ashy_walnut_desk, :twilio_auth_token)
+    Application.put_env(:ashy_walnut_desk, :twilio_signature_required, false)
+
+    on_exit(fn ->
+      if is_nil(prev_token) do
+        Application.delete_env(:ashy_walnut_desk, :twilio_auth_token)
+      else
+        Application.put_env(:ashy_walnut_desk, :twilio_auth_token, prev_token)
+      end
+
+      Application.put_env(:ashy_walnut_desk, :twilio_signature_required, prev_required)
+    end)
+
+    params = %{
+      "MessageSid" => "SM" <> String.duplicate("d", 32),
+      "From" => "+15551234567",
+      "To" => "+15557654321",
+      "Body" => "dev-mode unsigned"
+    }
+
+    response =
+      conn
+      |> Map.put(:host, "www.example.com")
+      |> Map.put(:port, 80)
+      |> post(~p"/webhook/twilio", params)
+
+    assert response.status == 200,
+           "expected 200 in dev-bypass mode, got #{response.status}: #{response.resp_body}"
+  end
+
+  # Companion to the dev-bypass test above: with no secret set BUT
+  # `twilio_signature_required` flipped on (the production
+  # misconfiguration scenario), the plug must reject. Locks the
+  # `:missing_secret` branch the security review pinned in R3.
+  test "no signature secret + required flag → 403", %{conn: conn} do
+    prev_token = Application.get_env(:ashy_walnut_desk, :twilio_auth_token)
+    prev_required = Application.get_env(:ashy_walnut_desk, :twilio_signature_required, false)
+    Application.delete_env(:ashy_walnut_desk, :twilio_auth_token)
+    Application.put_env(:ashy_walnut_desk, :twilio_signature_required, true)
+
+    on_exit(fn ->
+      if is_nil(prev_token) do
+        Application.delete_env(:ashy_walnut_desk, :twilio_auth_token)
+      else
+        Application.put_env(:ashy_walnut_desk, :twilio_auth_token, prev_token)
+      end
+
+      Application.put_env(:ashy_walnut_desk, :twilio_signature_required, prev_required)
+    end)
+
+    params = %{
+      "MessageSid" => "SM" <> String.duplicate("e", 32),
+      "From" => "+15551234567",
+      "To" => "+15557654321",
+      "Body" => "no secret"
+    }
+
+    response = post(conn, ~p"/webhook/twilio", params)
+    assert response.status == 403
+  end
 end
