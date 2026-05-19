@@ -52,6 +52,23 @@ defmodule AshyWalnutDesk.Interaction.InboundIntakeTest do
     }
   end
 
+  # Test-fix R5: an inbound webhook arriving on a DISABLED channel
+  # must still be intake'd. The disable lever is a SEND-path
+  # control (operator turns off outbound for a vendor incident);
+  # rejecting inbound at intake would silently drop customer
+  # messages while the channel is disabled and lose those rows
+  # forever (Twilio retries are 7-day budget, not unbounded). This
+  # test pins the "inbound is independent of channel.enabled?"
+  # invariant. If a future change wants to reject inbound on a
+  # disabled channel, that must be a deliberate decision.
+  test "intake proceeds even when channel is disabled", %{admin: admin, channel: channel} do
+    {:ok, _disabled} = Ash.update(channel, %{}, action: :disable, actor: admin)
+
+    assert {:ok, %{outcome: :processed} = result} = InboundIntake.intake(inbound(), channel)
+    assert %Inbox{status: :open} = result.inbox
+    assert %Message{direction: :inbound} = result.message
+  end
+
   # Test-fix R1: nil and empty-string `:from` both map to
   # `:missing_from`. Empty-string is covered by
   # replay_audit_outcome_test.exs; nil specifically guards against
