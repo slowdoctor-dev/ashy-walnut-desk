@@ -133,6 +133,25 @@ defmodule AshyWalnutDesk.Identity.Identity do
     end
   end
 
+  # Sec-fix R5: field-level gate on the raw `primary_identifier`.
+  # The Identity resource's `:read` policy admits admin / operator /
+  # viewer (so they see `display_name`, `notes_summary`, etc.). But
+  # the raw E.164 lives behind a stricter check: only admins on
+  # authorized reads, plus internal worker paths that bypass policy
+  # entirely via `authorize?: false`. A viewer or operator getting
+  # an Identity row sees `primary_identifier` as `%Ash.ForbiddenField{}`
+  # (or nil-ish, depending on Ash version), never the raw value.
+  field_policies do
+    field_policy :primary_identifier do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    # Other fields: same as the resource-level read policy.
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   attributes do
     uuid_primary_key(:id)
 
@@ -150,11 +169,15 @@ defmodule AshyWalnutDesk.Identity.Identity do
 
     # Story 3.fix: the raw identifier is required to send outbound
     # messages (Twilio needs E.164). Stored alongside the hash —
-    # `primary_identifier_hash` is the unique-lookup key, this column
-    # is the payload-only recipient address. `sensitive?: true` keeps
-    # it out of paper-trail diffs and inspect output by default.
-    # Deployers whose privacy policy requires encryption-at-rest can
-    # layer their own decryption load step in the private repo.
+    # `primary_identifier_hash` is the unique-lookup key, this
+    # column is the payload-only recipient address.
+    #
+    # Sec-fix R5: field-level authorization via `field_policies`
+    # (below) — the raw value is admin-only on read; viewer /
+    # operator generic `:read` paths still get the row but
+    # `primary_identifier` is masked. The outbound worker loads it
+    # via `authorize?: false` to bypass field policies for internal
+    # consumption.
     attribute :primary_identifier, :string do
       allow_nil?(true)
       sensitive?(true)
