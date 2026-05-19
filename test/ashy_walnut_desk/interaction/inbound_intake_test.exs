@@ -52,6 +52,23 @@ defmodule AshyWalnutDesk.Interaction.InboundIntakeTest do
     }
   end
 
+  # Test-fix R1: nil and empty-string `:from` both map to
+  # `:missing_from`. Empty-string is covered by
+  # replay_audit_outcome_test.exs; nil specifically guards against
+  # a refactor that drops the `from: nil` head of `resolve_identity/2`.
+  test "nil from returns :missing_from", %{channel: channel} do
+    msg = %InboundMessage{
+      provider: :twilio,
+      provider_message_id: "SM" <> String.duplicate("a", 32),
+      from: nil,
+      to: "+15557654321",
+      body: "x",
+      received_at: DateTime.utc_now()
+    }
+
+    assert {:error, :missing_from} = InboundIntake.intake(msg, channel)
+  end
+
   test "intake creates Conversation + Inbox + inbound Message", %{channel: channel} do
     assert {:ok, result} = InboundIntake.intake(inbound(), channel)
 
