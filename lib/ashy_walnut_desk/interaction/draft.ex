@@ -172,6 +172,27 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
   end
 
+  # Sec-fix R8: Draft.body and Draft.compensation_body carry the
+  # outbound text drafted by an operator (and the matching
+  # compensation message). Same posture as Message.body and
+  # Compensation.body — admin/operator only; viewers see the
+  # row's status / FKs but not the message text.
+  field_policies do
+    field_policy :body do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :compensation_body do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   attributes do
     uuid_primary_key(:id)
 
