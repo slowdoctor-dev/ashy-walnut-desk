@@ -78,12 +78,21 @@ defmodule Mix.Tasks.Phase2.Demo.Seed do
   end
 
   defp create_identity(admin, display_name) do
+    # `primary_identifier` must be E.164 (sec-fix R3). Generate a
+    # +1556-prefixed number (different prefix from Phase 1's +1555
+    # so the two demo runs don't collide on the unique-hash index).
+    suffix =
+      :erlang.unique_integer([:positive])
+      |> rem(1_000_000_000)
+      |> Integer.to_string()
+      |> String.pad_leading(9, "0")
+
     Identity
     |> Ash.Changeset.for_create(
       :register_identity,
       %{
         display_name: display_name,
-        primary_identifier: "phase2-demo-#{Ash.UUID.generate()}",
+        primary_identifier: "+1556#{suffix}",
         notes_summary: "Demo client for Phase 2 screenshot capture."
       },
       actor: admin

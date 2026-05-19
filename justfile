@@ -105,6 +105,11 @@ screenshots:
 phase2-screenshots:
     @./scripts/screenshots-phase2.sh
 
+# Capture AuditLive + Compensation screenshots into docs/phase-3-screenshots/
+# (requires `just dev` running in another terminal + python3 playwright)
+phase3-screenshots:
+    @./scripts/screenshots-phase3.sh
+
 # === Story workflow ===
 
 # Print prompt to start a new story execution session
