@@ -26,7 +26,7 @@
 ```bash
 # 1. Create GitHub repo (in browser)
 #    slowdoctor-dev/ashy-walnut-desk
-#    Public, MIT, do NOT auto-create README
+#    Public, Apache 2.0, do NOT auto-create README
 
 # 2. Extract this scaffold
 mkdir -p ~/projects && cd ~/projects

@@ -88,7 +88,7 @@ relationship between:
 
 ## License & Liability Limitation
 
-This software is licensed under the MIT License (see [LICENSE](LICENSE)).
+This software is licensed under the Apache License, Version 2.0 (see [LICENSE](LICENSE)).
 By using this software, you accept all risks associated with its use.
 
 ## Reporting Concerns

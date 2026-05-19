@@ -12,7 +12,7 @@
 | **Name** | ashy-walnut-desk |
 | **Module** | `AshyWalnutDesk` / app `ashy_walnut_desk` |
 | **Tagline** | The desk gets wiser with every reply. |
-| **License** | MIT |
+| **License** | Apache 2.0 |
 | **Hosting** | `github.com/slowdoctor-dev/ashy-walnut-desk` (Public) |
 
 ## 2. What it is
