@@ -47,6 +47,30 @@ defmodule AshyWalnutDesk.Interaction.HardeningTest do
                &match?(%Ash.Error.Invalid.NoSuchInput{input: :approved_by_id}, &1)
              )
     end
+
+    # Test-fix R6: `:revise` validates `StatusTransition, from:
+    # [:drafting]`. Once approved, the draft is sealed — the
+    # countdown is anchored on `approved_at` and the operator
+    # cannot edit the body out from under the chain. Pin the
+    # rejection so a future change to the from-state list
+    # (e.g. accidentally adding :approved to allow re-edits)
+    # surfaces as a failing test.
+    test "rejects :revise on an :approved draft (state transition)" do
+      %{operator: operator, draft: draft} = drafting_chain()
+
+      {:ok, approved} =
+        Ash.update(draft, %{compensation_body: "X"}, action: :approve, actor: operator)
+
+      assert approved.status == :approved
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Ash.update(approved, %{body: "tampered"}, action: :revise, actor: operator)
+
+      assert Enum.any?(error.errors, fn
+               %{message: msg} -> is_binary(msg) and msg =~ "invalid transition from :approved"
+               _ -> false
+             end)
+    end
   end
 
   describe "S2/R2-3: register_pending + register are internal-only" do
