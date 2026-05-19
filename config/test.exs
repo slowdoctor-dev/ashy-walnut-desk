@@ -17,7 +17,12 @@ config :ashy_walnut_desk, AshyWalnutDesk.Repo,
 # you can enable the server option below.
 config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "Xt4k65DjUHXZ4pTVCy79ofBk0A6odis0v6W+JGEfs8Nb3vX23ZMlP9s4aRbS0HAN",
+  # Stable test-only placeholder. Sessions in `:test` are sandboxed
+  # per-test by Phoenix.LiveViewTest / Plug.Test and never persist
+  # across runs, so the actual bytes don't matter — they just have
+  # to be 64 chars long for Phoenix to accept them.
+  secret_key_base:
+    String.duplicate("test-secret-key-base-not-for-production-aaaa-", 2) |> binary_part(0, 64),
   server: false
 
 # Run Oban in manual testing mode so AshOban triggers can be driven
