@@ -114,15 +114,16 @@ defmodule AshyWalnutDesk.Identity.IdentityTest do
     assert identity2.primary_identifier_hash == expected
   end
 
-  test "raw primary_identifier is not exposed as an attribute" do
+  test "primary_identifier and its hash are both stored and marked sensitive" do
+    # Story 3.fix: raw `primary_identifier` is required to send
+    # outbound (Twilio needs E.164). Stored alongside the hash with
+    # `sensitive?: true` so paper-trail and inspect don't leak it.
     attribute_names = Identity |> Info.attributes() |> Enum.map(& &1.name)
-    refute :primary_identifier in attribute_names
+    assert :primary_identifier in attribute_names
     assert :primary_identifier_hash in attribute_names
-  end
 
-  test "primary_identifier_hash is marked sensitive" do
-    %{sensitive?: sensitive} = Info.attribute(Identity, :primary_identifier_hash)
-    assert sensitive
+    assert Info.attribute(Identity, :primary_identifier).sensitive?
+    assert Info.attribute(Identity, :primary_identifier_hash).sensitive?
   end
 
   # AC3 — soft-delete + default-filter + recover

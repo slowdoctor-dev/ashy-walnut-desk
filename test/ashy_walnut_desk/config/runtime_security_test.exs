@@ -6,14 +6,14 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
   test "prod + non-local PHX_HOST enables secure session flags and force_ssl" do
     config =
       with_env(
-        %{
+        Map.merge(twilio_env(), %{
           "PHX_HOST" => "desk.example.com",
           "IDENTIFIER_HASH_SALT" => String.duplicate("a", 64),
           "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
           "POOL_SIZE" => "10"
-        },
+        }),
         fn -> read_runtime_config(:prod) end
       )
 
@@ -29,14 +29,14 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
   test "prod + localhost PHX_HOST does not inject secure session flags or force_ssl" do
     config =
       with_env(
-        %{
+        Map.merge(twilio_env(), %{
           "PHX_HOST" => "localhost",
           "IDENTIFIER_HASH_SALT" => String.duplicate("a", 64),
           "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
           "POOL_SIZE" => "10"
-        },
+        }),
         fn -> read_runtime_config(:prod) end
       )
 
@@ -45,6 +45,66 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
 
     assert is_nil(Keyword.get(app_cfg, :session_options))
     refute Keyword.has_key?(endpoint_cfg, :force_ssl)
+  end
+
+  test "prod block stamps Twilio config from env" do
+    config =
+      with_env(base_prod_env(), fn -> read_runtime_config(:prod) end)
+
+    app_cfg = Keyword.fetch!(config, :ashy_walnut_desk)
+    twilio = Keyword.fetch!(app_cfg, :twilio)
+    assert twilio[:account_sid] == "AC_prod_test"
+    assert twilio[:auth_token] == "prod_auth_token"
+    assert twilio[:from_number] == "+15551112222"
+    assert Keyword.fetch!(app_cfg, :twilio_signature_required) == true
+  end
+
+  test "prod boot raises when TWILIO_ACCOUNT_SID is missing" do
+    base = base_prod_env(no_twilio: true)
+
+    assert_raise RuntimeError, ~r/TWILIO_ACCOUNT_SID is missing/, fn ->
+      with_env(base, fn -> read_runtime_config(:prod) end)
+    end
+  end
+
+  test "prod boot raises when TWILIO_AUTH_TOKEN is missing" do
+    base = Map.put(base_prod_env(no_twilio: true), "TWILIO_ACCOUNT_SID", "ACxx")
+
+    assert_raise RuntimeError, ~r/TWILIO_AUTH_TOKEN is missing/, fn ->
+      with_env(base, fn -> read_runtime_config(:prod) end)
+    end
+  end
+
+  test "prod boot raises when TWILIO_FROM_NUMBER is missing" do
+    base =
+      base_prod_env(no_twilio: true)
+      |> Map.put("TWILIO_ACCOUNT_SID", "ACxx")
+      |> Map.put("TWILIO_AUTH_TOKEN", "tok")
+
+    assert_raise RuntimeError, ~r/TWILIO_FROM_NUMBER is missing/, fn ->
+      with_env(base, fn -> read_runtime_config(:prod) end)
+    end
+  end
+
+  defp twilio_env do
+    %{
+      "TWILIO_ACCOUNT_SID" => "AC_prod_test",
+      "TWILIO_AUTH_TOKEN" => "prod_auth_token",
+      "TWILIO_FROM_NUMBER" => "+15551112222"
+    }
+  end
+
+  defp base_prod_env(opts \\ []) do
+    base = %{
+      "PHX_HOST" => "localhost",
+      "IDENTIFIER_HASH_SALT" => String.duplicate("a", 64),
+      "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
+      "DATABASE_URL" => "ecto://user:pass@localhost/db",
+      "SECRET_KEY_BASE" => String.duplicate("c", 64),
+      "POOL_SIZE" => "10"
+    }
+
+    if Keyword.get(opts, :no_twilio), do: base, else: Map.merge(base, twilio_env())
   end
 
   defp read_runtime_config(env) do
