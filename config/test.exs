@@ -25,6 +25,14 @@ config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
 # sandbox connection (no background queue picks up sandboxed jobs).
 config :ashy_walnut_desk, Oban, testing: :manual
 
+# Story 3.fix: explicit test defaults for the two app secrets.
+# Scoped here for the same reason as `config/dev.exs` — the prior
+# top-level fallback in `config/runtime.exs` would have masked a
+# prod misdeployment that thought it was running in `:dev` / `:test`.
+config :ashy_walnut_desk,
+  identifier_hash_salt: "test-only-identifier-hash-salt",
+  ash_authentication_secret: String.duplicate("a", 64)
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
