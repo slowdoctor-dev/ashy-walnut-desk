@@ -159,7 +159,7 @@ defmodule AshyWalnutDeskWeb.IdentityLive.ShowTest do
 
     {:ok, view, html} = live(conn, ~p"/identities/#{identity.id}")
 
-    assert html =~ "Visible to viewer"
+    assert html =~ "[redacted]"
     refute has_element?(view, "[data-role=write-actions]")
     refute has_element?(view, "[data-role=edit-identity]")
     refute has_element?(view, "[data-role=archive-identity]")

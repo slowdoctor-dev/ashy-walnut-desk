@@ -568,3 +568,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Topic"
 msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:44
+#, elixir-autogen, elixir-format
+msgid "[redacted]"
+msgstr ""

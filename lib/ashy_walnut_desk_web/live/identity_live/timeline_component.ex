@@ -24,9 +24,9 @@ defmodule AshyWalnutDeskWeb.IdentityLive.TimelineComponent do
             </time>
           </div>
 
-          <p class="mt-1 text-sm text-zinc-800">{entry.summary}</p>
+          <p class="mt-1 text-sm text-zinc-800">{render_text(entry.summary)}</p>
 
-          <p :if={entry.detail} class="mt-1 text-xs text-zinc-500">{entry.detail}</p>
+          <p :if={entry.detail} class="mt-1 text-xs text-zinc-500">{render_text(entry.detail)}</p>
         </li>
       </ol>
 
@@ -40,4 +40,8 @@ defmodule AshyWalnutDeskWeb.IdentityLive.TimelineComponent do
   defp kind_label(:event), do: gettext("Event")
   defp kind_label(:appointment), do: gettext("Appointment")
   defp kind_label(:note), do: gettext("Note")
+
+  defp render_text(%Ash.ForbiddenField{}), do: gettext("[redacted]")
+  defp render_text(nil), do: nil
+  defp render_text(text), do: text
 end
