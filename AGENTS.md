@@ -24,7 +24,7 @@ glue layer. AI generates drafts; humans approve and send.
 - **Tagline**: *The desk gets wiser with every reply.*
 - **Status**: 🚧 Alpha, learning in public
 - **Owner**: solo maintainer
-- **License**: MIT
+- **License**: Apache 2.0
 - **First target domain**: regulated services (deployer-specific; not in this repo)
 - **Context**: safety-sensitive → human approval gating is non-negotiable
 

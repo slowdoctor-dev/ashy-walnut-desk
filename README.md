@@ -211,7 +211,7 @@ See [`AGENTS.md`](AGENTS.md) — the source of truth for all agents.
 
 ## Two-track repository
 
-This repo = **public framework** (MIT, no real customer data, no
+This repo = **public framework** (Apache 2.0, no real customer data, no
 jurisdiction-specific content). A deployer maintains a separate private
 repo for their deployment-specific content: real customer ontology,
 jurisdiction-specific compliance, credentials.
@@ -225,7 +225,7 @@ See ADR-010 in [`specs/decisions/`](specs/decisions/).
 
 ## License
 
-[MIT](LICENSE).
+[Apache License 2.0](LICENSE).
 
 ## Contributing
 
