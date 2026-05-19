@@ -40,9 +40,21 @@ defmodule AshyWalnutDeskWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
+  # Sec-fix R9: explicit body-size cap on the endpoint-level parser.
+  # `Plug.Parsers` defaults to 8 MB, which is large for an operator-
+  # facing app with no file-upload surface. Lower to 200 KB — well
+  # above any form / webhook body the framework currently serves
+  # (Twilio's largest payloads are ~10 KB). Deployers landing image
+  # / audio attachments can override in their endpoint config.
+  #
+  # Note: `Plug.Parsers` runs at the endpoint level BEFORE the
+  # router, so this cap applies to every route uniformly. A
+  # per-route tighter cap would need a separate content-length plug
+  # before the parser.
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
+    length: 200_000,
     json_decoder: Phoenix.json_library()
 
   plug Plug.MethodOverride
