@@ -95,6 +95,22 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
       change(set_attribute(:status, :failed))
       change({ChainLink, event_type: :compensation_executed})
     end
+
+    # Story 3.fix: stuck-state recovery. If an operator clicks
+    # "Trigger compensation" (→ :triggering) and then the LV crashes
+    # / the operator closes the tab before the 5-second countdown
+    # elapses, the Compensation is stuck in :triggering with no
+    # path back. An admin can reset it to :registered to retry.
+    # No chain event written — the original
+    # `:compensation_registered` event still stands.
+    update :reset_trigger do
+      accept([])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:triggering]})
+      change(set_attribute(:status, :registered))
+      change(set_attribute(:trigger_initiated_at, nil))
+      change(set_attribute(:outbound_idempotency_key, nil))
+    end
   end
 
   policies do
@@ -128,6 +144,13 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
 
     policy action(:fail_send) do
       authorize_if(FromActionWorker)
+    end
+
+    # Recovery action is admin-only. Operators may have legitimate
+    # need to retry but the route requires an explicit admin
+    # judgment — re-arming a send is a sensitive operation.
+    policy action(:reset_trigger) do
+      authorize_if(actor_attribute_equals(:role, :admin))
     end
   end
 

@@ -125,8 +125,24 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     case adapter.send_outbound(message, channel) do
       {:ok, payload} ->
         case complete(action, payload) do
-          {:ok, _} -> :ok
-          {:error, reason} -> {:error, error_text(reason)}
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            # Story 3.fix: the adapter accepted the send (Twilio
+            # returned 2xx) but persisting `:executed` failed. Log
+            # loudly — this is rare and indicates either a DB issue
+            # or a state-machine drift bug. The Oban retry path is
+            # safe: the Idempotency-Key dedupes at Twilio, so a
+            # repeated send returns the original payload (treated as
+            # success). But the elevated error surface helps the
+            # admin / monitoring catch persistent drift.
+            Logger.error(
+              "Jobs.OutboundSend: adapter sent but :complete_outbound failed for " <>
+                "action #{action.id}: #{inspect(reason)}"
+            )
+
+            {:error, error_text(reason)}
         end
 
       {:error, :transient} ->
@@ -261,8 +277,17 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
   defp handle_compensation_result({:ok, payload}, _job, compensation, draft) do
     case complete_compensation(compensation, draft, payload) do
-      {:ok, _} -> :ok
-      {:error, reason} -> {:error, error_text(reason)}
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        # See `do_attempt/6` for the rationale on logging here.
+        Logger.error(
+          "Jobs.OutboundSend: adapter sent but :complete_send failed for " <>
+            "compensation #{compensation.id}: #{inspect(reason)}"
+        )
+
+        {:error, error_text(reason)}
     end
   end
 
