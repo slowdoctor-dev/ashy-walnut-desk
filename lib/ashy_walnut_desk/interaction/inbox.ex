@@ -23,6 +23,17 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
       reference(:conversation, on_delete: :restrict)
       reference(:recorded_by, on_delete: :restrict)
     end
+
+    # Perf-fix R1: `InboxLive.Index` filters by `status` and sorts
+    # by `created_at desc` on every tab switch. Without a composite,
+    # PG sequential-scans on a large inboxes table. The composite
+    # also serves the `is_nil(deleted_at)` predicate added by the
+    # default `:read` action's soft-delete filter — PG can use the
+    # leading two columns and apply the soft-delete predicate as a
+    # cheap filter on top.
+    custom_indexes do
+      index([:status, :created_at])
+    end
   end
 
   paper_trail do
