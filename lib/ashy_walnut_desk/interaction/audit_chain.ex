@@ -82,11 +82,20 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
     end
   end
 
+  # Story 3.fix: hard cap on per-topic events the LV viewer pulls
+  # into memory. One inbox lifecycle normally produces 6-8 events;
+  # this guards against pathological topics (loops, future bugs, or
+  # someone deliberately spamming the same chain_topic) from
+  # OOMing the LV. CLI `mix audit.verify` walks the full chain
+  # without this cap.
+  @max_events_per_topic 5_000
+
   defp load_events(chain_topic) do
     AuditEvent
     |> Ash.Query.for_read(:read, %{}, authorize?: false)
     |> Ash.Query.filter(expr(chain_topic == ^chain_topic))
     |> Ash.Query.sort([{:inserted_at, :asc}, {:id, :asc}])
+    |> Ash.Query.limit(@max_events_per_topic)
     |> Ash.read!(authorize?: false)
   end
 
