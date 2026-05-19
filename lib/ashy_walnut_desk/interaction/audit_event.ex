@@ -41,6 +41,16 @@ defmodule AshyWalnutDesk.Interaction.AuditEvent do
     end
   end
 
+  field_policies do
+    field_policy :payload do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   attributes do
     uuid_primary_key(:id)
 
