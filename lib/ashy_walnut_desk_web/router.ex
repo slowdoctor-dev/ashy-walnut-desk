@@ -54,6 +54,10 @@ defmodule AshyWalnutDeskWeb.Router do
   # signature gate rejects forged payloads.
   pipeline :webhook do
     plug :accepts, ["html", "json"]
+    # The endpoint-level `Plug.Parsers` (200 KB cap, sec-fix R9)
+    # has already parsed the body by the time we reach this
+    # pipeline, so this declaration is redundant but kept for
+    # documentation: the webhook accepts urlencoded + json.
     plug Plug.Parsers, parsers: [:urlencoded, :json], pass: ["*/*"], json_decoder: Jason
 
     # Sec-fix R1: lowered from 60→20 req/min. Twilio's own retry
