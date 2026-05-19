@@ -32,8 +32,8 @@ defmodule AshyWalnutDesk.Identity.PrimaryIdentifierVisibilityTest do
     assert match?(%Ash.ForbiddenField{}, reloaded.primary_identifier),
            "expected ForbiddenField, got: #{inspect(reloaded.primary_identifier)}"
 
-    # Hash is still public — it's the lookup key, not the recipient.
-    refute is_nil(reloaded.primary_identifier_hash)
+    assert match?(%Ash.ForbiddenField{}, reloaded.primary_identifier_hash),
+           "expected ForbiddenField, got: #{inspect(reloaded.primary_identifier_hash)}"
   end
 
   test "operator cannot read raw primary_identifier via generic :read" do
@@ -45,6 +45,9 @@ defmodule AshyWalnutDesk.Identity.PrimaryIdentifierVisibilityTest do
 
     assert match?(%Ash.ForbiddenField{}, reloaded.primary_identifier),
            "expected ForbiddenField, got: #{inspect(reloaded.primary_identifier)}"
+
+    assert match?(%Ash.ForbiddenField{}, reloaded.primary_identifier_hash),
+           "expected ForbiddenField, got: #{inspect(reloaded.primary_identifier_hash)}"
   end
 
   test "admin CAN read raw primary_identifier" do
@@ -53,6 +56,7 @@ defmodule AshyWalnutDesk.Identity.PrimaryIdentifierVisibilityTest do
 
     {:ok, reloaded} = Ash.get(Identity, identity.id, actor: admin)
     assert reloaded.primary_identifier == "+15558881234"
+    refute is_nil(reloaded.primary_identifier_hash)
   end
 
   test "outbound worker path (authorize?: false + explicit load) still gets the raw value" do

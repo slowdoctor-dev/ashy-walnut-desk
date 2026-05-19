@@ -17,6 +17,10 @@ defmodule AshyWalnutDesk.Identity.Identity do
   postgres do
     table("identities")
     repo(AshyWalnutDesk.Repo)
+
+    custom_indexes do
+      index([:primary_identifier_hash], unique: true)
+    end
   end
 
   paper_trail do
@@ -143,6 +147,10 @@ defmodule AshyWalnutDesk.Identity.Identity do
   # (or nil-ish, depending on Ash version), never the raw value.
   field_policies do
     field_policy :primary_identifier do
+      authorize_if(actor_attribute_equals(:role, :admin))
+    end
+
+    field_policy :primary_identifier_hash do
       authorize_if(actor_attribute_equals(:role, :admin))
     end
 
