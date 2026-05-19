@@ -198,6 +198,23 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
+    # Sec-fix R13: Phase 4 metadata. `:ai_model` is the model
+    # identifier (e.g. "claude-opus-4.7"); not raw PII but reveals
+    # deployment topology and could fingerprint deployers across
+    # leaked tables. `:ai_validator_output` is a free-form map that
+    # may carry validator flags + redacted prompt fragments — same
+    # treatment as `:ai_response`. R12 gated the prompt/response;
+    # this round closes the metadata pair.
+    field_policy :ai_model do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :ai_validator_output do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
     field_policy :* do
       authorize_if(always())
     end
@@ -241,6 +258,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
     attribute :ai_model, :string do
       allow_nil?(true)
+      sensitive?(true)
       public?(true)
     end
 
@@ -252,6 +270,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
     attribute :ai_validator_output, :map do
       allow_nil?(true)
+      sensitive?(true)
       public?(true)
     end
 
