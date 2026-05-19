@@ -312,10 +312,27 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
   # Record a delivery row for an intake that failed inside the
   # transaction (which rolled back). Runs in a fresh transaction so
   # the failure is auditable even after rollback.
+  #
+  # Story 3.fix: the `{:error, _}` clause previously swallowed
+  # silently — an admin debugging "why didn't intake X surface as
+  # :failed_intake?" would have no trace. The webhook controller
+  # still returns 200 to Twilio regardless (see twilio_controller),
+  # so logging here doesn't change the response shape, just adds
+  # the observability signal.
   defp record_delivery_outside_transaction(msg, reason) do
     case record_delivery(msg, :failed_intake, reason) do
-      {:ok, _} -> :ok
-      {:error, _} -> :ok
+      {:ok, _} ->
+        :ok
+
+      {:error, error} ->
+        require Logger
+
+        Logger.error(
+          "InboundIntake: could not persist :failed_intake ledger row for " <>
+            "(#{msg.provider}, #{msg.provider_message_id}): #{inspect(error)}"
+        )
+
+        :ok
     end
   end
 end

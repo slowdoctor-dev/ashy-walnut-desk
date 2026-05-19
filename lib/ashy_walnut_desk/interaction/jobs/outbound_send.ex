@@ -345,7 +345,12 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
       },
       action: :record_message,
       authorize?: false,
-      context: %{from_action_execute: true}
+      # Story 3.fix: use the worker-context flag (compensation path
+      # is worker-driven, not LV-driven). Message.:record_message
+      # accepts either `:from_action_worker` or `:from_action_execute`
+      # to admit both story 3.5 (action) and story 3.6 (compensation)
+      # send paths.
+      context: %{from_action_worker: true}
     )
   end
 

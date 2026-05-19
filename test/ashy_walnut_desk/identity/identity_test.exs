@@ -188,9 +188,15 @@ defmodule AshyWalnutDesk.Identity.IdentityTest do
     for v <- versions do
       assert v.changes["display_name"] in [nil, "REDACTED"]
       assert v.changes["primary_identifier_hash"] in [nil, "REDACTED"]
+      # Story 3.fix: the raw `primary_identifier` is now persisted
+      # to support outbound sends. PaperTrail's `sensitive_attributes(:redact)`
+      # MUST hide it from version diffs — leaking the E.164 in the
+      # diff would defeat the `sensitive?: true` flag.
+      assert v.changes["primary_identifier"] in [nil, "REDACTED"]
 
       refute v.changes["display_name"] == "Redacted Name"
       refute v.changes["primary_identifier_hash"] == identity.primary_identifier_hash
+      refute v.changes["primary_identifier"] == raw_identifier
 
       rendered = inspect(v.changes)
       refute rendered =~ raw_identifier
