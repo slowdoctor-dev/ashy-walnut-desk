@@ -10,6 +10,8 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
 
   alias Ash.Changeset
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
+
   alias AshyWalnutDesk.Interaction.Changes.{
     ChainLink,
     CompensationCountdownGuard,
@@ -115,8 +117,7 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
 
   policies do
     policy action_type(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -129,13 +130,11 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
     end
 
     policy action(:initiate_trigger) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:trigger) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:complete_send) do
@@ -156,20 +155,17 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
 
   field_policies do
     field_policy :body do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     # Sec-fix R7: same posture as Action — provider response /
     # error fields are operational-debug, not viewer-visible.
     field_policy :adapter_response do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :error do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do

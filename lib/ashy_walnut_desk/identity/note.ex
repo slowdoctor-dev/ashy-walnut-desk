@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Identity.Note do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
 
   postgres do
@@ -68,8 +69,7 @@ defmodule AshyWalnutDesk.Identity.Note do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -78,8 +78,7 @@ defmodule AshyWalnutDesk.Identity.Note do
     end
 
     policy action(:record_note) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:edit_note) do
@@ -99,8 +98,7 @@ defmodule AshyWalnutDesk.Identity.Note do
 
   field_policies do
     field_policy :body do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do
