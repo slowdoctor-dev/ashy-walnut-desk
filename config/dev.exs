@@ -23,7 +23,13 @@ config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "G1q0YDCR2PTY2O5WtE7vMr+N+c7QDfIdnqNWKv5fz92wCqACYS88JsGri1elGrms",
+  # Stable dev-only placeholder. `:prod` reads `SECRET_KEY_BASE` from
+  # the environment via `config/runtime.exs` and raises if missing.
+  # If you want a unique dev value, set `SECRET_KEY_BASE` in your
+  # local environment — `mix phx.gen.secret` produces a 64-byte value.
+  secret_key_base:
+    System.get_env("SECRET_KEY_BASE") ||
+      "DEV_PLACEHOLDER_secret_key_base_replace_via_env_or_runtime_exs_a",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:ashy_walnut_desk, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:ashy_walnut_desk, ~w(--watch)]}
