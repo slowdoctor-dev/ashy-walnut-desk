@@ -118,28 +118,73 @@ defmodule AshyWalnutDesk.Interaction.SensitiveFieldVisibilityTest do
     assert match?(%Ash.ForbiddenField{}, viewer_compensation.error)
   end
 
-  # Sec-fix R8: Draft.body / Draft.compensation_body carry the
+  # Sec-fix R8 + R12: Draft text fields and AI artifacts carry
   # operator-drafted text and matching compensation message.
   # Viewer was previously able to read both via the resource-level
   # `:read` policy. Field policies now mask them.
-  test "viewer cannot read Draft.body or Draft.compensation_body" do
-    chain = InteractionFixtures.seed_approved_chain()
+  test "viewer cannot read Draft.body / compensation_body / ai_prompt / ai_response" do
+    admin = AccountsFixtures.create_user(:admin)
+    operator = AccountsFixtures.create_user(:operator)
     viewer = AccountsFixtures.create_user(:viewer)
 
-    {:ok, viewer_draft} = Ash.get(Draft, chain.draft.id, actor: viewer)
+    identity = InteractionFixtures.seed_identity(admin)
+    channel = InteractionFixtures.seed_channel(admin)
+    conversation = InteractionFixtures.seed_conversation(operator, identity, channel)
+    inbox = InteractionFixtures.seed_inbox(operator, conversation)
+
+    {:ok, draft} =
+      Ash.create(
+        Draft,
+        %{
+          inbox_id: inbox.id,
+          body: "draft body",
+          compensation_body: "draft compensation",
+          status: :drafting,
+          ai_prompt: "draft prompt with pii",
+          ai_response: "model output with pii"
+        },
+        action: :compose_draft,
+        actor: operator
+      )
+
+    {:ok, viewer_draft} = Ash.get(Draft, draft.id, actor: viewer)
     assert match?(%Ash.ForbiddenField{}, viewer_draft.body)
     assert match?(%Ash.ForbiddenField{}, viewer_draft.compensation_body)
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_prompt)
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_response)
     # Status / FKs remain readable so the chain view can still show
     # "Draft #N — approved" without leaking the message text.
     assert viewer_draft.status in [:drafting, :approved]
     refute is_nil(viewer_draft.inbox_id)
   end
 
-  test "operator retains access to Draft.body and Draft.compensation_body" do
-    chain = InteractionFixtures.seed_approved_chain()
+  test "operator retains access to Draft.body / compensation_body / ai_prompt / ai_response" do
+    admin = AccountsFixtures.create_user(:admin)
+    operator = AccountsFixtures.create_user(:operator)
+    identity = InteractionFixtures.seed_identity(admin)
+    channel = InteractionFixtures.seed_channel(admin)
+    conversation = InteractionFixtures.seed_conversation(operator, identity, channel)
+    inbox = InteractionFixtures.seed_inbox(operator, conversation)
 
-    {:ok, operator_draft} = Ash.get(Draft, chain.draft.id, actor: chain.operator)
+    {:ok, draft} =
+      Ash.create(
+        Draft,
+        %{
+          inbox_id: inbox.id,
+          body: "draft body",
+          compensation_body: "draft compensation",
+          status: :drafting,
+          ai_prompt: "draft prompt with pii",
+          ai_response: "model output with pii"
+        },
+        action: :compose_draft,
+        actor: operator
+      )
+
+    {:ok, operator_draft} = Ash.get(Draft, draft.id, actor: operator)
     assert is_binary(operator_draft.body)
     assert is_binary(operator_draft.compensation_body)
+    assert is_binary(operator_draft.ai_prompt)
+    assert is_binary(operator_draft.ai_response)
   end
 end
