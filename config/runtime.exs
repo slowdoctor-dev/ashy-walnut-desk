@@ -88,6 +88,17 @@ if config_env() == :prod do
   config :ashy_walnut_desk, :twilio_auth_token, twilio_auth_token
   config :ashy_walnut_desk, :twilio_signature_required, true
 
+  # Sec-fix R3: pin the canonical webhook URL used in signature
+  # verification. Twilio computed `X-Twilio-Signature` over the URL
+  # it POSTed to; if the deployer is behind a reverse proxy that
+  # rewrites Host, reconstructing from `conn.host` produces a
+  # different string and verification fails for legitimate requests.
+  # Required when the webhook lives behind a proxy; optional
+  # otherwise.
+  if url = System.get_env("TWILIO_WEBHOOK_URL") do
+    config :ashy_walnut_desk, :twilio_webhook_url, url
+  end
+
   identifier_hash_salt =
     System.get_env("IDENTIFIER_HASH_SALT") ||
       raise """

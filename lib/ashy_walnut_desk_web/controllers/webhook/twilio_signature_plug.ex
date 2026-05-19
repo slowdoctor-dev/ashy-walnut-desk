@@ -55,7 +55,30 @@ defmodule AshyWalnutDeskWeb.Webhook.TwilioSignaturePlug do
     end
   end
 
+  # Sec-fix R3: prefer the deployer-configured canonical webhook URL
+  # over reconstructing from `conn.host`. `conn.host` mirrors the
+  # `Host:` request header (or whatever the reverse proxy forwards),
+  # which:
+  # 1. Breaks signature verification when a reverse proxy rewrites
+  #    Host (Twilio computed the sig over the URL it posted to;
+  #    behind a proxy we may see a different hostname).
+  # 2. Removes one input under attacker control from the signature
+  #    canonical string. Even though an attacker can't forge a valid
+  #    signature without `TWILIO_AUTH_TOKEN`, reducing trust on
+  #    request-shaped inputs in the verification path is hygiene.
+  #
+  # Deployers set `TWILIO_WEBHOOK_URL` (e.g.
+  # "https://desk.example.com/webhook/twilio"). If unset, falls
+  # back to the conn-derived URL — preserving the current behavior
+  # for tests and the dev mode that bypasses verification anyway.
   defp full_url(conn) do
+    case Application.get_env(:ashy_walnut_desk, :twilio_webhook_url) do
+      url when is_binary(url) and url != "" -> url
+      _ -> conn_derived_url(conn)
+    end
+  end
+
+  defp conn_derived_url(conn) do
     scheme = Atom.to_string(conn.scheme)
     host = conn.host
 
