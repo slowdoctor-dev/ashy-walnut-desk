@@ -15,6 +15,15 @@ defmodule AshyWalnutDesk.Interaction.AuditEvent do
     references do
       reference(:actor, on_delete: :restrict)
     end
+
+    # Perf-fix R2: every consumer of `audit_events` filters by
+    # `chain_topic` and orders by `inserted_at`. `AuditChain.walk/1`
+    # + `walk_with_status/1` (admin LV at `/audit/chain`) +
+    # `mix audit.verify` all share this shape. As chains grow over
+    # months a seq scan dominates the page-load.
+    custom_indexes do
+      index([:chain_topic, :inserted_at])
+    end
   end
 
   actions do
