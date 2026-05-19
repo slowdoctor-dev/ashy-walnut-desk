@@ -19,12 +19,14 @@ defmodule AshyWalnutDesk.Identity.IdentityTest do
   end
 
   defp register_identity(actor, attrs \\ %{}) do
+    unique = System.unique_integer([:positive])
+
     Ash.create(
       Identity,
       Map.merge(
         %{
           display_name: "Alex Doe",
-          primary_identifier: "+15551234567"
+          primary_identifier: "+1555#{unique}"
         },
         attrs
       ),
@@ -97,7 +99,7 @@ defmodule AshyWalnutDesk.Identity.IdentityTest do
 
   # AC2 — primary identifier is hashed and never stored raw
 
-  test "primary identifier normalizes formatting and hashes deterministically" do
+  test "primary identifier normalizes formatting and hash uniqueness blocks equivalent duplicate" do
     # Sec-fix R3: identifier is normalized to bare E.164 (`+` plus
     # digits) before hashing, so different human-friendly formats
     # of the same number collide on the same hash. The original
@@ -109,14 +111,16 @@ defmodule AshyWalnutDesk.Identity.IdentityTest do
     {:ok, identity1} =
       register_identity(admin, %{display_name: "Hash A", primary_identifier: " +1-555 123 "})
 
-    {:ok, identity2} =
-      register_identity(admin, %{display_name: "Hash B", primary_identifier: "+1 (555) 123"})
+    assert {:error, %Ash.Error.Invalid{}} =
+             register_identity(admin, %{
+               display_name: "Hash B",
+               primary_identifier: "+1 (555) 123"
+             })
 
     expected =
       :crypto.hash(:sha256, "+1555123" <> salt) |> Base.encode16(case: :lower)
 
     assert identity1.primary_identifier_hash == expected
-    assert identity2.primary_identifier_hash == expected
     assert identity1.primary_identifier == "+1555123"
   end
 

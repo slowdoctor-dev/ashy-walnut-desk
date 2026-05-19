@@ -85,6 +85,17 @@ defmodule AshyWalnutDesk.Interaction.Conversation do
     end
   end
 
+  field_policies do
+    field_policy :subject do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   attributes do
     uuid_primary_key(:id)
 

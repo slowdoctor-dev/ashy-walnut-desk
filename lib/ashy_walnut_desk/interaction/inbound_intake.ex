@@ -166,6 +166,25 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
 
   defp duplicate_delivery_error?(_), do: false
 
+  defp unique_primary_identifier_hash_violation?(%Ash.Error.Invalid{errors: errors}) do
+    Enum.any?(errors, &primary_identifier_hash_unique_error?/1)
+  end
+
+  defp unique_primary_identifier_hash_violation?(%Ash.Changeset{errors: errors}) do
+    Enum.any?(errors, &primary_identifier_hash_unique_error?/1)
+  end
+
+  defp unique_primary_identifier_hash_violation?(_), do: false
+
+  defp primary_identifier_hash_unique_error?(%Ash.Error.Changes.InvalidAttribute{
+         field: :primary_identifier_hash,
+         private_vars: vars
+       }) do
+    Keyword.get(vars, :constraint_type) == :unique
+  end
+
+  defp primary_identifier_hash_unique_error?(_), do: false
+
   defp resolve_identity(%InboundMessage{from: nil}, _actor), do: {:error, :missing_from}
   defp resolve_identity(%InboundMessage{from: ""}, _actor), do: {:error, :missing_from}
 
@@ -187,8 +206,11 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
                actor: actor,
                context: @ctx
              ) do
-          {:ok, identity} -> {:ok, %{identity: identity, provisional?: true}}
-          {:error, _} = e -> e
+          {:ok, identity} ->
+            {:ok, %{identity: identity, provisional?: true}}
+
+          {:error, error} ->
+            maybe_load_identity_after_unique_race(error, hash)
         end
 
       {:ok, _multiple} ->
@@ -196,6 +218,24 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
 
       {:error, _} ->
         {:error, :identity_lookup_failed}
+    end
+  end
+
+  defp load_identity_by_hash(hash) do
+    Identity
+    |> Ash.Query.filter(expr(primary_identifier_hash == ^hash and is_nil(deleted_at)))
+    |> Ash.read(authorize?: false)
+    |> case do
+      {:ok, [identity]} -> {:ok, %{identity: identity, provisional?: identity.provisional?}}
+      {:ok, _} -> {:error, :identity_lookup_failed}
+      {:error, _} -> {:error, :identity_lookup_failed}
+    end
+  end
+
+  defp maybe_load_identity_after_unique_race(error, hash) do
+    case unique_primary_identifier_hash_violation?(error) do
+      true -> load_identity_by_hash(hash)
+      false -> {:error, error}
     end
   end
 
