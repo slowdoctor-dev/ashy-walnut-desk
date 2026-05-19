@@ -90,13 +90,37 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
     |> Ash.read!(authorize?: false)
   end
 
-  def all_chain_topics do
-    case Repo.query(
-           "SELECT DISTINCT chain_topic FROM audit_events WHERE chain_topic IS NOT NULL",
-           []
-         ) do
-      {:ok, %{rows: rows}} -> Enum.map(rows, fn [topic] -> topic end)
-      {:error, _error} -> []
+  @doc """
+  Returns the most recently active chain topics, capped at the
+  configured limit (default 200) and ordered by latest event first.
+
+  Story 3.fix:
+  - Bounded result set so the admin LV doesn't try to render every
+    historical topic.
+  - DB errors are logged (not swallowed) and re-raised so the LV's
+    error boundary surfaces them instead of pretending the system
+    has no chains.
+  """
+  def all_chain_topics(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 200)
+
+    sql = """
+    SELECT chain_topic
+    FROM audit_events
+    WHERE chain_topic IS NOT NULL
+    GROUP BY chain_topic
+    ORDER BY MAX(inserted_at) DESC
+    LIMIT $1
+    """
+
+    case Repo.query(sql, [limit]) do
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [topic] -> topic end)
+
+      {:error, error} ->
+        require Logger
+        Logger.error("AuditChain.all_chain_topics failed: #{inspect(error)}")
+        raise error
     end
   end
 

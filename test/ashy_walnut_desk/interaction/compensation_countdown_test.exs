@@ -47,7 +47,11 @@ defmodule AshyWalnutDesk.Interaction.CompensationCountdownTest do
   test ":trigger rejects when fewer than 5 seconds have elapsed since initiate_trigger", %{
     admin: admin
   } do
-    for seconds <- [0, 1, 4] do
+    # NOTE: don't use seconds=4 here — slow CI can take 1s+ between
+    # `backdate!` writing the row and `Ash.update(:trigger)` reading
+    # it, pushing the effective elapsed time past 5s and flaking the
+    # rejection assertion. Stay 2+ seconds under the 5s threshold.
+    for seconds <- [0, 1, 2] do
       %{operator: operator, compensation: comp} = setup_compensation(admin)
       comp = backdate!(comp, seconds)
 

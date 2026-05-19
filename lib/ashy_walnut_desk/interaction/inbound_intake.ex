@@ -75,12 +75,20 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
 
   defp do_intake(%InboundMessage{} = msg, %Channel{} = channel, actor) do
     Repo.transaction(fn ->
-      with {:ok, %{identity: identity, provisional?: provisional?}} <-
+      # Story 3.fix: claim the `(provider, provider_message_id)` slot
+      # FIRST. Two concurrent webhooks for the same MessageSid both
+      # passed the optimistic `existing_delivery/1` check (no row in
+      # the ledger yet); whichever transaction inserts here first
+      # wins, and the loser hits the unique constraint immediately —
+      # before doing any wasted chain creation. The loser's
+      # transaction rolls back wholesale (no orphan rows), and the
+      # caller maps the constraint violation to `:duplicate`.
+      with {:ok, _delivery} <- record_delivery(msg, :processed, nil),
+           {:ok, %{identity: identity, provisional?: provisional?}} <-
              resolve_identity(msg, actor),
            {:ok, conversation} <- thread_or_open(identity, channel, actor),
            {:ok, inbox} <- record_inbound_inbox(conversation, msg, actor),
-           {:ok, message} <- record_inbound_message(conversation, msg, actor),
-           {:ok, _delivery} <- record_delivery(msg, :processed, nil) do
+           {:ok, message} <- record_inbound_message(conversation, msg, actor) do
         %{
           identity: identity,
           conversation: conversation,
@@ -97,11 +105,25 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
       {:ok, result} ->
         {:ok, result}
 
-      {:error, reason} when is_atom(reason) ->
+      {:error, reason} ->
+        handle_transaction_failure(msg, reason)
+    end
+  end
+
+  defp handle_transaction_failure(msg, reason) do
+    cond do
+      duplicate_delivery_violation?(reason) ->
+        # Lost the race — another concurrent intake claimed the same
+        # MessageSid first. Honest reply: this delivery is a
+        # duplicate. No `:failed_intake` ledger write needed; the
+        # winner's row already exists with `:processed`.
+        {:ok, %{outcome: :duplicate}}
+
+      is_atom(reason) ->
         record_delivery_outside_transaction(msg, reason)
         {:error, reason}
 
-      {:error, reason} ->
+      true ->
         require Logger
 
         Logger.warning(
@@ -114,6 +136,35 @@ defmodule AshyWalnutDesk.Interaction.InboundIntake do
         {:error, classified}
     end
   end
+
+  # Recognize an Ash error tree whose root cause is the (provider,
+  # provider_message_id) unique-constraint violation. We treat this
+  # as a duplicate, not a failure. Other invariant violations still
+  # bubble up as `:intake_failed`.
+  #
+  # The reason value passed to `Repo.rollback/1` varies by Ash
+  # version / action shape: sometimes `%Ash.Error.Invalid{}` wrapping
+  # `%InvalidAttribute{}`, sometimes the raw `Ash.Changeset` carrying
+  # `errors:` directly. Handle both.
+  defp duplicate_delivery_violation?(%Ash.Error.Invalid{errors: errors}) do
+    Enum.any?(errors, &duplicate_delivery_error?/1)
+  end
+
+  defp duplicate_delivery_violation?(%Ash.Changeset{errors: errors}) do
+    Enum.any?(errors, &duplicate_delivery_error?/1)
+  end
+
+  defp duplicate_delivery_violation?(_), do: false
+
+  defp duplicate_delivery_error?(%Ash.Error.Changes.InvalidAttribute{
+         field: field,
+         private_vars: vars
+       })
+       when field in [:provider, :provider_message_id] do
+    Keyword.get(vars, :constraint_type) == :unique
+  end
+
+  defp duplicate_delivery_error?(_), do: false
 
   defp resolve_identity(%InboundMessage{from: nil}, _actor), do: {:error, :missing_from}
   defp resolve_identity(%InboundMessage{from: ""}, _actor), do: {:error, :missing_from}

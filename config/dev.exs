@@ -65,6 +65,15 @@ config :ashy_walnut_desk, AshyWalnutDeskWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :ashy_walnut_desk, dev_routes: true
 
+# Story 3.fix: explicit dev defaults for the two app secrets.
+# Previously these were set at the top of `config/runtime.exs`
+# (which runs in every env, including prod). Scoped here so a prod
+# release missing the env vars fails fast in the runtime.exs prod
+# block instead of silently using these dev-only constants.
+config :ashy_walnut_desk,
+  identifier_hash_salt: System.get_env("IDENTIFIER_HASH_SALT") || "dev-only-identifier-hash-salt",
+  ash_authentication_secret: System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"
+
 config :ashy_walnut_desk, AshyWalnutDesk.Mailer, adapter: Swoosh.Adapters.Local
 
 # Local dev: allow sign-up so `mix phx.server` works without env wiring.

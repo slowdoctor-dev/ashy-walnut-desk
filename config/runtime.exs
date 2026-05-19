@@ -1,8 +1,10 @@
 import Config
 
-config :ashy_walnut_desk,
-  identifier_hash_salt: System.get_env("IDENTIFIER_HASH_SALT") || "dev-only-identifier-hash-salt",
-  ash_authentication_secret: System.get_env("ASH_AUTHENTICATION_SECRET") || "dev-only-secret"
+# Story 3.fix: `:identifier_hash_salt` and `:ash_authentication_secret`
+# are set explicitly in `config/dev.exs` and `config/test.exs` so a
+# prod misconfiguration cannot silently fall back to a dev-only
+# default at this top level. The `:prod` block below enforces them
+# from env vars and raises at boot if either is missing.
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
