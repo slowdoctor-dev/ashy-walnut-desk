@@ -126,6 +126,27 @@ defmodule AshyWalnutDesk.Interaction.Action do
     end
   end
 
+  # Sec-fix R7: `adapter_response` carries provider-side metadata
+  # (Twilio sid, "to" — the customer's phone number), and `error`
+  # holds provider error strings that can echo PII. Both are
+  # operational-debug fields, not viewer-visible. Restrict to
+  # admin / operator; viewers see ForbiddenField sentinels.
+  field_policies do
+    field_policy :adapter_response do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :error do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   attributes do
     uuid_primary_key(:id)
 

@@ -160,6 +160,18 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
       authorize_if(actor_attribute_equals(:role, :operator))
     end
 
+    # Sec-fix R7: same posture as Action — provider response /
+    # error fields are operational-debug, not viewer-visible.
+    field_policy :adapter_response do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
+    field_policy :error do
+      authorize_if(actor_attribute_equals(:role, :admin))
+      authorize_if(actor_attribute_equals(:role, :operator))
+    end
+
     field_policy :* do
       authorize_if(always())
     end
