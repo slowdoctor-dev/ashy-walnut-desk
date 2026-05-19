@@ -3,6 +3,8 @@ defmodule AshyWalnutDesk.Interaction.Action do
 
   alias Ash.Changeset
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
+
   alias AshyWalnutDesk.Interaction.Changes.{
     ChainLink,
     CountdownGuard,
@@ -96,14 +98,12 @@ defmodule AshyWalnutDesk.Interaction.Action do
 
   policies do
     policy action_type(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
     policy action(:execute) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     # S2: internal-only. Must originate from `Draft.approve`'s
@@ -133,13 +133,11 @@ defmodule AshyWalnutDesk.Interaction.Action do
   # admin / operator; viewers see ForbiddenField sentinels.
   field_policies do
     field_policy :adapter_response do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :error do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do

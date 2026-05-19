@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Identity.Appointment do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Identity.Validations.OriginatingEventLink
 
@@ -93,8 +94,7 @@ defmodule AshyWalnutDesk.Identity.Appointment do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -103,28 +103,23 @@ defmodule AshyWalnutDesk.Identity.Appointment do
     end
 
     policy action(:schedule_appointment) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:reschedule) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:cancel) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:complete) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:archive) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:recover) do
@@ -134,8 +129,7 @@ defmodule AshyWalnutDesk.Identity.Appointment do
 
   field_policies do
     field_policy :summary do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do

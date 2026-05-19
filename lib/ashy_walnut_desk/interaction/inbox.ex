@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.ChainLink
   alias AshyWalnutDesk.Interaction.Checks.{FromActionExecute, FromInboundWebhook}
@@ -106,8 +107,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -116,8 +116,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     end
 
     policy action(:record_inbox) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:record_inbound) do
@@ -125,8 +124,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     end
 
     policy action(:mark_drafting) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     # Internal-only: must originate from `Action.execute`'s
@@ -139,18 +137,15 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
     end
 
     policy action(:dismiss) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:edit_summary) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:archive) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:recover) do
@@ -160,8 +155,7 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
 
   field_policies do
     field_policy :summary do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do

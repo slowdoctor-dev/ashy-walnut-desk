@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Identity.Identity do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.HashPrimaryIdentifier
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Identity.ProvisionalNamer
@@ -104,8 +105,7 @@ defmodule AshyWalnutDesk.Identity.Identity do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -114,8 +114,7 @@ defmodule AshyWalnutDesk.Identity.Identity do
     end
 
     policy action(:register_identity) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:register_provisional) do
@@ -123,13 +122,11 @@ defmodule AshyWalnutDesk.Identity.Identity do
     end
 
     policy action(:update_profile) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:archive) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:recover) do

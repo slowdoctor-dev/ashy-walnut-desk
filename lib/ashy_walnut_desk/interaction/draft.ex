@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CompensationAtApproval}
   alias AshyWalnutDesk.Interaction.Validations.StatusTransition
@@ -124,8 +125,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -134,28 +134,23 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     policy action(:compose_draft) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:revise) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:reject) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:supersede) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:approve) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:backdate_approval_for_tests) do
@@ -163,8 +158,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     policy action(:archive) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     policy action(:recover) do
@@ -179,23 +173,19 @@ defmodule AshyWalnutDesk.Interaction.Draft do
   # row's status / FKs but not the message text.
   field_policies do
     field_policy :body do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :compensation_body do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :ai_prompt do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :ai_response do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     # Sec-fix R13: Phase 4 metadata. `:ai_model` is the model
@@ -206,13 +196,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     # treatment as `:ai_response`. R12 gated the prompt/response;
     # this round closes the metadata pair.
     field_policy :ai_model do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :ai_validator_output do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do

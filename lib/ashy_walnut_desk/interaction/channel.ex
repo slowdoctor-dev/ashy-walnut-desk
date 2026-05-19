@@ -9,6 +9,7 @@ defmodule AshyWalnutDesk.Interaction.Channel do
     extensions: [AshPaperTrail.Resource],
     primary_read_warning?: false
 
+  alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
   alias AshyWalnutDesk.Interaction.Validations.AdapterAllowed
 
@@ -77,8 +78,7 @@ defmodule AshyWalnutDesk.Interaction.Channel do
 
   policies do
     policy action(:read) do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
       authorize_if(actor_attribute_equals(:role, :viewer))
     end
 
@@ -109,8 +109,7 @@ defmodule AshyWalnutDesk.Interaction.Channel do
 
   field_policies do
     field_policy :adapter_module do
-      authorize_if(actor_attribute_equals(:role, :admin))
-      authorize_if(actor_attribute_equals(:role, :operator))
+      authorize_if(AdminOrOperator)
     end
 
     field_policy :* do
