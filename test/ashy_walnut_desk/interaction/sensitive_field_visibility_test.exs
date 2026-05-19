@@ -141,7 +141,9 @@ defmodule AshyWalnutDesk.Interaction.SensitiveFieldVisibilityTest do
           compensation_body: "draft compensation",
           status: :drafting,
           ai_prompt: "draft prompt with pii",
-          ai_response: "model output with pii"
+          ai_response: "model output with pii",
+          ai_model: "claude-opus-4.7",
+          ai_validator_output: %{"flagged" => false, "reason" => nil}
         },
         action: :compose_draft,
         actor: operator
@@ -152,6 +154,10 @@ defmodule AshyWalnutDesk.Interaction.SensitiveFieldVisibilityTest do
     assert match?(%Ash.ForbiddenField{}, viewer_draft.compensation_body)
     assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_prompt)
     assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_response)
+    # Sec-fix R13: AI metadata gated alongside the prompt/response
+    # pair Round 12 already covered.
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_model)
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.ai_validator_output)
     # Status / FKs remain readable so the chain view can still show
     # "Draft #N — approved" without leaking the message text.
     assert viewer_draft.status in [:drafting, :approved]
