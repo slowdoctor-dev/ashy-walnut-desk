@@ -43,25 +43,25 @@ defmodule AshyWalnutDeskWeb.Webhook.WebhookThrottleTest do
     )
   end
 
-  test "first 60 requests succeed-or-403 (within throttle window)", %{conn: conn} do
-    # 60 requests per IP per minute is the configured limit. None of
-    # them should get a 429; they'll get 403 from the signature gate
-    # instead (we send a forged signature). That's the assertion:
-    # the throttle does NOT trip in the first 60.
-    for _ <- 1..60 do
+  test "first 20 requests succeed-or-403 (within throttle window)", %{conn: conn} do
+    # Sec-fix R1: the limit was lowered from 60 to 20 req/min/IP.
+    # 20 is comfortably above Twilio's own retry cadence and well
+    # below abuse-flood. None of these should 429; they 403 at the
+    # signature gate (forged signature).
+    for _ <- 1..20 do
       response = webhook_post(conn)
       assert response.status in [200, 403], "got #{response.status}"
       refute response.status == 429
     end
   end
 
-  test "the 61st request gets 429 from the throttle", %{conn: conn} do
+  test "the 21st request gets 429 from the throttle", %{conn: conn} do
     # Burn the budget.
-    for _ <- 1..60 do
+    for _ <- 1..20 do
       _ = webhook_post(conn)
     end
 
-    # 61st request — same IP, same minute.
+    # 21st request — same IP, same minute.
     over_limit = webhook_post(conn)
     assert over_limit.status == 429
     assert over_limit.resp_body =~ "rate_limited"
