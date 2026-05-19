@@ -78,7 +78,7 @@ defmodule AshyWalnutDesk.Interaction.Adapters.Twilio do
         {:error, :transient}
 
       {:error, reason} ->
-        Logger.warning("Adapters.Twilio: transport error #{inspect(reason)}")
+        Logger.warning("Adapters.Twilio: transport error #{reason_tag(reason)}")
         {:error, :transient}
     end
   end
@@ -231,6 +231,11 @@ defmodule AshyWalnutDesk.Interaction.Adapters.Twilio do
   end
 
   defp classify_4xx(_body), do: {:error, :permanent}
+
+  defp reason_tag(%{__struct__: mod}), do: inspect(mod)
+  defp reason_tag(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp reason_tag(reason) when is_binary(reason), do: reason
+  defp reason_tag(_), do: "unknown"
 
   # ────────────────────────────────────────────────────────────────
 
