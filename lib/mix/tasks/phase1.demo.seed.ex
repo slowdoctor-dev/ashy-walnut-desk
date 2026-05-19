@@ -50,12 +50,22 @@ defmodule Mix.Tasks.Phase1.Demo.Seed do
   end
 
   defp create_identity(admin, display_name) do
+    # `primary_identifier` must be E.164 (sec-fix R3). Generate a
+    # +1555-prefixed number with 9 padded digits derived from the
+    # system unique integer so repeat seed runs produce different
+    # (unique-indexed) identifiers but always pass the E.164 regex.
+    suffix =
+      :erlang.unique_integer([:positive])
+      |> rem(1_000_000_000)
+      |> Integer.to_string()
+      |> String.pad_leading(9, "0")
+
     Identity
     |> Ash.Changeset.for_create(
       :register_identity,
       %{
         display_name: display_name,
-        primary_identifier: "demo-#{Ash.UUID.generate()}",
+        primary_identifier: "+1555#{suffix}",
         notes_summary: "Demo client for Phase 1 screenshot capture."
       },
       actor: admin
