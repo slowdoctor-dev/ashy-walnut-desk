@@ -5,7 +5,7 @@ defmodule AshyWalnutDesk.Interaction.SensitiveFieldVisibilityTest do
   require Ash.Query
 
   alias AshyWalnutDesk.AccountsFixtures
-  alias AshyWalnutDesk.Interaction.{Action, Compensation, Conversation, Inbox, Message}
+  alias AshyWalnutDesk.Interaction.{Action, Compensation, Conversation, Draft, Inbox, Message}
   alias AshyWalnutDesk.InteractionFixtures
 
   test "viewer cannot read Message.body / Compensation.body / Inbox.summary / Conversation.subject" do
@@ -116,5 +116,30 @@ defmodule AshyWalnutDesk.Interaction.SensitiveFieldVisibilityTest do
     {:ok, viewer_compensation} = Ash.get(Compensation, compensation.id, actor: viewer)
     assert match?(%Ash.ForbiddenField{}, viewer_compensation.adapter_response)
     assert match?(%Ash.ForbiddenField{}, viewer_compensation.error)
+  end
+
+  # Sec-fix R8: Draft.body / Draft.compensation_body carry the
+  # operator-drafted text and matching compensation message.
+  # Viewer was previously able to read both via the resource-level
+  # `:read` policy. Field policies now mask them.
+  test "viewer cannot read Draft.body or Draft.compensation_body" do
+    chain = InteractionFixtures.seed_approved_chain()
+    viewer = AccountsFixtures.create_user(:viewer)
+
+    {:ok, viewer_draft} = Ash.get(Draft, chain.draft.id, actor: viewer)
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.body)
+    assert match?(%Ash.ForbiddenField{}, viewer_draft.compensation_body)
+    # Status / FKs remain readable so the chain view can still show
+    # "Draft #N — approved" without leaking the message text.
+    assert viewer_draft.status in [:drafting, :approved]
+    refute is_nil(viewer_draft.inbox_id)
+  end
+
+  test "operator retains access to Draft.body and Draft.compensation_body" do
+    chain = InteractionFixtures.seed_approved_chain()
+
+    {:ok, operator_draft} = Ash.get(Draft, chain.draft.id, actor: chain.operator)
+    assert is_binary(operator_draft.body)
+    assert is_binary(operator_draft.compensation_body)
   end
 end
