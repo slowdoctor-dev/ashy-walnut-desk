@@ -45,4 +45,22 @@ defmodule AshyWalnutDeskWeb.Plugs.RateLimitTest do
       refute RateLimit.call(conn, opts).halted
     end)
   end
+
+  test "ignores spoofed X-Forwarded-For by default (plug-level)" do
+    opts = RateLimit.init(scope: :xff_default, max_requests: 1, window_ms: 60_000)
+    base = Phoenix.ConnTest.build_conn(:get, "/") |> Map.put(:remote_ip, {127, 0, 0, 1})
+
+    first =
+      Plug.Conn.put_req_header(base, "x-forwarded-for", "1.1.1.1")
+      |> RateLimit.call(opts)
+
+    refute first.halted
+
+    second =
+      Plug.Conn.put_req_header(base, "x-forwarded-for", "2.2.2.2")
+      |> RateLimit.call(opts)
+
+    assert second.halted
+    assert second.status == 429
+  end
 end

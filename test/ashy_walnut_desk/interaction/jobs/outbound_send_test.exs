@@ -11,7 +11,7 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSendTest do
   import Ash.Expr
   require Ash.Query
 
-  alias AshyWalnutDesk.Interaction.{Inbox, Message}
+  alias AshyWalnutDesk.Interaction.{Inbox, Jobs.OutboundSend, Message}
   alias AshyWalnutDesk.InteractionFixtures, as: Fixtures
 
   setup do
@@ -84,5 +84,27 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSendTest do
     assert is_binary(key)
     assert key == action.outbound_idempotency_key
     assert String.starts_with?(key, "action-")
+  end
+
+  test "manual job injection cannot send while action is still pending" do
+    %{action: action} = twilio_chain()
+
+    job = OutboundSend.new(%{"action_id" => action.id, "kind" => "action"})
+
+    assert {:ok, _job} = Oban.insert(job)
+    Oban.drain_queue(queue: :outbound, with_recursion: true, with_safety: false)
+
+    reloaded = Ash.get!(AshyWalnutDesk.Interaction.Action, action.id, authorize?: false)
+    assert reloaded.status == :pending
+    assert attempts() == []
+
+    outbound_count =
+      Message
+      |> Ash.Query.for_read(:read, %{}, authorize?: false)
+      |> Ash.Query.filter(expr(direction == :outbound))
+      |> Ash.read!()
+      |> length()
+
+    assert outbound_count == 0
   end
 end
