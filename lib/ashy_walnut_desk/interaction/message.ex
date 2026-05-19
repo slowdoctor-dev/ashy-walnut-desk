@@ -53,7 +53,18 @@ defmodule AshyWalnutDesk.Interaction.Message do
       validate(fn changeset, _context ->
         case Ash.Changeset.get_attribute(changeset, :direction) do
           :outbound ->
-            if Map.get(changeset.context, :from_action_execute, false) do
+            # Story 3.fix: accept either context flag. Phase 2's
+            # `from_action_execute` is the legacy name; story 3.5
+            # introduced `from_action_worker` for the same semantic
+            # ("internal send-path write"). Compensation worker path
+            # (story 3.6) writes via the action-worker route, action
+            # write goes through Changes.RecordOutbound which still
+            # passes the legacy flag. Both must be honored until a
+            # future cleanup pass standardizes on one.
+            ctx = changeset.context
+
+            if Map.get(ctx, :from_action_execute, false) or
+                 Map.get(ctx, :from_action_worker, false) do
               :ok
             else
               {:error,
