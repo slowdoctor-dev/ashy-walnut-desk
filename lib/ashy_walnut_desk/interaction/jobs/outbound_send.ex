@@ -93,7 +93,13 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
   # Returning `{:error, _}` triggers Oban retry; after max_attempts
   # the job lands in `:discarded` and is visible in admin tooling.
   def perform(%Oban.Job{args: args}) do
-    Logger.error("Jobs.OutboundSend: unrecognized job args #{inspect(args)}")
+    arg_keys =
+      case args do
+        %{} -> Map.keys(args)
+        _ -> []
+      end
+
+    Logger.error("Jobs.OutboundSend: unrecognized job args keys=#{inspect(arg_keys)}")
     {:error, :unrecognized_job_args}
   end
 
@@ -149,7 +155,7 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
             # admin / monitoring catch persistent drift.
             Logger.error(
               "Jobs.OutboundSend: adapter sent but :complete_outbound failed for " <>
-                "action #{action.id}: #{inspect(reason)}"
+                "action #{action.id}: #{reason_tag(reason)}"
             )
 
             {:error, error_text(reason)}
@@ -254,7 +260,7 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     else
       {:error, reason} ->
         Logger.error(
-          "Jobs.OutboundSend: terminal_fail could not mark Action #{action_id} failed: #{inspect(reason)}"
+          "Jobs.OutboundSend: terminal_fail could not mark Action #{action_id} failed: #{reason_tag(reason)}"
         )
 
         :ok
@@ -328,7 +334,7 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
         # See `do_attempt/6` for the rationale on logging here.
         Logger.error(
           "Jobs.OutboundSend: adapter sent but :complete_send failed for " <>
-            "compensation #{compensation.id}: #{inspect(reason)}"
+            "compensation #{compensation.id}: #{reason_tag(reason)}"
         )
 
         {:error, error_text(reason)}
@@ -412,10 +418,15 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     else
       {:error, reason} ->
         Logger.error(
-          "Jobs.OutboundSend: terminal_fail_compensation could not mark Compensation #{compensation_id} failed: #{inspect(reason)}"
+          "Jobs.OutboundSend: terminal_fail_compensation could not mark Compensation #{compensation_id} failed: #{reason_tag(reason)}"
         )
 
         :ok
     end
   end
+
+  defp reason_tag(%{__struct__: mod}), do: inspect(mod)
+  defp reason_tag(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp reason_tag(reason) when is_binary(reason), do: reason
+  defp reason_tag(_), do: "unknown"
 end
