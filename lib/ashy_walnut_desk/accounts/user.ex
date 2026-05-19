@@ -115,6 +115,20 @@ defmodule AshyWalnutDesk.Accounts.User do
     end
   end
 
+  field_policies do
+    field_policy :email do
+      authorize_if(always())
+    end
+
+    field_policy :email_hash do
+      authorize_if(always())
+    end
+
+    field_policy :* do
+      authorize_if(always())
+    end
+  end
+
   authentication do
     # `:jti` keys the LV session value on the per-token JWT id, so
     # per-session revocation actually invalidates the cookie. The
