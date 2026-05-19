@@ -16,7 +16,13 @@ defmodule AshyWalnutDesk.Identity.Changes.HashPrimaryIdentifier do
           normalized = raw |> to_string() |> String.trim() |> String.downcase()
           salt = Application.fetch_env!(:ashy_walnut_desk, :identifier_hash_salt)
           hash = :crypto.hash(:sha256, normalized <> salt) |> Base.encode16(case: :lower)
-          Changeset.force_change_attribute(changeset, :primary_identifier_hash, hash)
+
+          changeset
+          |> Changeset.force_change_attribute(:primary_identifier_hash, hash)
+          # Story 3.fix: persist the raw identifier (sensitive) so
+          # the outbound adapter has a recipient to send to. The
+          # hash remains the lookup key; this is payload only.
+          |> Changeset.force_change_attribute(:primary_identifier, normalized)
       end
     end)
   end

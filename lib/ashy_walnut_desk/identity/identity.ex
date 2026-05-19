@@ -148,6 +148,19 @@ defmodule AshyWalnutDesk.Identity.Identity do
       public?(true)
     end
 
+    # Story 3.fix: the raw identifier is required to send outbound
+    # messages (Twilio needs E.164). Stored alongside the hash —
+    # `primary_identifier_hash` is the unique-lookup key, this column
+    # is the payload-only recipient address. `sensitive?: true` keeps
+    # it out of paper-trail diffs and inspect output by default.
+    # Deployers whose privacy policy requires encryption-at-rest can
+    # layer their own decryption load step in the private repo.
+    attribute :primary_identifier, :string do
+      allow_nil?(true)
+      sensitive?(true)
+      public?(true)
+    end
+
     attribute :notes_summary, :string do
       allow_nil?(true)
       sensitive?(true)

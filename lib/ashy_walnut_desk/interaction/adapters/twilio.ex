@@ -47,7 +47,22 @@ defmodule AshyWalnutDesk.Interaction.Adapters.Twilio do
 
   @impl true
   def send_outbound(message, channel) do
-    options = build_req_options(message, channel)
+    case resolve_to_number(message) do
+      {:ok, to} ->
+        do_send(message, channel, to)
+
+      {:error, :missing_recipient} ->
+        # The worker didn't preload `conversation.identity` — that's
+        # a bug, not a transient failure. Fail permanently and the
+        # Action transitions to `:failed` so a human can investigate
+        # rather than silently shipping to a dummy fallback number.
+        Logger.error("Adapters.Twilio: outbound message missing recipient identity")
+        {:error, :permanent}
+    end
+  end
+
+  defp do_send(message, channel, to) do
+    options = build_req_options(message, channel, to)
 
     case Req.post(messages_url(), options) do
       {:ok, %{status: status, body: body}} when status in 200..299 ->
@@ -108,12 +123,12 @@ defmodule AshyWalnutDesk.Interaction.Adapters.Twilio do
   # Outbound request building
   # ────────────────────────────────────────────────────────────────
 
-  defp build_req_options(message, channel) do
+  defp build_req_options(message, channel, to) do
     base = [
       auth: {:basic, "#{account_sid()}:#{auth_token()}"},
       headers: idempotency_headers(message),
       form: [
-        {"To", to_number(message)},
+        {"To", to},
         {"From", from_number(channel)},
         {"Body", message.body || ""}
       ],
@@ -129,34 +144,57 @@ defmodule AshyWalnutDesk.Interaction.Adapters.Twilio do
 
   defp idempotency_headers(_message), do: []
 
-  defp to_number(%{conversation: %{identity: %{primary_identifier: id}}}) when is_binary(id) do
-    id
+  # Resolves the recipient phone number from the in-memory Message's
+  # preloaded `conversation.identity.primary_identifier`. The worker
+  # is responsible for loading that chain (see
+  # `Jobs.OutboundSend.load_action/1`); if it's missing here, we
+  # refuse the send instead of routing to a hardcoded fallback.
+  defp resolve_to_number(%{conversation: %{identity: %{primary_identifier: id}}})
+       when is_binary(id) and id != "" do
+    {:ok, id}
   end
 
-  # The Worker doesn't preload identity onto the in-memory Message, so
-  # the `to` number must be passed via `Channel.provider_config[:to]`
-  # in tests (or — in story 3.6 — by an explicit lookup in the worker).
-  # For story 3.5 we default to the from-number to keep the contract
-  # test green; story 3.7 wires the real identity lookup.
-  defp to_number(_message), do: "+15550000000"
+  defp resolve_to_number(_), do: {:error, :missing_recipient}
 
   defp from_number(%{slug: _slug}) do
-    Application.get_env(:ashy_walnut_desk, :twilio, [])
-    |> Keyword.get(:from_number)
-    |> case do
-      nil -> System.get_env("TWILIO_FROM_NUMBER") || "+15550000000"
-      val -> val
-    end
+    twilio_config(:from_number) || System.get_env("TWILIO_FROM_NUMBER") ||
+      fallback_credential!("TWILIO_FROM_NUMBER")
   end
 
   defp account_sid do
-    Application.get_env(:ashy_walnut_desk, :twilio, [])
-    |> Keyword.get(:account_sid) || System.get_env("TWILIO_ACCOUNT_SID") || "AC_test"
+    twilio_config(:account_sid) || System.get_env("TWILIO_ACCOUNT_SID") ||
+      fallback_credential!("TWILIO_ACCOUNT_SID")
   end
 
   defp auth_token do
-    Application.get_env(:ashy_walnut_desk, :twilio, [])
-    |> Keyword.get(:auth_token) || System.get_env("TWILIO_AUTH_TOKEN") || "test-token"
+    twilio_config(:auth_token) || System.get_env("TWILIO_AUTH_TOKEN") ||
+      fallback_credential!("TWILIO_AUTH_TOKEN")
+  end
+
+  defp twilio_config(key) do
+    :ashy_walnut_desk
+    |> Application.get_env(:twilio, [])
+    |> Keyword.get(key)
+  end
+
+  # Returns a dev/test placeholder for the named credential. In test
+  # the HTTP layer is stubbed at the `Req` plug boundary so the
+  # placeholder never reaches a real Twilio request; in dev the
+  # adapter is exercised only by the conformance suite. In `:prod`
+  # we never reach this — `config/runtime.exs` raises at boot if any
+  # of the env vars is unset.
+  defp fallback_credential!(env_name) do
+    case Application.fetch_env(:ashy_walnut_desk, :env) do
+      {:ok, :prod} ->
+        raise """
+        Adapters.Twilio: missing required env var #{env_name}.
+        This branch should be unreachable in :prod — config/runtime.exs
+        is supposed to raise at boot. Investigate config drift.
+        """
+
+      _ ->
+        "DEV_PLACEHOLDER_#{env_name}"
+    end
   end
 
   defp messages_url do

@@ -28,6 +28,11 @@ config :ashy_walnut_desk, Oban,
   queues: [default: 10, messages: 10, ai: 5, reindex: 5, tokens: 5, outbound: 5]
 
 if config_env() == :prod do
+  # Stamp the runtime env so prod-only code paths (e.g.
+  # `Adapters.Twilio.fallback_credential!/1`) can fail-loud instead
+  # of returning a dev placeholder.
+  config :ashy_walnut_desk, :env, :prod
+
   # F1 — registration gate. Default false; deployer opts in by setting
   # AWD_REGISTRATION_ENABLED=1 once their allowlist / invite flow / SSO
   # replacement is in place. Without this, the magic-link strategy
@@ -37,6 +42,49 @@ if config_env() == :prod do
   if System.get_env("AWD_REGISTRATION_ENABLED") in ~w(1 true) do
     config :ashy_walnut_desk, :registration_enabled?, true
   end
+
+  # Story 3.fix — Twilio prod credentials must be set when the
+  # framework is built with the Twilio adapter in the
+  # `:channel_adapters` allowlist (the framework default). Missing
+  # creds in prod would otherwise fall through to the adapter's
+  # placeholder strings and produce a 401 from Twilio on every send.
+  # Enforced regardless of whether a `Channel{adapter_module:
+  # Twilio}` row exists — registering one without creds wired would
+  # be the same misconfiguration.
+  twilio_account_sid =
+    System.get_env("TWILIO_ACCOUNT_SID") ||
+      raise """
+      environment variable TWILIO_ACCOUNT_SID is missing.
+      Get it from https://console.twilio.com (Account Info).
+      """
+
+  twilio_auth_token =
+    System.get_env("TWILIO_AUTH_TOKEN") ||
+      raise """
+      environment variable TWILIO_AUTH_TOKEN is missing.
+      Get it from https://console.twilio.com (Account Info).
+      Treat this as a secret — leaking it allows forging webhook
+      signatures (X-Twilio-Signature) per ADR-024.
+      """
+
+  twilio_from_number =
+    System.get_env("TWILIO_FROM_NUMBER") ||
+      raise """
+      environment variable TWILIO_FROM_NUMBER is missing.
+      The E.164 (+1…) number you bought / registered with Twilio.
+      """
+
+  config :ashy_walnut_desk, :twilio,
+    account_sid: twilio_account_sid,
+    auth_token: twilio_auth_token,
+    from_number: twilio_from_number
+
+  # Webhook signature verification: the signature plug refuses to
+  # bypass when this is true. In prod we set both — the secret AND
+  # the requirement flag — so a future code path that forgets to
+  # check the flag can't silently accept unsigned webhooks.
+  config :ashy_walnut_desk, :twilio_auth_token, twilio_auth_token
+  config :ashy_walnut_desk, :twilio_signature_required, true
 
   identifier_hash_salt =
     System.get_env("IDENTIFIER_HASH_SALT") ||

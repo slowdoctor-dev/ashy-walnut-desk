@@ -87,6 +87,16 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     end
   end
 
+  # Fail-loud catch-all. An Oban job with an unrecognized `kind` or
+  # malformed args is a bug (someone enqueued the worker by hand or
+  # a future story added a new branch without registering it here).
+  # Returning `{:error, _}` triggers Oban retry; after max_attempts
+  # the job lands in `:discarded` and is visible in admin tooling.
+  def perform(%Oban.Job{args: args}) do
+    Logger.error("Jobs.OutboundSend: unrecognized job args #{inspect(args)}")
+    {:error, :unrecognized_job_args}
+  end
+
   # ────────────────────────────────────────────────────────────────
   # Core flow
   # ────────────────────────────────────────────────────────────────
@@ -141,7 +151,11 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
   defp load_action(action_id) do
     with {:ok, action} <- Ash.get(Action, action_id, authorize?: false),
          {:ok, channel} <- Ash.get(Channel, action.channel_id, authorize?: false),
-         {:ok, draft} <- Ash.get(Draft, action.draft_id, load: [:inbox], authorize?: false) do
+         {:ok, draft} <-
+           Ash.get(Draft, action.draft_id,
+             load: [inbox: [conversation: :identity]],
+             authorize?: false
+           ) do
       {:ok, action, channel, draft}
     else
       {:error, %Ash.Error.Invalid{}} -> {:error, :action_not_found}
@@ -156,7 +170,13 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
       direction: :outbound,
       body: draft.body,
       approved_by_id: draft.approved_by_id,
-      outbound_idempotency_key: action.outbound_idempotency_key
+      outbound_idempotency_key: action.outbound_idempotency_key,
+      # Story 3.fix: surface the resolved conversation (and its
+      # identity) on the in-memory struct so the Twilio adapter can
+      # read `message.conversation.identity.primary_identifier` as
+      # the recipient — instead of falling back to a hardcoded test
+      # number, which would silently misroute every outbound send.
+      conversation: draft.inbox.conversation
     }
   end
 
@@ -210,7 +230,11 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     with {:ok, compensation} <- Ash.get(Compensation, compensation_id, authorize?: false),
          {:ok, action} <- Ash.get(Action, compensation.action_id, authorize?: false),
          {:ok, channel} <- Ash.get(Channel, action.channel_id, authorize?: false),
-         {:ok, draft} <- Ash.get(Draft, action.draft_id, load: [:inbox], authorize?: false) do
+         {:ok, draft} <-
+           Ash.get(Draft, action.draft_id,
+             load: [inbox: [conversation: :identity]],
+             authorize?: false
+           ) do
       {:ok, compensation, channel, draft}
     else
       {:error, %Ash.Error.Invalid{}} -> {:error, :compensation_not_found}
@@ -264,7 +288,8 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
       direction: :outbound,
       body: compensation.body,
       approved_by_id: draft.approved_by_id,
-      outbound_idempotency_key: compensation.outbound_idempotency_key
+      outbound_idempotency_key: compensation.outbound_idempotency_key,
+      conversation: draft.inbox.conversation
     }
   end
 

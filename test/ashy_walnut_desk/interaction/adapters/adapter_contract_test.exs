@@ -14,9 +14,10 @@ defmodule AshyWalnutDesk.Interaction.Adapters.AdapterContractTest do
 
   use ExUnit.Case, async: true
 
+  alias AshyWalnutDesk.Identity.Identity
   alias AshyWalnutDesk.Interaction.Adapter
   alias AshyWalnutDesk.Interaction.Adapters.{Echo, Stub, Twilio}
-  alias AshyWalnutDesk.Interaction.{Channel, InboundMessage, Message}
+  alias AshyWalnutDesk.Interaction.{Channel, Conversation, InboundMessage, Message}
 
   @adapters_under_test [Stub, Echo, Twilio]
 
@@ -42,11 +43,28 @@ defmodule AshyWalnutDesk.Interaction.Adapters.AdapterContractTest do
       end
 
       test "send_outbound/2 with a valid message + channel returns {:ok, map}", _ctx do
+        # Story 3.fix: Twilio's `to_number` reads from
+        # `message.conversation.identity.primary_identifier`. The
+        # worker preloads this chain (`load_action/1`); contract
+        # tests must do the same to exercise the real adapter
+        # surface — otherwise the test passes for the wrong reason.
+        identity = %Identity{
+          id: Ash.UUID.generate(),
+          primary_identifier: "+15551239999"
+        }
+
+        conversation = %Conversation{
+          id: Ash.UUID.generate(),
+          identity: identity
+        }
+
         message = %Message{
-          conversation_id: Ash.UUID.generate(),
+          conversation_id: conversation.id,
+          conversation: conversation,
           direction: :outbound,
           body: "test outbound body",
-          approved_by_id: Ash.UUID.generate()
+          approved_by_id: Ash.UUID.generate(),
+          outbound_idempotency_key: "action-test-key"
         }
 
         channel = %Channel{
