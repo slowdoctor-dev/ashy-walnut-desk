@@ -51,15 +51,16 @@ defmodule AshyWalnutDeskWeb.Plugs.RateLimit do
     %{
       scope: Keyword.fetch!(opts, :scope),
       max_requests: Keyword.get(opts, :max_requests, 10),
-      window_ms: Keyword.get(opts, :window_ms, 60_000)
+      window_ms: Keyword.get(opts, :window_ms, 60_000),
+      trust_x_forwarded_for: Keyword.get(opts, :trust_x_forwarded_for, false)
     }
   end
 
   @impl true
   def call(%Plug.Conn{method: "OPTIONS"} = conn, _opts), do: conn
 
-  def call(conn, %{scope: scope, max_requests: max, window_ms: window}) do
-    if exceeded?(conn, scope, max, window) do
+  def call(conn, %{scope: scope, max_requests: max, window_ms: window} = opts) do
+    if exceeded?(conn, scope, max, window, opts) do
       conn
       |> put_resp_header("retry-after", Integer.to_string(div(window, 1_000)))
       |> send_resp(429, "rate_limited")
@@ -69,9 +70,9 @@ defmodule AshyWalnutDeskWeb.Plugs.RateLimit do
     end
   end
 
-  defp exceeded?(conn, scope, max, window) do
+  defp exceeded?(conn, scope, max, window, opts) do
     start_table()
-    key = {scope, client_ip(conn)}
+    key = {scope, client_ip(conn, opts)}
     now = System.monotonic_time(:millisecond)
     window_start = now - window
 
@@ -89,7 +90,7 @@ defmodule AshyWalnutDeskWeb.Plugs.RateLimit do
     end
   end
 
-  defp client_ip(conn) do
+  defp client_ip(conn, %{trust_x_forwarded_for: true}) do
     # Prefer the X-Forwarded-For first hop when behind a trusted
     # reverse proxy (Cloudflare Tunnel is the documented path —
     # BASELINE §12). If no header is set, fall back to the raw peer
@@ -100,4 +101,6 @@ defmodule AshyWalnutDeskWeb.Plugs.RateLimit do
       [] -> conn.remote_ip |> :inet.ntoa() |> to_string()
     end
   end
+
+  defp client_ip(conn, _opts), do: conn.remote_ip |> :inet.ntoa() |> to_string()
 end

@@ -36,8 +36,8 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundRetryPolicyTest do
         slug: "twilio-sms-#{System.unique_integer([:positive])}"
       )
 
-    _ = operator
     Fixtures.backdate_approval!(draft, 6)
+    {:ok, _scheduled} = Ash.update(action, %{}, action: :execute, actor: operator)
 
     transient_plug = fn conn ->
       Plug.Conn.send_resp(conn, 503, "transient")
@@ -100,8 +100,8 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundRetryPolicyTest do
         slug: "twilio-sms-#{System.unique_integer([:positive])}"
       )
 
-    _ = operator
     Fixtures.backdate_approval!(draft, 6)
+    {:ok, _scheduled} = Ash.update(action, %{}, action: :execute, actor: operator)
 
     permanent_plug = fn conn ->
       conn

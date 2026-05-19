@@ -103,6 +103,13 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
   defp run_send(job, action, channel, draft, args) do
     cond do
+      action.status == :pending ->
+        Logger.warning(
+          "Jobs.OutboundSend: refusing send for unscheduled Action #{action.id} (status=pending)"
+        )
+
+        :ok
+
       action.status == :executed ->
         # Idempotent re-entry after a worker crash post-DB-commit but
         # pre-Oban-ack. Nothing to do.
@@ -116,8 +123,11 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
       true ->
         message = build_outbound_message(action, draft)
-        adapter = resolve_adapter!(channel.adapter_module)
-        do_attempt(job, action, channel, message, adapter, args)
+
+        case resolve_adapter(channel.adapter_module) do
+          {:ok, adapter} -> do_attempt(job, action, channel, message, adapter, args)
+          {:error, reason} -> terminal_fail(action.id, error_text(reason))
+        end
     end
   end
 
@@ -196,8 +206,24 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
     }
   end
 
-  defp resolve_adapter!(module_name) when is_binary(module_name) do
-    Module.concat([module_name])
+  defp resolve_adapter(module_name) when is_binary(module_name) do
+    allowed =
+      :ashy_walnut_desk
+      |> Application.get_env(:channel_adapters, [])
+      |> Enum.map(&Atom.to_string/1)
+      |> MapSet.new()
+
+    module =
+      case module_name do
+        "Elixir." <> _ -> module_name
+        other -> "Elixir." <> other
+      end
+
+    if MapSet.member?(allowed, module) do
+      {:ok, Module.concat([module_name])}
+    else
+      {:error, :adapter_not_allowed}
+    end
   end
 
   # ────────────────────────────────────────────────────────────────
@@ -261,18 +287,36 @@ defmodule AshyWalnutDesk.Interaction.Jobs.OutboundSend do
 
   defp run_compensation_send(job, compensation, channel, draft) do
     cond do
-      compensation.status in [:triggered, :failed, :completed] -> :ok
-      not channel.enabled? -> terminal_fail_compensation(compensation.id, "channel disabled")
-      true -> dispatch_compensation_attempt(job, compensation, channel, draft)
+      compensation.status in [:registered, :triggering] ->
+        Logger.warning(
+          "Jobs.OutboundSend: refusing send for unscheduled Compensation #{compensation.id} " <>
+            "(status=#{compensation.status})"
+        )
+
+        :ok
+
+      compensation.status in [:triggered, :failed, :completed] ->
+        :ok
+
+      not channel.enabled? ->
+        terminal_fail_compensation(compensation.id, "channel disabled")
+
+      true ->
+        dispatch_compensation_attempt(job, compensation, channel, draft)
     end
   end
 
   defp dispatch_compensation_attempt(job, compensation, channel, draft) do
     message = build_compensation_message(compensation, draft)
-    adapter = Module.concat([channel.adapter_module])
 
-    adapter.send_outbound(message, channel)
-    |> handle_compensation_result(job, compensation, draft)
+    case resolve_adapter(channel.adapter_module) do
+      {:ok, adapter} ->
+        adapter.send_outbound(message, channel)
+        |> handle_compensation_result(job, compensation, draft)
+
+      {:error, reason} ->
+        terminal_fail_compensation(compensation.id, error_text(reason))
+    end
   end
 
   defp handle_compensation_result({:ok, payload}, _job, compensation, draft) do
