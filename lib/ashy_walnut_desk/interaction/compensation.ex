@@ -167,6 +167,7 @@ defmodule AshyWalnutDesk.Interaction.Compensation do
       allow_nil?(false)
       sensitive?(true)
       public?(true)
+      constraints(max_length: 2_000)
     end
 
     # Story 3.6: server-stamped at `:initiate_trigger` time. The

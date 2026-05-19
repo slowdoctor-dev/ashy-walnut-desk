@@ -138,10 +138,17 @@ defmodule AshyWalnutDesk.Interaction.Message do
       public?(true)
     end
 
+    # Sec-fix R3: bound the body size so a malformed inbound webhook
+    # or a forged provider payload can't blob megabytes into the
+    # database (and downstream into AuditEvent payloads / paper
+    # trail). 2_000 chars comfortably exceeds Twilio's 1_600-char
+    # SMS limit, with headroom for future providers (WhatsApp text
+    # is 4_096 — deployers landing that adapter can override).
     attribute :body, :string do
       allow_nil?(false)
       sensitive?(true)
       public?(true)
+      constraints(max_length: 2_000)
     end
 
     attribute :sent_at, :utc_datetime_usec do

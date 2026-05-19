@@ -175,16 +175,20 @@ defmodule AshyWalnutDesk.Interaction.Draft do
   attributes do
     uuid_primary_key(:id)
 
+    # Sec-fix R3: same upper bound as Message.body (the outbound
+    # row mirrors this).
     attribute :body, :string do
       allow_nil?(false)
       sensitive?(true)
       public?(true)
+      constraints(max_length: 2_000)
     end
 
     attribute :compensation_body, :string do
       allow_nil?(true)
       sensitive?(true)
       public?(true)
+      constraints(max_length: 2_000)
     end
 
     attribute :status, :atom do
