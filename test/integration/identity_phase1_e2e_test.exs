@@ -229,7 +229,7 @@ defmodule AshyWalnutDesk.Integration.IdentityPhase1E2ETest do
 
     {:ok, viewer_view, html} = live(viewer_conn, ~p"/identities/#{identity.id}")
 
-    assert html =~ "Recorded by admin"
+    assert html =~ "[redacted]"
     refute has_element?(viewer_view, "[data-role=write-actions]")
     refute has_element?(viewer_view, "[data-role=edit-identity]")
     refute has_element?(viewer_view, "[data-role=archive-identity]")
