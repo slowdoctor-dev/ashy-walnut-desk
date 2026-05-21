@@ -168,7 +168,6 @@ BMAD (per phase, ~half day):
   Analyst   → specs/phase-N/requirements.md
   Architect → specs/phase-N/architecture.md
   PM        → specs/phase-N/stories/story-N.M.md
-
 GSD (per story, 1-3 hours):
   1. Discuss — load story + read referenced specs
   2. Plan    — propose file changes BEFORE coding
@@ -277,6 +276,7 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
   string `"false"` is truthy, so `:if` always passes. Convert at the
   attribute boundary with `to_string/1`.
 - `validate(attribute_in(:field, list))` rejects `nil` even when `allow_nil?(true)`; for optional enum-like strings (e.g. Persona `model_override`), guard nil in a custom `change/2` validation before membership checks.
+- Running multiple `mix test` commands concurrently in the same checkout can corrupt BEAM artifacts under `_build` (e.g., `Inspect` load errors); run compile/test serially per worktree.
 ## 11. When in Doubt
 
 1. Check `specs/decisions/` for existing ADRs

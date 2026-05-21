@@ -20,7 +20,8 @@ config :ashy_walnut_desk,
     AshyWalnutDesk.Accounts,
     AshyWalnutDesk.Identity,
     AshyWalnutDesk.Interaction,
-    AshyWalnutDesk.Knowledge
+    AshyWalnutDesk.Knowledge,
+    AshyWalnutDesk.AI
   ]
 
 # Base session-cookie options. `runtime.exs` `:prod` block merges
@@ -48,6 +49,12 @@ config :ashy_walnut_desk, :channel_adapters, [
 config :ashy_walnut_desk, :ai_model_allowlist, [
   "claude-sonnet-4-6",
   "claude-opus-4-7"
+]
+
+config :ashy_walnut_desk, :ai_adapter, AshyWalnutDesk.AI.Adapters.Fixture
+
+config :ashy_walnut_desk, :ai_adapter_allowlist, [
+  AshyWalnutDesk.AI.Adapters.Fixture
 ]
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling
