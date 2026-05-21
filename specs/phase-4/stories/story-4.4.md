@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 3h
 **Depends on**: 4.2
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Phase 2 source-level honest-framing checks do not cover runtime AI text. Phase 4
 
 ## Acceptance criteria
 
-- [ ] AC1: `Safety.Validator` behaviour and `Validators.Composite` chain exist with deterministic merged result schema. — Verify: `mix test test/ashy_walnut_desk/safety/validator_composite_test.exs`
-- [ ] AC2: `Validators.Baseline` blocks prohibited claims and guarantee-style phrasing per framework rules. — Verify: `mix test test/ashy_walnut_desk/safety/validators/baseline_test.exs`
-- [ ] AC3: `Validators.HonestFraming` evaluates runtime generated body text (not source files) and returns violation codes/messages. — Verify: `mix test test/ashy_walnut_desk/safety/validators/honest_framing_test.exs`
-- [ ] AC4: Validator-facing operator messages are gettext-backed (no hardcoded UI error strings in validator output path). — Verify: `rg -n "gettext\(" lib/ashy_walnut_desk/safety && mix test test/ashy_walnut_desk/safety/validator_i18n_test.exs`
+- [x] AC1: `Safety.Validator` behaviour and `Validators.Composite` chain exist with deterministic merged result schema. — Verify: `mix test test/ashy_walnut_desk/safety/validator_composite_test.exs`
+- [x] AC2: `Validators.Baseline` blocks prohibited claims and guarantee-style phrasing per framework rules. — Verify: `mix test test/ashy_walnut_desk/safety/validators/baseline_test.exs`
+- [x] AC3: `Validators.HonestFraming` evaluates runtime generated body text (not source files) and returns violation codes/messages. — Verify: `mix test test/ashy_walnut_desk/safety/validators/honest_framing_test.exs`
+- [x] AC4: Validator-facing operator messages are gettext-backed (no hardcoded UI error strings in validator output path). — Verify: `rg -n "gettext\(" lib/ashy_walnut_desk/safety && mix test test/ashy_walnut_desk/safety/validator_i18n_test.exs`
 
 ## Files to create
 
@@ -84,5 +84,9 @@ mix test test/ashy_walnut_desk/safety/validator_i18n_test.exs
 (AI fills this in during execution.)
 
 - Decisions made:
+- Added `Safety.HonestFraming.banned_terms/0` as the single source for banned unsend framing terms and reused it in both runtime validator logic and the existing source-file safety scan test.
+- `Safety.Validators.Composite.check/2` defaults deployment validator modules from `Application.compile_env/3` and supports an explicit `:deployment_validators` override for deterministic tests.
+- Baseline violation locale keys are `validator.violations.<code>` and all baseline code paths are gettext-backed.
 - Spec drift noticed:
+- Story references phase architecture section numbers that drifted; implementation follows `/specs/phase-4/architecture.md` section 5 (`Safety subsystem detail`), as requested.
 - Gotchas to add to AGENTS.md §10:
