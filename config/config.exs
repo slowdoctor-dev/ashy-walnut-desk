@@ -54,10 +54,16 @@ config :ashy_walnut_desk, :ai_model_allowlist, [
 config :ashy_walnut_desk, :ai_adapter, AshyWalnutDesk.AI.Adapters.Fixture
 
 config :ashy_walnut_desk, :ai_adapter_allowlist, [
-  AshyWalnutDesk.AI.Adapters.Fixture
+  AshyWalnutDesk.AI.Adapters.Fixture,
+  AshyWalnutDesk.AI.Adapters.Anthropic
 ]
 
 config :ashy_walnut_desk, :deployment_validators, []
+
+# Default model when a Persona supplies no `model_override`. Must be a
+# member of `:ai_model_allowlist` above. `config/runtime.exs` flips
+# `:ai_adapter` to the real Anthropic impl in `:prod`.
+config :ashy_walnut_desk, :default_model, "claude-sonnet-4-6"
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that

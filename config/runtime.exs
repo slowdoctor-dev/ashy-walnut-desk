@@ -99,6 +99,24 @@ if config_env() == :prod do
     config :ashy_walnut_desk, :twilio_webhook_url, url
   end
 
+  # AI generation (ADR-025, story 4.3). Fail fast at boot if the
+  # provider key is missing — otherwise the Anthropic adapter would
+  # fall through to its dev placeholder and 401 on the first
+  # generation. In prod the real adapter is the default; dev/test use
+  # the deterministic Fixture (set in config/config.exs), so the key
+  # is only required here.
+  anthropic_api_key =
+    System.get_env("ANTHROPIC_API_KEY") ||
+      raise """
+      environment variable ANTHROPIC_API_KEY is missing.
+      Get it from https://console.anthropic.com (API keys).
+      Treat this as a secret — it is never logged or persisted in
+      Draft.ai_* fields or AuditEvent rows (AGENTS.md §7.4).
+      """
+
+  config :ashy_walnut_desk, :anthropic, api_key: anthropic_api_key
+  config :ashy_walnut_desk, :ai_adapter, AshyWalnutDesk.AI.Adapters.Anthropic
+
   identifier_hash_salt =
     System.get_env("IDENTIFIER_HASH_SALT") ||
       raise """
