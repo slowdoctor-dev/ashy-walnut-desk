@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 3h
 **Depends on**: 4.5, 4.6
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Backend generation is complete after story 4.6; this story adds operator-facing 
 
 ## Acceptance criteria
 
-- [ ] AC1: `GenerationPanel` allows operator/admin to request generation and renders worker progress/state safely. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/generation_panel_test.exs`
-- [ ] AC2: `ValidatorBadge` surfaces pass/fail + violation summary from persisted validator output without exposing restricted fields to viewers. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/validator_badge_test.exs`
-- [ ] AC3: Candidate carousel renders one card per `:drafting` Draft on the Inbox; each card shows `ValidatorBadge` + body preview + per-card Approve/Reject/Regenerate actions; approve auto-supersedes sibling candidates (per story 4.5 AC5) and the carousel re-renders without leaving stale candidate cards visible. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/candidate_flow_test.exs`
-- [ ] AC4: Operator-facing generation/validation error messages in this flow are gettext-backed. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/generation_i18n_test.exs`
+- [x] AC1: `GenerationPanel` allows operator/admin to request generation and renders worker progress/state safely. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/generation_panel_test.exs`
+- [x] AC2: `ValidatorBadge` surfaces pass/fail + violation summary from persisted validator output without exposing restricted fields to viewers. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/validator_badge_test.exs`
+- [x] AC3: Candidate carousel renders one card per `:drafting` Draft on the Inbox; each card shows `ValidatorBadge` + body preview + per-card Approve/Reject/Regenerate actions; approve auto-supersedes sibling candidates (per story 4.5 AC5) and the carousel re-renders without leaving stale candidate cards visible. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/candidate_flow_test.exs`
+- [x] AC4: Operator-facing generation/validation error messages in this flow are gettext-backed. — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/generation_i18n_test.exs`
 
 ## Files to create
 
@@ -80,5 +80,10 @@ mix test test/ashy_walnut_desk_web/live/inbox_live/generation_i18n_test.exs
 (AI fills this in during execution.)
 
 - Decisions made:
+- Added `Inbox.latest_drafting_candidates` relationship (statuses `:generating | :drafting`) and integrated `InboxLive.Show` with PubSub-based generation refresh.
+- Kept Phase 3 approval/countdown/compensation flow unchanged; candidate Approve triggers the same server countdown path.
+- Implemented static `gettext("validator.violations.<code>")` dispatch in `ValidatorBadge` so extraction stays complete.
 - Spec drift noticed:
+- None.
 - Gotchas to add to AGENTS.md §10:
+- `InboxLive.Show` cannot use `Ash.read_one!` for Draft lookup once multi-candidate drafting is enabled; use `sort + limit(1)` then `List.first/1`.

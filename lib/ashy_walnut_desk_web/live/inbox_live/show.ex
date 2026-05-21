@@ -4,8 +4,10 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
   use AshyWalnutDeskWeb, :live_view
 
   alias AshyWalnutDesk.Interaction.{Action, Compensation, Draft, Inbox}
+  alias AshyWalnutDesk.Knowledge.Persona
   alias AshyWalnutDeskWeb.Components.CountdownSendButton
   alias AshyWalnutDeskWeb.InboxLive.ChainComponent
+  alias AshyWalnutDeskWeb.InboxLive.Components.GenerationPanel
   require Ash.Query
 
   on_mount {AshyWalnutDeskWeb.LiveUserAuth, :live_user_required}
@@ -18,11 +20,14 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
          socket
          |> assign(
            inbox: inbox,
+           personas: list_personas(socket.assigns.current_user),
            countdown_active?: false,
            seconds_left: 5,
            comp_countdown_active?: false,
-           comp_seconds_left: 5
+           comp_seconds_left: 5,
+           draft_subscriptions: MapSet.new()
          )
+         |> sync_draft_subscriptions(inbox)
          |> assign_draft_form()}
 
       {:error, _} ->
@@ -73,6 +78,77 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
       false -> {:noreply, put_flash(socket, :error, gettext("Draft is not ready for approval."))}
       {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Could not approve draft."))}
       _ -> {:noreply, put_flash(socket, :error, gettext("Draft is not ready for approval."))}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "generate_draft",
+        %{"generation_form" => %{"persona_id" => persona_id}},
+        socket
+      ) do
+    attrs = %{"inbox_id" => socket.assigns.inbox.id, "persona_id" => persona_id}
+
+    case Ash.create(Draft, attrs, action: :generate, actor: socket.assigns.current_user) do
+      {:ok, _draft} ->
+        {:noreply, reload(socket)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not generate draft."))}
+    end
+  end
+
+  @impl true
+  def handle_event("approve_candidate", %{"draft_id" => draft_id}, socket) do
+    actor = socket.assigns.current_user
+
+    with {:ok, draft} <- Ash.get(Draft, draft_id, actor: actor),
+         true <- ready_for_candidate_approval?(draft),
+         {:ok, _approved} <- Ash.update(draft, %{}, action: :approve, actor: actor),
+         {:ok, action} <- find_action_for_draft(draft.id, actor) do
+      Process.send_after(self(), {:countdown_tick, action.id, 4}, 1_000)
+      Process.send_after(self(), {:execute_action, action.id}, 5_000)
+
+      {:noreply, socket |> assign(countdown_active?: true, seconds_left: 5) |> reload()}
+    else
+      false -> {:noreply, put_flash(socket, :error, gettext("Draft is not ready for approval."))}
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Could not approve draft."))}
+      _ -> {:noreply, put_flash(socket, :error, gettext("Draft is not ready for approval."))}
+    end
+  end
+
+  @impl true
+  def handle_event("reject_candidate", %{"draft_id" => draft_id}, socket) do
+    actor = socket.assigns.current_user
+
+    with {:ok, draft} <- Ash.get(Draft, draft_id, actor: actor),
+         {:ok, _} <- Ash.update(draft, %{}, action: :reject, actor: actor) do
+      {:noreply, reload(socket)}
+    else
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Could not reject draft."))}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "regenerate_candidate",
+        %{"draft_id" => draft_id, "persona_id" => persona_id},
+        socket
+      ) do
+    actor = socket.assigns.current_user
+
+    with {:ok, _draft} <- Ash.get(Draft, draft_id, actor: actor),
+         {:ok, _} <-
+           Ash.create(
+             Draft,
+             %{"inbox_id" => socket.assigns.inbox.id, "persona_id" => persona_id},
+             action: :generate,
+             actor: actor
+           ) do
+      {:noreply, reload(socket)}
+    else
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not regenerate draft."))}
     end
   end
 
@@ -142,6 +218,11 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
   end
 
   @impl true
+  def handle_info(event, socket) when event in [:generation_complete, :generation_failed] do
+    {:noreply, reload(socket)}
+  end
+
+  @impl true
   def handle_info({:comp_countdown_tick, compensation_id, seconds_left}, socket) do
     current_id = current_compensation_id(socket)
 
@@ -200,10 +281,27 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
       String.trim(draft.compensation_body || "") != ""
   end
 
+  defp ready_for_candidate_approval?(draft) do
+    validator_passed? =
+      case draft.ai_validator_output do
+        %{"passed?" => true} -> true
+        _ -> false
+      end
+
+    draft.status == :drafting and validator_passed? and String.trim(draft.body || "") != "" and
+      String.trim(draft.compensation_body || "") != ""
+  end
+
   defp reload(socket) do
     case load_inbox(socket.assigns.inbox.id, socket.assigns.current_user, true) do
-      {:ok, inbox} -> socket |> assign(inbox: inbox) |> assign_draft_form()
-      {:error, _} -> socket
+      {:ok, inbox} ->
+        socket
+        |> assign(inbox: inbox, personas: list_personas(socket.assigns.current_user))
+        |> sync_draft_subscriptions(inbox)
+        |> assign_draft_form()
+
+      {:error, _} ->
+        socket
     end
   end
 
@@ -233,7 +331,14 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
       Draft
       |> Ash.Query.filter(inbox_id == ^inbox.id)
       |> Ash.Query.sort(created_at: :desc)
-      |> Ash.read_one!(actor: actor)
+      |> Ash.Query.limit(1)
+      |> Ash.read!(actor: actor)
+      |> List.first()
+
+    candidates =
+      inbox
+      |> Ash.load!([:latest_drafting_candidates], actor: actor)
+      |> Map.get(:latest_drafting_candidates, [])
 
     action =
       if draft do
@@ -253,8 +358,42 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
     inbox
     |> Map.put(:conversation, conversation)
     |> Map.put(:draft, draft)
+    |> Map.put(:latest_drafting_candidates, candidates)
     |> Map.put(:action, action)
     |> Map.put(:compensation, compensation)
+  end
+
+  defp list_personas(actor) do
+    if actor.role in [:admin, :operator] do
+      Persona
+      |> Ash.Query.filter(status == :active)
+      |> Ash.Query.sort(name: :asc)
+      |> Ash.read!(actor: actor)
+    else
+      []
+    end
+  end
+
+  defp sync_draft_subscriptions(socket, inbox) do
+    prev = socket.assigns.draft_subscriptions || MapSet.new()
+
+    next =
+      inbox.latest_drafting_candidates
+      |> Enum.filter(&(&1.status == :generating))
+      |> Enum.map(& &1.id)
+      |> MapSet.new()
+
+    Enum.each(MapSet.difference(prev, next), fn id ->
+      Phoenix.PubSub.unsubscribe(AshyWalnutDesk.PubSub, "draft:#{id}")
+    end)
+
+    if connected?(socket) do
+      Enum.each(MapSet.difference(next, prev), fn id ->
+        Phoenix.PubSub.subscribe(AshyWalnutDesk.PubSub, "draft:#{id}")
+      end)
+    end
+
+    assign(socket, :draft_subscriptions, next)
   end
 
   # S6: single actor-aware lookup. Returns `{:ok, action}` or
@@ -344,6 +483,15 @@ defmodule AshyWalnutDeskWeb.InboxLive.Show do
           seconds_left={@seconds_left}
         />
       </section>
+
+      <.live_component
+        :if={@current_user.role in [:admin, :operator]}
+        module={GenerationPanel}
+        id="generation-panel"
+        personas={@personas}
+        candidates={@inbox.latest_drafting_candidates}
+        generating?={Enum.any?(@inbox.latest_drafting_candidates, &(&1.status == :generating))}
+      />
 
       <section
         :if={ready_for_compensation_trigger?(@inbox) or @comp_countdown_active?}

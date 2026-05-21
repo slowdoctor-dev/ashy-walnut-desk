@@ -119,7 +119,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:338
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:393
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:323
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:462
 #, elixir-autogen, elixir-format
 msgid "Body"
 msgstr ""
@@ -364,17 +364,18 @@ msgid "Chain status"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:46
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:327
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:466
 #, elixir-autogen, elixir-format
 msgid "Compensation"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:308
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:447
 #, elixir-autogen, elixir-format
 msgid "Conversation"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:74
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:79
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:115
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not approve draft."
 msgstr ""
@@ -384,7 +385,7 @@ msgstr ""
 msgid "Could not create inbox chain."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:140
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:216
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not execute action."
 msgstr ""
@@ -405,18 +406,20 @@ msgid "Create inbox"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/chain_component.ex:34
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:314
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:453
 #, elixir-autogen, elixir-format
 msgid "Draft"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:73
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:75
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:78
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:80
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:114
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:116
 #, elixir-autogen, elixir-format
 msgid "Draft is not ready for approval."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:335
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:474
 #, elixir-autogen, elixir-format
 msgid "Draft status"
 msgstr ""
@@ -432,7 +435,7 @@ msgstr ""
 msgid "Inbox"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:30
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:35
 #, elixir-autogen, elixir-format
 msgid "Inbox not found."
 msgstr ""
@@ -448,7 +451,7 @@ msgstr ""
 msgid "Operator queue from inbox to action."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:330
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:469
 #, elixir-autogen, elixir-format
 msgid "Save draft"
 msgstr ""
@@ -475,50 +478,51 @@ msgstr ""
 msgid "Open inbox"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:354
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:502
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compensation follow-up"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:99
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:105
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:175
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:181
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compensation not ready."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:382
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:530
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compensation outcome"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:102
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:178
 #, elixir-autogen, elixir-format
 msgid "Could not initiate compensation."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:181
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:262
 #, elixir-autogen, elixir-format
 msgid "Could not trigger compensation."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:357
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:505
 #, elixir-autogen, elixir-format
 msgid "Send the compensation message tied to this conversation."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:361
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:509
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Sending in %{seconds}s"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:139
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:385
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:58
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:533
 #: lib/ashy_walnut_desk_web/live/persona_live/form.ex:130
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:372
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:520
 #, elixir-autogen, elixir-format
 msgid "Trigger compensation"
 msgstr ""
@@ -675,31 +679,140 @@ msgid "System prompt"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:74
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:64
 #, elixir-autogen, elixir-format
 msgid "validator.violations.diagnostic_claim"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:71
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:61
 #, elixir-autogen, elixir-format
 msgid "validator.violations.guarantee_claim"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:83
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:73
 #, elixir-autogen, elixir-format
 msgid "validator.violations.honest_framing"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:86
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:76
 #, elixir-autogen, elixir-format
 msgid "validator.violations.length_exceeded"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:77
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:67
 #, elixir-autogen, elixir-format
 msgid "validator.violations.pricing_assertion"
 msgstr ""
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:80
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:57
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:70
 #, elixir-autogen, elixir-format
 msgid "validator.violations.prohibited_phrase"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:80
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Approve"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:44
+#, elixir-autogen, elixir-format
+msgid "Candidates"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:97
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not generate draft."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:151
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not regenerate draft."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:128
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not reject draft."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:119
+#, elixir-autogen, elixir-format
+msgid "Draft body is empty."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:124
+#, elixir-autogen, elixir-format
+msgid "Draft body is unavailable."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:113
+#, elixir-autogen, elixir-format
+msgid "Draft is generating."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:35
+#, elixir-autogen, elixir-format
+msgid "Generate"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:15
+#, elixir-autogen, elixir-format
+msgid "Generate candidate drafts under a selected persona."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:40
+#, elixir-autogen, elixir-format
+msgid "Generating draft…"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:13
+#, elixir-autogen, elixir-format
+msgid "Generation"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:47
+#, elixir-autogen, elixir-format
+msgid "No drafting candidates yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:21
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Persona"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:99
+#, elixir-autogen, elixir-format
+msgid "Regenerate"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:89
+#, elixir-autogen, elixir-format
+msgid "Reject"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:39
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:44
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:78
+#, elixir-autogen, elixir-format
+msgid "Validation failed"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:43
+#, elixir-autogen, elixir-format
+msgid "Validation passed"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:46
+#, elixir-autogen, elixir-format
+msgid "Validation pending"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:45
+#, elixir-autogen, elixir-format
+msgid "Validation restricted"
 msgstr ""
