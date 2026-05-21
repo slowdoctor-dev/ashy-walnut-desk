@@ -57,6 +57,8 @@ config :ashy_walnut_desk, :ai_adapter_allowlist, [
   AshyWalnutDesk.AI.Adapters.Fixture
 ]
 
+config :ashy_walnut_desk, :deployment_validators, []
+
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that
 # `script-src 'self'` blocks — Chromium silently aborts the

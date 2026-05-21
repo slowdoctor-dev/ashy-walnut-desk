@@ -1,8 +1,9 @@
 defmodule AshyWalnutDeskWeb.Safety.HonestFramingTest do
   use ExUnit.Case, async: true
 
+  alias AshyWalnutDesk.Safety.HonestFraming
+
   @scan_roots ["lib/ashy_walnut_desk_web", "priv/gettext"]
-  @banned_terms ["unsend", "undo send", "recall message", "take back"]
 
   test "user-facing surfaces avoid banned unsend framing" do
     violations =
@@ -29,7 +30,7 @@ defmodule AshyWalnutDeskWeb.Safety.HonestFramingTest do
     |> Enum.flat_map(fn {line, line_no} ->
       downcased = String.downcase(line)
 
-      @banned_terms
+      HonestFraming.banned_terms()
       |> Enum.filter(&String.contains?(downcased, &1))
       |> Enum.map(fn term ->
         "#{path}:#{line_no} contains banned framing term #{inspect(term)}: #{String.trim(line)}"

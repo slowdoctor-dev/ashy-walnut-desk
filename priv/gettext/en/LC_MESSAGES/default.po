@@ -673,3 +673,33 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "System prompt"
 msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:74
+#, elixir-autogen, elixir-format
+msgid "validator.violations.diagnostic_claim"
+msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:71
+#, elixir-autogen, elixir-format
+msgid "validator.violations.guarantee_claim"
+msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:83
+#, elixir-autogen, elixir-format
+msgid "validator.violations.honest_framing"
+msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:86
+#, elixir-autogen, elixir-format
+msgid "validator.violations.length_exceeded"
+msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:77
+#, elixir-autogen, elixir-format
+msgid "validator.violations.pricing_assertion"
+msgstr ""
+
+#: lib/ashy_walnut_desk/safety/validators/baseline.ex:80
+#, elixir-autogen, elixir-format
+msgid "validator.violations.prohibited_phrase"
+msgstr ""
