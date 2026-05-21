@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 3h
 **Depends on**: 4.1
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Phase 4 needs deterministic test seams before real provider integration. This st
 
 ## Acceptance criteria
 
-- [ ] AC1: `AI.Adapter` behaviour and `AI.Adapters.Fixture` test implementation exist with stable `complete/2` contract. — Verify: `mix test test/ashy_walnut_desk/ai/adapter_contract_test.exs`
-- [ ] AC2: `%AI.Prompt{}` and `%AI.Response{}` structs exist with fields required by architecture (text, usage, stop reason, etc.). — Verify: `mix test test/ashy_walnut_desk/ai/prompt_response_test.exs`
-- [ ] AC3: `AI.PromptAssembler` builds allowlisted prompt context only and emits stable cache marker metadata. — Verify: `mix test test/ashy_walnut_desk/ai/prompt_assembler_test.exs`
-- [ ] AC4: No direct LiveView path can call provider APIs; this story ships only the internal adapter seam + tests. — Verify: `rg -n "Req\.post|Anthropic|AI\.Adapters\.Anthropic" lib/ashy_walnut_desk_web`
+- [x] AC1: `AI.Adapter` behaviour and `AI.Adapters.Fixture` test implementation exist with stable `complete/2` contract. — Verify: `mix test test/ashy_walnut_desk/ai/adapter_contract_test.exs`
+- [x] AC2: `%AI.Prompt{}` and `%AI.Response{}` structs exist with fields required by architecture (text, usage, stop reason, etc.). — Verify: `mix test test/ashy_walnut_desk/ai/prompt_response_test.exs`
+- [x] AC3: `AI.PromptAssembler` builds allowlisted prompt context only and emits stable cache marker metadata. — Verify: `mix test test/ashy_walnut_desk/ai/prompt_assembler_test.exs`
+- [x] AC4: No direct LiveView path can call provider APIs; this story ships only the internal adapter seam + tests. — Verify: `rg -n "Req\.post|Anthropic|AI\.Adapters\.Anthropic" lib/ashy_walnut_desk_web`
 
 ## Files to create
 
@@ -81,6 +81,6 @@ rg -n "Req\.post|Anthropic|AI\.Adapters\.Anthropic" lib/ashy_walnut_desk_web
 
 (AI fills this in during execution.)
 
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: keep `AI.PromptAssembler.build/1` pure (`persona` + `messages` inputs), emit three-system-block shape with ephemeral markers only on framework/persona blocks, and use deterministic prompt-hash response selection in `AI.Adapters.Fixture`.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: parallel `mix test` invocations that compile simultaneously can corrupt BEAM artifacts in `_build`; run mix compile/test serially per checkout.
