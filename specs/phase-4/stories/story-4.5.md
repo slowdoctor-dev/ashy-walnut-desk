@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 3h
 **Depends on**: 4.1, 4.4
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,11 +23,11 @@ This story defines the authoritative state machine (`:generating` path) and poli
 
 ## Acceptance criteria
 
-- [ ] AC1: `Draft` status enum and actions include `:generate`, `:complete_generation`, `:fail_generation` with valid transitions and policy gates. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_actions_test.exs`
-- [ ] AC2: Worker-only completion/failure actions are blocked for regular actors and allowed only with generation-worker context check. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_policy_test.exs`
-- [ ] AC3: `Draft.:approve` enforces validator-pass precondition and preserves existing countdown/send chain contract. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_approval_validation_gate_test.exs`
-- [ ] AC4: Generation lifecycle emits chain events (`requested/completed/failed`) with expected payload shapes. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_audit_chain_test.exs`
-- [ ] AC5: `Draft.:approve` atomically supersedes every other `:drafting` candidate on the same Inbox in a single transaction; each supersession stamps its own `ChainLink :draft_superseded` event, and the approved draft's `:draft_approved` payload includes `superseded_sibling_draft_ids`. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_approval_supersede_siblings_test.exs`
+- [x] AC1: `Draft` status enum and actions include `:generate`, `:complete_generation`, `:fail_generation` with valid transitions and policy gates. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_actions_test.exs`
+- [x] AC2: Worker-only completion/failure actions are blocked for regular actors and allowed only with generation-worker context check. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_policy_test.exs`
+- [x] AC3: `Draft.:approve` enforces validator-pass precondition and preserves existing countdown/send chain contract. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_approval_validation_gate_test.exs`
+- [x] AC4: Generation lifecycle emits chain events (`requested/completed/failed`) with expected payload shapes. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_audit_chain_test.exs`
+- [x] AC5: `Draft.:approve` atomically supersedes every other `:drafting` candidate on the same Inbox in a single transaction; each supersession stamps its own `ChainLink :draft_superseded` event, and the approved draft's `:draft_approved` payload includes `superseded_sibling_draft_ids`. — Verify: `mix test test/ashy_walnut_desk/interaction/draft_approval_supersede_siblings_test.exs`
 
 ## Files to create
 
@@ -82,5 +82,7 @@ mix test test/ashy_walnut_desk/interaction/draft_generation_audit_chain_test.exs
 (AI fills this in during execution.)
 
 - Decisions made:
+- Mirrored existing worker gate mechanism with action context flag (`context.from_generation_worker == true`) to match `FromActionWorker` behavior.
 - Spec drift noticed:
+- `specs/phase-4/architecture.md §3.2` references a process-dictionary worker marker; implementation and test suite use context-flag worker checks. No code deviation needed; wording should be corrected in spec docs.
 - Gotchas to add to AGENTS.md §10:

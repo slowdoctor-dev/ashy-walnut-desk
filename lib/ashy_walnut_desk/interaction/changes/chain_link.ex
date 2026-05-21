@@ -104,6 +104,90 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
      ]}
   end
 
+  defp event_specs(changeset, %Draft{} = draft, :draft_generation_requested) do
+    {:ok,
+     [
+       %{
+         event_type: :draft_generation_requested,
+         subject_kind: :draft,
+         subject_id: draft.id,
+         actor_id: actor_id_for(changeset),
+         payload: %{
+           draft_id: draft.id,
+           inbox_id: draft.inbox_id,
+           persona_id: nil,
+           persona_slug: nil,
+           model: draft.ai_model,
+           actor_id: actor_id_for(changeset)
+         }
+       }
+     ]}
+  end
+
+  defp event_specs(_changeset, %Draft{} = draft, :draft_generation_completed) do
+    validator_output = draft.ai_validator_output || %{}
+
+    {:ok,
+     [
+       %{
+         event_type: :draft_generation_completed,
+         subject_kind: :draft,
+         subject_id: draft.id,
+         actor_id: nil,
+         payload: %{
+           draft_id: draft.id,
+           inbox_id: draft.inbox_id,
+           model: draft.ai_model,
+           input_tokens: get_map_value(validator_output, "input_tokens"),
+           output_tokens: get_map_value(validator_output, "output_tokens"),
+           cache_read_tokens: get_map_value(validator_output, "cache_read_tokens"),
+           cache_creation_tokens: get_map_value(validator_output, "cache_creation_tokens"),
+           validator_passed?: validator_passed?(validator_output),
+           violations_count: violations_count(validator_output),
+           baseline_version: get_map_value(validator_output, "baseline_version"),
+           deployment_version: get_map_value(validator_output, "deployment_version")
+         }
+       }
+     ]}
+  end
+
+  defp event_specs(_changeset, %Draft{} = draft, :draft_generation_failed) do
+    validator_output = draft.ai_validator_output || %{}
+
+    {:ok,
+     [
+       %{
+         event_type: :draft_generation_failed,
+         subject_kind: :draft,
+         subject_id: draft.id,
+         actor_id: nil,
+         payload: %{
+           draft_id: draft.id,
+           inbox_id: draft.inbox_id,
+           model: draft.ai_model,
+           error_class: get_map_value(validator_output, "error_class"),
+           error_detail_redacted: get_map_value(validator_output, "error_detail_redacted")
+         }
+       }
+     ]}
+  end
+
+  defp event_specs(changeset, %Draft{} = draft, :draft_superseded) do
+    {:ok,
+     [
+       %{
+         event_type: :draft_superseded,
+         subject_kind: :draft,
+         subject_id: draft.id,
+         actor_id: actor_id_for(changeset),
+         payload: %{
+           draft_id: draft.id,
+           inbox_id: draft.inbox_id
+         }
+       }
+     ]}
+  end
+
   defp event_specs(changeset, %Draft{} = draft, :draft_approved) do
     # S4: prefer the action+compensation rows stashed by
     # `CompensationAtApproval`. Falls back to a DB lookup so this
@@ -121,7 +205,8 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
            payload: %{
              draft_id: draft.id,
              approved_at: draft.approved_at,
-             approved_by_id: draft.approved_by_id
+             approved_by_id: draft.approved_by_id,
+             superseded_sibling_draft_ids: superseded_sibling_draft_ids(changeset)
            }
          },
          %{
@@ -296,6 +381,41 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
     case Map.fetch(payload, :outcome) do
       {:ok, outcome} -> Map.put(payload, :outcome, normalize_outcome(outcome))
       :error -> payload
+    end
+  end
+
+  defp actor_id_for(%{actor: %{id: id}}), do: id
+  defp actor_id_for(_), do: nil
+
+  defp get_map_value(map, key) when is_map(map) do
+    if Map.has_key?(map, key) do
+      Map.get(map, key)
+    else
+      atom_key =
+        Enum.find(Map.keys(map), fn
+          k when is_atom(k) -> Atom.to_string(k) == key
+          _ -> false
+        end)
+
+      if atom_key, do: Map.get(map, atom_key), else: nil
+    end
+  end
+
+  defp validator_passed?(validator_output) do
+    get_map_value(validator_output, "passed?") == true
+  end
+
+  defp violations_count(validator_output) do
+    case get_map_value(validator_output, "violations") do
+      list when is_list(list) -> length(list)
+      _ -> 0
+    end
+  end
+
+  defp superseded_sibling_draft_ids(changeset) do
+    case Map.get(changeset.context || %{}, :superseded_sibling_draft_ids) do
+      ids when is_list(ids) -> ids
+      _ -> []
     end
   end
 end

@@ -164,6 +164,8 @@ defmodule AshyWalnutDesk.Interaction.Properties.ChainInvariantsTest do
       draft_id: string(:alphanumeric, min_length: 4, max_length: 16),
       approved_at: map(integer(1..2_000_000_000), &DateTime.from_unix!(&1, :second)),
       approved_by_id: string(:alphanumeric, min_length: 4, max_length: 16),
+      superseded_sibling_draft_ids:
+        list_of(string(:alphanumeric, min_length: 4, max_length: 16), max_length: 5),
       action_id: string(:alphanumeric, min_length: 4, max_length: 16),
       channel_id: string(:alphanumeric, min_length: 4, max_length: 16),
       outcome: one_of([constant(:ok), constant(:failed), constant("ok")]),
@@ -173,7 +175,10 @@ defmodule AshyWalnutDesk.Interaction.Properties.ChainInvariantsTest do
 
   defp allowed_keys(:inbox_opened), do: [:inbox_id, :conversation_id, :identity_id]
   defp allowed_keys(:draft_started), do: [:inbox_id, :draft_id]
-  defp allowed_keys(:draft_approved), do: [:draft_id, :approved_at, :approved_by_id]
+
+  defp allowed_keys(:draft_approved),
+    do: [:draft_id, :approved_at, :approved_by_id, :superseded_sibling_draft_ids]
+
   defp allowed_keys(:action_executed), do: [:action_id, :draft_id, :channel_id, :outcome]
   defp allowed_keys(:compensation_registered), do: [:compensation_id, :action_id]
 end

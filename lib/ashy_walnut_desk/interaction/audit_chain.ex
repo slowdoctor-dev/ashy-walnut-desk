@@ -10,7 +10,30 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
   @payload_allowlist %{
     inbox_opened: [:inbox_id, :conversation_id, :identity_id],
     draft_started: [:inbox_id, :draft_id],
-    draft_approved: [:draft_id, :approved_at, :approved_by_id],
+    draft_generation_requested: [
+      :draft_id,
+      :inbox_id,
+      :persona_id,
+      :persona_slug,
+      :model,
+      :actor_id
+    ],
+    draft_generation_completed: [
+      :draft_id,
+      :inbox_id,
+      :model,
+      :input_tokens,
+      :output_tokens,
+      :cache_read_tokens,
+      :cache_creation_tokens,
+      :validator_passed?,
+      :violations_count,
+      :baseline_version,
+      :deployment_version
+    ],
+    draft_generation_failed: [:draft_id, :inbox_id, :model, :error_class, :error_detail_redacted],
+    draft_superseded: [:draft_id, :inbox_id],
+    draft_approved: [:draft_id, :approved_at, :approved_by_id, :superseded_sibling_draft_ids],
     action_scheduled: [:action_id, :draft_id, :channel_id],
     action_executed: [:action_id, :draft_id, :channel_id, :outcome],
     compensation_registered: [:compensation_id, :action_id],
@@ -19,7 +42,7 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
   }
 
   def canonicalize_payload(event_type, payload) when is_map(payload) do
-    with {:ok, allowed_keys} <- Map.fetch(@payload_allowlist, event_type),
+    with {:ok, allowed_keys} <- allowed_keys_for(event_type, payload),
          :ok <- reject_unknown_keys(payload, allowed_keys) do
       canonical =
         allowed_keys
@@ -37,6 +60,17 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
 
   def canonicalize_payload(event_type, _payload),
     do: {:error, {:invalid_payload_type, event_type}}
+
+  defp allowed_keys_for(:draft_approved, payload) do
+    if Map.has_key?(payload, :superseded_sibling_draft_ids) or
+         Map.has_key?(payload, "superseded_sibling_draft_ids") do
+      {:ok, Map.fetch!(@payload_allowlist, :draft_approved)}
+    else
+      {:ok, [:draft_id, :approved_at, :approved_by_id]}
+    end
+  end
+
+  defp allowed_keys_for(event_type, _payload), do: Map.fetch(@payload_allowlist, event_type)
 
   def compute_hash(prev_hash, canonical_json) when is_binary(canonical_json) do
     prefix = prev_hash || ""
