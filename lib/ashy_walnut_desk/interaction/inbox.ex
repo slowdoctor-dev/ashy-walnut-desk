@@ -213,5 +213,11 @@ defmodule AshyWalnutDesk.Interaction.Inbox do
       attribute_writable?(false)
       public?(true)
     end
+
+    has_many :latest_drafting_candidates, AshyWalnutDesk.Interaction.Draft do
+      filter(expr(status in [:generating, :drafting]))
+      sort(created_at: :desc)
+      public?(true)
+    end
   end
 end
