@@ -95,6 +95,7 @@ msgid "Appointment scheduled."
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:296
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:150
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr ""
@@ -106,6 +107,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:99
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:269
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:74
 #, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr ""
@@ -124,6 +126,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:73
 #: lib/ashy_walnut_desk_web/live/identity_live/new.ex:67
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
@@ -150,6 +153,7 @@ msgid "Display name"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:286
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:81
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
@@ -159,6 +163,7 @@ msgstr ""
 msgid "Edit identity"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:140
 #: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:40
 #, elixir-autogen, elixir-format
 msgid "Event"
@@ -176,6 +181,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:68
 #: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:54
 #, elixir-autogen, elixir-format
 msgid "Hide archived"
 msgstr ""
@@ -272,6 +278,7 @@ msgid "Record note"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:305
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:160
 #, elixir-autogen, elixir-format
 msgid "Recover"
 msgstr ""
@@ -287,6 +294,7 @@ msgid "Register identity"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:68
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:135
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr ""
@@ -308,6 +316,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:70
 #: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:56
 #, elixir-autogen, elixir-format
 msgid "Show archived"
 msgstr ""
@@ -502,7 +511,9 @@ msgstr ""
 msgid "Sending in %{seconds}s"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:139
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:385
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:130
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr ""
@@ -510,4 +521,155 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:372
 #, elixir-autogen, elixir-format
 msgid "Trigger compensation"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:122
+#, elixir-autogen, elixir-format
+msgid "%{count} events"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:90
+#, elixir-autogen, elixir-format
+msgid "Admin only — read-only viewer"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:132
+#, elixir-autogen, elixir-format
+msgid "All topics"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:142
+#, elixir-autogen, elixir-format
+msgid "At"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:88
+#, elixir-autogen, elixir-format
+msgid "Audit chain"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:95
+#, elixir-autogen, elixir-format
+msgid "Chain topics"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:143
+#, elixir-autogen, elixir-format
+msgid "Hash"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:98
+#, elixir-autogen, elixir-format
+msgid "No chain topics yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:109
+#, elixir-autogen, elixir-format
+msgid "Open"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:141
+#, elixir-autogen, elixir-format
+msgid "Subject"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/audit_live/chain.ex:119
+#, elixir-autogen, elixir-format
+msgid "Topic"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/identity_live/timeline_component.ex:44
+#, elixir-autogen, elixir-format
+msgid "[redacted]"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:67
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not archive persona."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:85
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not recover persona."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:34
+#, elixir-autogen, elixir-format
+msgid "Deployment tone and policy profile definitions."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:118
+#, elixir-autogen, elixir-format
+msgid "Disclosure text"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:102
+#, elixir-autogen, elixir-format
+msgid "Edit persona"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:124
+#, elixir-autogen, elixir-format
+msgid "Guardrail notes"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:126
+#, elixir-autogen, elixir-format
+msgid "Model override"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:107
+#, elixir-autogen, elixir-format
+msgid "Name"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:100
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:41
+#, elixir-autogen, elixir-format
+msgid "New persona"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:89
+#, elixir-autogen, elixir-format
+msgid "No personas yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:63
+#, elixir-autogen, elixir-format
+msgid "Persona archived."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:91
+#, elixir-autogen, elixir-format
+msgid "Persona created."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:25
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Persona not found."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:81
+#, elixir-autogen, elixir-format
+msgid "Persona recovered."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:92
+#, elixir-autogen, elixir-format
+msgid "Persona updated."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/index.ex:33
+#, elixir-autogen, elixir-format
+msgid "Personas"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:108
+#, elixir-autogen, elixir-format
+msgid "Slug"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/persona_live/form.ex:112
+#, elixir-autogen, elixir-format
+msgid "System prompt"
 msgstr ""

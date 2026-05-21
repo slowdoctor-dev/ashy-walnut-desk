@@ -276,7 +276,7 @@ Per-story: **fresh AI session**. Spec, not chat, is the bridge.
 - Helpers used in both `data-*={…}` and `:if={…}` must return booleans —
   string `"false"` is truthy, so `:if` always passes. Convert at the
   attribute boundary with `to_string/1`.
-
+- `validate(attribute_in(:field, list))` rejects `nil` even when `allow_nil?(true)`; for optional enum-like strings (e.g. Persona `model_override`), guard nil in a custom `change/2` validation before membership checks.
 ## 11. When in Doubt
 
 1. Check `specs/decisions/` for existing ADRs

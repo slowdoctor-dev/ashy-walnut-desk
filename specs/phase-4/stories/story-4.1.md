@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 2h
 **Depends on**: —
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ Phase 4 generation depends on deployment-configured persona inputs (system promp
 
 ## Acceptance criteria
 
-- [ ] AC1: `Knowledge` domain and `Knowledge.Persona` resource exist with required fields and constraints (`slug` unique, `status`, `system_prompt`, `disclosure_text`, optional `model_override`). — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_test.exs`
-- [ ] AC2: Persona policies enforce admin mutate and admin/operator read semantics; sensitive internals stay field-policy gated per architecture. — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_policy_test.exs`
-- [ ] AC3: Persona supports soft-delete + paper-trail audit semantics (archive/recover and version rows). — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_paper_trail_test.exs`
-- [ ] AC4: Admin-only LiveView scaffold for Persona list/form exists and route is policy-gated. — Verify: `mix test test/ashy_walnut_desk_web/live/persona_live/access_test.exs`
+- [x] AC1: `Knowledge` domain and `Knowledge.Persona` resource exist with required fields and constraints (`slug` unique, `status`, `system_prompt`, `disclosure_text`, optional `model_override`). — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_test.exs`
+- [x] AC2: Persona policies enforce admin mutate and admin/operator read semantics; sensitive internals stay field-policy gated per architecture. — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_policy_test.exs`
+- [x] AC3: Persona supports soft-delete + paper-trail audit semantics (archive/recover and version rows). — Verify: `mix test test/ashy_walnut_desk/knowledge/persona_paper_trail_test.exs`
+- [x] AC4: Admin-only LiveView scaffold for Persona list/form exists and route is policy-gated. — Verify: `mix test test/ashy_walnut_desk_web/live/persona_live/access_test.exs`
 
 ## Files to create
 
@@ -82,5 +82,11 @@ mix test test/ashy_walnut_desk_web/live/persona_live/access_test.exs
 (AI fills this in during execution.)
 
 - Decisions made:
+- Added `Knowledge` Ash domain at `lib/ashy_walnut_desk/knowledge/knowledge.ex` and registered it in `config/config.exs`.
+- Implemented `Knowledge.Persona` with admin-only mutate actions (`:create`, `:update`, `:archive`, `:recover`), admin/operator read split, field-policy gating for internals, soft-delete, and paper-trail versioning.
+- Shipped admin-only Persona LiveView skeleton at `/personas`, `/personas/new`, `/personas/:id/edit`.
+- Added focused tests for schema/actions, policy + field policy, paper trail semantics, and admin route access.
 - Spec drift noticed:
+- None.
 - Gotchas to add to AGENTS.md §10:
+- Added one gotcha about `attribute_in/2` rejecting nil for optional attributes.
