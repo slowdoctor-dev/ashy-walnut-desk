@@ -11,8 +11,16 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
   alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
-  alias AshyWalnutDesk.Interaction.Changes.{ChainLink, CompensationAtApproval}
+
+  alias AshyWalnutDesk.Interaction.Changes.{
+    ChainLink,
+    CompensationAtApproval,
+    SupersedeSiblingDraftCandidates
+  }
+
+  alias AshyWalnutDesk.Interaction.Checks.FromGenerationWorker
   alias AshyWalnutDesk.Interaction.Validations.StatusTransition
+  alias AshyWalnutDesk.Interaction.Validations.ValidatorPassed
 
   postgres do
     table("drafts")
@@ -58,6 +66,13 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change({ChainLink, event_type: :draft_started})
     end
 
+    create :generate do
+      accept([:inbox_id, :body])
+      change(set_attribute(:status, :generating))
+      change(set_attribute(:body, ""))
+      change({ChainLink, event_type: :draft_generation_requested})
+    end
+
     # C2: per-transition status changes go through named actions
     # (`:reject`, `:supersede`, `:approve`). `:revise` only edits
     # body/compensation/AI metadata — no `:status` in the accept
@@ -89,16 +104,36 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       require_atomic?(false)
       validate({StatusTransition, from: [:drafting]})
       change(set_attribute(:status, :superseded))
+      change({ChainLink, event_type: :draft_superseded})
     end
 
     update :approve do
       accept([:compensation_body])
       require_atomic?(false)
+      validate(ValidatorPassed)
       change(CompensationAtApproval)
       change(set_attribute(:status, :approved))
       change(set_attribute(:approved_at, &DateTime.utc_now/0))
       change(relate_actor(:approved_by))
+      change(SupersedeSiblingDraftCandidates)
       change({ChainLink, event_type: :draft_approved})
+    end
+
+    update :complete_generation do
+      accept([:body, :ai_prompt, :ai_model, :ai_response, :ai_validator_output])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:generating]})
+      validate({ValidatorPassed, require_ai?: true})
+      change(set_attribute(:status, :drafting))
+      change({ChainLink, event_type: :draft_generation_completed})
+    end
+
+    update :fail_generation do
+      accept([:ai_validator_output])
+      require_atomic?(false)
+      validate({StatusTransition, from: [:generating]})
+      change(set_attribute(:status, :rejected))
+      change({ChainLink, event_type: :draft_generation_failed})
     end
 
     # Test-only escape hatch: backdate `approved_at` so countdown tests
@@ -151,6 +186,18 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
     policy action(:approve) do
       authorize_if(AdminOrOperator)
+    end
+
+    policy action(:generate) do
+      authorize_if(AdminOrOperator)
+    end
+
+    policy action(:complete_generation) do
+      authorize_if(FromGenerationWorker)
+    end
+
+    policy action(:fail_generation) do
+      authorize_if(FromGenerationWorker)
     end
 
     policy action(:backdate_approval_for_tests) do
@@ -217,7 +264,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       allow_nil?(false)
       sensitive?(true)
       public?(true)
-      constraints(max_length: 2_000)
+      constraints(max_length: 2_000, allow_empty?: true)
     end
 
     attribute :compensation_body, :string do
@@ -229,7 +276,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
 
     attribute :status, :atom do
       allow_nil?(false)
-      constraints(one_of: [:drafting, :approved, :superseded, :rejected])
+      constraints(one_of: [:generating, :drafting, :approved, :superseded, :rejected])
       public?(true)
     end
 

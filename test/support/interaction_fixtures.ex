@@ -41,7 +41,13 @@ defmodule AshyWalnutDesk.InteractionFixtures do
   def seed_identity(admin, opts \\ []) do
     unique = System.unique_integer([:positive])
     display_name = Keyword.get(opts, :display_name, "Identity #{unique}")
-    primary_identifier = Keyword.get(opts, :primary_identifier, "+1555#{unique}")
+
+    primary_identifier =
+      Keyword.get(
+        opts,
+        :primary_identifier,
+        "+1" <> Integer.to_string(1_000_000_000 + rem(unique, 8_000_000_000))
+      )
 
     {:ok, identity} =
       Ash.create(
@@ -126,9 +132,23 @@ defmodule AshyWalnutDesk.InteractionFixtures do
           inbox_id: inbox.id,
           body: "Draft body",
           compensation_body: "Compensate",
-          status: :drafting
+          status: :drafting,
+          ai_prompt: nil,
+          ai_model: nil,
+          ai_response: nil,
+          ai_validator_output: nil
         },
-        Map.new(Keyword.take(opts, [:body, :compensation_body, :status]))
+        Map.new(
+          Keyword.take(opts, [
+            :body,
+            :compensation_body,
+            :status,
+            :ai_prompt,
+            :ai_model,
+            :ai_response,
+            :ai_validator_output
+          ])
+        )
       )
 
     {:ok, draft} = Ash.create(Draft, attrs, action: :compose_draft, actor: actor)

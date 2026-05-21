@@ -37,6 +37,10 @@ defmodule AshyWalnutDesk.Interaction.AuditChainTest do
     for event_type <- [
           :inbox_opened,
           :draft_started,
+          :draft_generation_requested,
+          :draft_generation_completed,
+          :draft_generation_failed,
+          :draft_superseded,
           :draft_approved,
           :action_scheduled,
           :action_executed,

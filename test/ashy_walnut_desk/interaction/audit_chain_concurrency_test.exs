@@ -14,42 +14,55 @@ defmodule AshyWalnutDesk.Interaction.AuditChainConcurrencyTest do
     n = 6
     %{operator: operator, inbox: inbox, drafts: drafts} = seed_chain_with_drafts(n)
 
-    drafts
-    |> Task.async_stream(
-      fn draft ->
-        Sandbox.allow(Repo, parent, self())
+    results =
+      drafts
+      |> Task.async_stream(
+        fn draft ->
+          Sandbox.allow(Repo, parent, self())
 
-        {:ok, approved} =
-          Ash.update(draft, %{compensation_body: "Comp"}, action: :approve, actor: operator)
+          case Ash.update(draft, %{compensation_body: "Comp"}, action: :approve, actor: operator) do
+            {:ok, approved} ->
+              {:ok, _} =
+                Ash.update(
+                  approved,
+                  %{approved_at: DateTime.add(DateTime.utc_now(), -6, :second)},
+                  action: :backdate_approval_for_tests,
+                  authorize?: false
+                )
 
-        {:ok, _} =
-          Ash.update(approved, %{approved_at: DateTime.add(DateTime.utc_now(), -6, :second)},
-            action: :backdate_approval_for_tests,
-            authorize?: false
-          )
+              action =
+                Action
+                |> Ash.Query.for_read(:read, %{}, authorize?: false)
+                |> Ash.Query.filter(expr(draft_id == ^approved.id))
+                |> Ash.read_one!(authorize?: false)
 
-        action =
-          Action
-          |> Ash.Query.for_read(:read, %{}, authorize?: false)
-          |> Ash.Query.filter(expr(draft_id == ^approved.id))
-          |> Ash.read_one!(authorize?: false)
+              {:ok, _} = Ash.update(action, %{}, action: :execute, actor: operator)
+              :approved
 
-        {:ok, _} = Ash.update(action, %{}, action: :execute, actor: operator)
-        :ok
-      end,
-      max_concurrency: n,
-      timeout: 30_000
-    )
-    |> Enum.each(fn {:ok, :ok} -> :ok end)
+            {:error, _error} ->
+              :superseded
+          end
+        end,
+        max_concurrency: n,
+        timeout: 30_000
+      )
+      |> Enum.map(fn {:ok, result} -> result end)
 
     # Drain the Oban outbound queue so worker-side ChainLink writes the
     # `:action_executed` events for each scheduled job.
     Oban.drain_queue(queue: :outbound, with_recursion: true)
 
+    approved_count = Enum.count(results, &(&1 == :approved))
+    superseded_count = Enum.count(results, &(&1 == :superseded))
+    assert approved_count == 1
+    assert approved_count + superseded_count == n
+
     assert {:ok, events} = AuditChain.walk(to_string(inbox.id))
-    # 1 inbox_opened + 5 per-draft events (draft_started, draft_approved,
-    # compensation_registered, action_scheduled, action_executed).
-    assert length(events) == 1 + 5 * n
+    # New behavior with sibling supersede on approve:
+    # 1 inbox_opened + n draft_started + (n - 1) draft_superseded +
+    # winner's 4 events (draft_approved, compensation_registered,
+    # action_scheduled, action_executed).
+    assert length(events) == 1 + n + (n - 1) + 4
 
     hashes = MapSet.new(Enum.map(events, & &1.hash))
     prev_hashes = events |> Enum.map(& &1.prev_hash) |> Enum.reject(&is_nil/1)
@@ -66,7 +79,11 @@ defmodule AshyWalnutDesk.Interaction.AuditChainConcurrencyTest do
     {:ok, identity} =
       Ash.create(
         Identity,
-        %{display_name: "Identity #{unique}", primary_identifier: "+1555#{unique}"},
+        %{
+          display_name: "Identity #{unique}",
+          primary_identifier:
+            "+1" <> Integer.to_string(1_000_000_000 + rem(unique, 8_000_000_000))
+        },
         action: :register_identity,
         actor: admin
       )
