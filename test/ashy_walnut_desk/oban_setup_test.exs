@@ -22,7 +22,8 @@ defmodule AshyWalnutDesk.ObanSetupTest do
              ai: 5,
              reindex: 5,
              tokens: 5,
-             outbound: 5
+             outbound: 5,
+             ai_generation: 5
            ]
   end
 end

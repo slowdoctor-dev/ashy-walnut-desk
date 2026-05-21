@@ -315,15 +315,25 @@ create :generate do
   change({ChainLink, event_type: :draft_generation_requested})
 end
 
-# Worker-only. Stamps the AI output + validator result. Transitions
-# :generating → :drafting (if validator passed) or stays :generating
-# with validator_output set (if failed — operator can :regenerate).
+# Worker-only. Stamps the AI output + validator result and transitions
+# :generating → :drafting REGARDLESS of validator outcome (resolved in
+# story 4.6). A validator-FAILED generation still "completed" — the
+# model produced output — so it lands in :drafting as a reviewable
+# candidate carrying its violations in ai_validator_output. It is NOT
+# auto-rejected: the :approve action's ValidatorPassed gate (§3.2 below)
+# is what blocks a failed draft from being sent, so the operator can see
+# why it failed and revise / regenerate / reject. (Only PROVIDER
+# failures — :permanent / :content_blocked — route to :fail_generation
+# → :rejected.) An earlier draft of this doc proposed a
+# `SetDraftingIfValidatorPassed` change that kept failed drafts in
+# :generating; that was dropped — the single approve-time gate is
+# simpler and more resilient to validator false-positives.
 update :complete_generation do
   accept([:body, :ai_prompt, :ai_response, :ai_validator_output])
   require_atomic?(false)
   validate({StatusTransition, from: [:generating]})
-  change(SetDraftingIfValidatorPassed)  # NEW: status :drafting if validator_passed?
-  change(AppendDisclosureFooter)        # NEW: appends Persona.disclosure_text to :body
+  change(AppendDisclosureFooter)        # appends Persona.disclosure_text to :body
+  change(set_attribute(:status, :drafting))
   change({ChainLink, event_type: :draft_generation_completed})
 end
 
@@ -820,13 +830,14 @@ Operator on InboxLive.Show clicks "Generate"
   validator.passed? == false
   validator.violations == [%{code: :guarantee_claim, severity: :error,
                              span: {142, 17}, locale_key: "validator.violations.guarantee_claim"}]
-  Draft.:complete_generation runs
-    SetDraftingIfValidatorPassed → status stays :generating (not promoted to :drafting)
+  Draft.:complete_generation runs (validator outcome does NOT block completion)
+    set_attribute(:status, :drafting) → completes to :drafting as a reviewable candidate
     AppendDisclosureFooter        → still appends (operator sees the full thing)
     ChainLink :draft_generation_completed (with validator_passed?: false)
-  PubSub.broadcast → :generation_complete (with failure flag in metadata)
-  operator UI: candidate card renders with :error-state ValidatorBadge,
-    body visible but greyed, "Approve" disabled, "Regenerate" + "Reject" enabled
+  PubSub.broadcast → :generation_complete (4.7 reads ai_validator_output for pass/fail)
+  operator UI (4.7): candidate card renders with :error-state ValidatorBadge,
+    body visible but greyed, "Approve" disabled (blocked by :approve's
+    ValidatorPassed gate), "Regenerate" + "Reject" enabled
   operator either:
     a. Clicks Regenerate → new Draft.:generate (new Draft row, same flow)
     b. Clicks Reject → Draft.:reject on this Draft (status :rejected,

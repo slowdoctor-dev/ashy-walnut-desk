@@ -13,8 +13,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
 
   alias AshyWalnutDesk.Interaction.Changes.{
+    AppendDisclosureFooter,
     ChainLink,
     CompensationAtApproval,
+    EnqueueGenerationWorker,
+    StampModelFromPersona,
     SupersedeSiblingDraftCandidates
   }
 
@@ -29,6 +32,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     references do
       reference(:inbox, on_delete: :restrict)
       reference(:approved_by, on_delete: :restrict)
+      reference(:persona, on_delete: :restrict)
     end
   end
 
@@ -67,9 +71,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     create :generate do
-      accept([:inbox_id, :body])
+      accept([:inbox_id, :persona_id])
       change(set_attribute(:status, :generating))
       change(set_attribute(:body, ""))
+      change(StampModelFromPersona)
+      change(EnqueueGenerationWorker)
       change({ChainLink, event_type: :draft_generation_requested})
     end
 
@@ -119,11 +125,18 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change({ChainLink, event_type: :draft_approved})
     end
 
+    # Completes a generation REGARDLESS of validator outcome (architecture
+    # §8.2): a validator-failed draft persists to :drafting as a reviewable
+    # candidate with its violations in ai_validator_output — it is NOT
+    # auto-rejected. The :approve action's ValidatorPassed gate (below) is
+    # what blocks a failed draft from being sent, so the operator can see
+    # why it failed and revise/regenerate/reject. Only provider failures
+    # (:permanent/:content_blocked) route to :fail_generation → :rejected.
     update :complete_generation do
       accept([:body, :ai_prompt, :ai_model, :ai_response, :ai_validator_output])
       require_atomic?(false)
       validate({StatusTransition, from: [:generating]})
-      validate({ValidatorPassed, require_ai?: true})
+      change(AppendDisclosureFooter)
       change(set_attribute(:status, :drafting))
       change({ChainLink, event_type: :draft_generation_completed})
     end
@@ -331,6 +344,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       # `:approved_by_id` to an accept list cannot stamp the approver
       # field directly (countdown bypass).
       attribute_writable?(false)
+      public?(true)
+    end
+
+    belongs_to :persona, AshyWalnutDesk.Knowledge.Persona do
+      allow_nil?(true)
       public?(true)
     end
   end

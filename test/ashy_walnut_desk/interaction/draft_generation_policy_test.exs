@@ -14,7 +14,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationPolicyTest do
     inbox = Fixtures.seed_inbox(operator, conversation)
 
     {:ok, draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     %{draft: draft, operator: operator}
   end
@@ -66,7 +66,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationPolicyTest do
     assert completed.status == :drafting
 
     assert {:ok, generating} =
-             Ash.create(Draft, %{inbox_id: completed.inbox_id, body: ""},
+             Ash.create(Draft, %{inbox_id: completed.inbox_id},
                action: :generate,
                actor: operator
              )
