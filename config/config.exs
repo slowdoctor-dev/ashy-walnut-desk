@@ -19,7 +19,8 @@ config :ashy_walnut_desk,
   ash_domains: [
     AshyWalnutDesk.Accounts,
     AshyWalnutDesk.Identity,
-    AshyWalnutDesk.Interaction
+    AshyWalnutDesk.Interaction,
+    AshyWalnutDesk.Knowledge
   ]
 
 # Base session-cookie options. `runtime.exs` `:prod` block merges
@@ -39,6 +40,14 @@ config :ash_paper_trail,
 config :ashy_walnut_desk, :channel_adapters, [
   AshyWalnutDesk.Interaction.Adapters.Stub,
   AshyWalnutDesk.Interaction.Adapters.Twilio
+]
+
+# Model strings a Persona may select via `model_override`. Distinct from
+# `:ai_adapter_allowlist` (adapter MODULES), which story 4.3 introduces
+# mirroring `:channel_adapters` above.
+config :ashy_walnut_desk, :ai_model_allowlist, [
+  "claude-sonnet-4-6",
+  "claude-opus-4-7"
 ]
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling

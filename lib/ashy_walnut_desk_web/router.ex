@@ -91,6 +91,9 @@ defmodule AshyWalnutDeskWeb.Router do
       # its own `on_mount` stack, so non-admin authenticated users
       # are redirected back to `/sign-in`.
       live "/audit/chain", AuditLive.Chain, :index
+      live "/personas", PersonaLive.Index, :index
+      live "/personas/new", PersonaLive.Form, :new
+      live "/personas/:id/edit", PersonaLive.Form, :edit
     end
   end
 
