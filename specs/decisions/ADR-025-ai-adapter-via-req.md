@@ -140,5 +140,7 @@ Reasoning:
 - External:
   - Anthropic Messages API: `POST https://api.anthropic.com/v1/messages`
   - Anthropic prompt caching: `cache_control: %{type: "ephemeral"}`
-    markers on `content` blocks (≥1024 tokens for Sonnet/Opus to be
-    cacheable).
+    markers on `content` blocks (GA — no beta header). Minimum
+    cacheable prefix is model-dependent: ~2048 tokens on Sonnet 4.6,
+    ~4096 on Opus 4.7 (corrected in story 4.3; an earlier "~1024"
+    figure was wrong).

@@ -12,7 +12,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
           "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
-          "POOL_SIZE" => "10"
+          "POOL_SIZE" => "10",
+          "ANTHROPIC_API_KEY" => "sk-ant-test"
         }),
         fn -> read_runtime_config(:prod) end
       )
@@ -35,7 +36,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
           "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
-          "POOL_SIZE" => "10"
+          "POOL_SIZE" => "10",
+          "ANTHROPIC_API_KEY" => "sk-ant-test"
         }),
         fn -> read_runtime_config(:prod) end
       )
@@ -101,7 +103,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
       "ASH_AUTHENTICATION_SECRET" => String.duplicate("b", 64),
       "DATABASE_URL" => "ecto://user:pass@localhost/db",
       "SECRET_KEY_BASE" => String.duplicate("c", 64),
-      "POOL_SIZE" => "10"
+      "POOL_SIZE" => "10",
+      "ANTHROPIC_API_KEY" => "sk-ant-test"
     }
 
     if Keyword.get(opts, :no_twilio), do: base, else: Map.merge(base, twilio_env())

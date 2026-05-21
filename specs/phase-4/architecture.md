@@ -900,12 +900,18 @@ where multiple candidates remain `:drafting` after an approval.
   Q6 — see §11). Persona can override to Opus 4.7 for cases that
   need it.
 - Prompt caching: `cache_control: %{type: "ephemeral"}` markers on
-  the framework + persona system blocks. Cache hit returns
+  the framework + persona system blocks. Ephemeral caching is GA — no
+  `anthropic-beta` header required. Cache hit returns
   `cache_read_input_tokens` in usage; we persist these per call.
-  Minimum block size for cacheability on Sonnet/Opus is ~1024
-  tokens at the time of writing — the framework block alone meets
-  this; the persona block usually does once `system_prompt +
-  guardrail_notes` is filled.
+  **Minimum cacheable prefix is model-dependent and larger than an
+  earlier note in this doc claimed: ~2048 tokens on Sonnet 4.6,
+  ~4096 on Opus 4.7** (corrected during story 4.3). The framework
+  block (~600 tokens) alone does NOT meet either threshold, so caching
+  only kicks in once the persona block (`system_prompt +
+  guardrail_notes`) pushes the framework+persona prefix over the
+  model's minimum. A shorter prefix silently won't cache (no error;
+  `cache_read_input_tokens` stays 0) — a PromptAssembler / Persona-
+  content sizing concern, not an adapter bug.
 
 ### 9.2 No webhook side
 
