@@ -682,38 +682,38 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:64
 #, elixir-autogen, elixir-format
 msgid "validator.violations.diagnostic_claim"
-msgstr ""
+msgstr "Reads as a diagnostic or professional-judgment claim"
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:71
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:61
 #, elixir-autogen, elixir-format
 msgid "validator.violations.guarantee_claim"
-msgstr ""
+msgstr "Contains a guarantee or promise of an outcome"
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:83
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:73
 #, elixir-autogen, elixir-format
 msgid "validator.violations.honest_framing"
-msgstr ""
+msgstr "Implies a delivered message can be retracted or reversed"
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:86
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:76
 #, elixir-autogen, elixir-format
 msgid "validator.violations.length_exceeded"
-msgstr ""
+msgstr "Exceeds the maximum allowed length"
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:77
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:67
 #, elixir-autogen, elixir-format
 msgid "validator.violations.pricing_assertion"
-msgstr ""
+msgstr "States a price or cost"
 
 #: lib/ashy_walnut_desk/safety/validators/baseline.ex:80
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:57
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:70
 #, elixir-autogen, elixir-format
 msgid "validator.violations.prohibited_phrase"
-msgstr ""
+msgstr "Contains a deployment-prohibited phrase"
 
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:80
 #, elixir-autogen, elixir-format, fuzzy

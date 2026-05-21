@@ -15,7 +15,7 @@ defmodule AshyWalnutDeskWeb.InboxLive.ValidatorBadgeTest do
     assert html =~ "Validation passed"
   end
 
-  test "renders failure state with static gettext violation key" do
+  test "renders failure state with a human-readable violation message" do
     html =
       render_component(ValidatorBadge,
         id: "badge-failed",
@@ -26,7 +26,9 @@ defmodule AshyWalnutDeskWeb.InboxLive.ValidatorBadgeTest do
       )
 
     assert html =~ "Validation failed"
-    assert html =~ "validator.violations.honest_framing"
+    # The gettext key resolves to its English translation, not the raw key.
+    assert html =~ "Implies a delivered message can be retracted or reversed"
+    refute html =~ "validator.violations.honest_framing"
   end
 
   test "handles forbidden validator field gracefully" do
