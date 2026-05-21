@@ -18,7 +18,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationActionsTest do
 
   test "generate creates a generating draft with empty body", %{operator: operator, inbox: inbox} do
     {:ok, draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     assert draft.status == :generating
     assert draft.body == ""
@@ -29,7 +29,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationActionsTest do
     inbox: inbox
   } do
     {:ok, draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     {:ok, completed} =
       Ash.update(
@@ -53,7 +53,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationActionsTest do
     inbox: inbox
   } do
     {:ok, draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     {:ok, failed} =
       Ash.update(

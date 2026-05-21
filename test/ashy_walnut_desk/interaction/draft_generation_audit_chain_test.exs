@@ -25,7 +25,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationAuditChainTest do
     inbox: inbox
   } do
     {:ok, draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     assert {:ok, _completed} =
              Ash.update(
@@ -51,7 +51,7 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationAuditChainTest do
              )
 
     {:ok, failed_draft} =
-      Ash.create(Draft, %{inbox_id: inbox.id, body: ""}, action: :generate, actor: operator)
+      Ash.create(Draft, %{inbox_id: inbox.id}, action: :generate, actor: operator)
 
     assert {:ok, _failed} =
              Ash.update(

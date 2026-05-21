@@ -19,6 +19,8 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
     Locks
   }
 
+  alias AshyWalnutDesk.Knowledge.Persona
+
   @impl true
   def change(changeset, opts, _context) do
     event_type = Keyword.fetch!(opts, :event_type)
@@ -115,8 +117,8 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
          payload: %{
            draft_id: draft.id,
            inbox_id: draft.inbox_id,
-           persona_id: nil,
-           persona_slug: nil,
+           persona_id: draft.persona_id,
+           persona_slug: persona_slug_for(draft.persona_id),
            model: draft.ai_model,
            actor_id: actor_id_for(changeset)
          }
@@ -290,6 +292,15 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
 
   defp event_specs(_changeset, _record, event_type),
     do: {:error, {:unsupported_chain_event, event_type}}
+
+  defp persona_slug_for(nil), do: nil
+
+  defp persona_slug_for(persona_id) do
+    case Ash.get(Persona, persona_id, authorize?: false) do
+      {:ok, persona} -> persona.slug
+      _ -> nil
+    end
+  end
 
   # S4: pull the chain payload from the changeset context if
   # `CompensationAtApproval` stashed it; fall back to a DB read.

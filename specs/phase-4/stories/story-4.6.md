@@ -3,7 +3,7 @@
 **Phase**: 4
 **Estimate**: 3h
 **Depends on**: 4.3, 4.4, 4.5
-**Status**: planned
+**Status**: done
 
 ---
 
@@ -23,10 +23,10 @@ This story activates the runtime pipeline while keeping send-path invariants unc
 
 ## Acceptance criteria
 
-- [ ] AC1: `AI.GenerationWorker` loads required context, invokes adapter + validator chain, and writes `Draft.:complete_generation`/`:fail_generation` via worker context. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_test.exs`
-- [ ] AC2: Worker handles adapter timeout/error classes deterministically without mutating send-stage records (`Action`/`Compensation`). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_failure_test.exs`
-- [ ] AC3: Worker path emits expected telemetry events/metadata (model, token/caching counters, validator outcome signals). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_telemetry_test.exs`
-- [ ] AC4: Enqueue semantics are idempotent for same draft generation request shape (no duplicate terminal state corruption). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_idempotency_test.exs`
+- [x] AC1: `AI.GenerationWorker` loads required context, invokes adapter + validator chain, and writes `Draft.:complete_generation`/`:fail_generation` via worker context. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_test.exs`
+- [x] AC2: Worker handles adapter timeout/error classes deterministically without mutating send-stage records (`Action`/`Compensation`). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_failure_test.exs`
+- [x] AC3: Worker path emits expected telemetry events/metadata (model, token/caching counters, validator outcome signals). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_telemetry_test.exs`
+- [x] AC4: Enqueue semantics are idempotent for same draft generation request shape (no duplicate terminal state corruption). — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_idempotency_test.exs`
 
 ## Files to create
 
@@ -78,5 +78,11 @@ mix test test/ashy_walnut_desk/ai/jobs/generation_worker_idempotency_test.exs
 (AI fills this in during execution.)
 
 - Decisions made:
+- Added `drafts.persona_id` as nullable FK and `Draft.belongs_to :persona` (manual drafts remain persona-less), then wired model stamping from persona/default at `Draft.:generate`.
+- Enforced disclosure append server-side in `Draft.:complete_generation` via a resource change so operator edits cannot bypass immutable-at-generation disclosure stamping.
+- `AI.GenerationWorker` retries only transient classes (`:transient`, `:rate_limited`, `:timeout`), terminal-fails permanent classes (`:permanent`, `:content_blocked`, validator failure), and no-ops idempotently if draft is no longer `:generating`.
 - Spec drift noticed:
+- `specs/phase-4/architecture.md` had an internal contradiction: §3.2 required `Draft.:generate accept([:inbox_id, :persona_id])` while §10.1 claimed no new columns on `drafts`; implementation follows §3.2 and adds `drafts.persona_id`.
+- Story 4.5 note said enqueue/disclosure were deferred; this story implements both (`EnqueueGenerationWorker` on `:generate`, disclosure append on `:complete_generation`) to match Phase 4 architecture runtime behavior.
 - Gotchas to add to AGENTS.md §10:
+- None discovered beyond already-documented Oban test/manual and admin uniqueness gotchas.

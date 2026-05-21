@@ -13,8 +13,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
 
   alias AshyWalnutDesk.Interaction.Changes.{
+    AppendDisclosureFooter,
     ChainLink,
     CompensationAtApproval,
+    EnqueueGenerationWorker,
+    StampModelFromPersona,
     SupersedeSiblingDraftCandidates
   }
 
@@ -29,6 +32,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     references do
       reference(:inbox, on_delete: :restrict)
       reference(:approved_by, on_delete: :restrict)
+      reference(:persona, on_delete: :restrict)
     end
   end
 
@@ -67,9 +71,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     create :generate do
-      accept([:inbox_id, :body])
+      accept([:inbox_id, :persona_id])
       change(set_attribute(:status, :generating))
       change(set_attribute(:body, ""))
+      change(StampModelFromPersona)
+      change(EnqueueGenerationWorker)
       change({ChainLink, event_type: :draft_generation_requested})
     end
 
@@ -124,6 +130,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       require_atomic?(false)
       validate({StatusTransition, from: [:generating]})
       validate({ValidatorPassed, require_ai?: true})
+      change(AppendDisclosureFooter)
       change(set_attribute(:status, :drafting))
       change({ChainLink, event_type: :draft_generation_completed})
     end
@@ -331,6 +338,11 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       # `:approved_by_id` to an accept list cannot stamp the approver
       # field directly (countdown bypass).
       attribute_writable?(false)
+      public?(true)
+    end
+
+    belongs_to :persona, AshyWalnutDesk.Knowledge.Persona do
+      allow_nil?(true)
       public?(true)
     end
   end

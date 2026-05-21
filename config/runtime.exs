@@ -27,7 +27,15 @@ if System.get_env("PHX_SERVER") do
 end
 
 config :ashy_walnut_desk, Oban,
-  queues: [default: 10, messages: 10, ai: 5, reindex: 5, tokens: 5, outbound: 5]
+  queues: [
+    default: 10,
+    messages: 10,
+    ai: 5,
+    reindex: 5,
+    tokens: 5,
+    outbound: 5,
+    ai_generation: 5
+  ]
 
 if config_env() == :prod do
   # Stamp the runtime env so prod-only code paths (e.g.
