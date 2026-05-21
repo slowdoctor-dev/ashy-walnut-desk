@@ -125,11 +125,17 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       change({ChainLink, event_type: :draft_approved})
     end
 
+    # Completes a generation REGARDLESS of validator outcome (architecture
+    # §8.2): a validator-failed draft persists to :drafting as a reviewable
+    # candidate with its violations in ai_validator_output — it is NOT
+    # auto-rejected. The :approve action's ValidatorPassed gate (below) is
+    # what blocks a failed draft from being sent, so the operator can see
+    # why it failed and revise/regenerate/reject. Only provider failures
+    # (:permanent/:content_blocked) route to :fail_generation → :rejected.
     update :complete_generation do
       accept([:body, :ai_prompt, :ai_model, :ai_response, :ai_validator_output])
       require_atomic?(false)
       validate({StatusTransition, from: [:generating]})
-      validate({ValidatorPassed, require_ai?: true})
       change(AppendDisclosureFooter)
       change(set_attribute(:status, :drafting))
       change({ChainLink, event_type: :draft_generation_completed})

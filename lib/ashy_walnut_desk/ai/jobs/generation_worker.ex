@@ -52,9 +52,6 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
       {:error, :content_blocked} ->
         terminal_fail(draft_id, "provider_blocked")
 
-      {:error, :validator_failed, validator_output} ->
-        terminal_fail(draft_id, "validator_failed", validator_output)
-
       {:error, reason} ->
         Logger.warning("GenerationWorker: unexpected error #{inspect(reason)}")
         raise "generation unexpected failure"
@@ -198,18 +195,19 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
       ai_validator_output: validator_output
     }
 
-    if validator.passed? do
-      case Ash.update(draft, attrs,
-             action: :complete_generation,
-             authorize?: false,
-             context: %{from_generation_worker: true}
-           ) do
-        {:ok, _} -> :ok
-        {:error, %Ash.Error.Invalid{}} -> maybe_idempotent_noop(draft.id)
-        other -> other
-      end
-    else
-      {:error, :validator_failed, validator_output}
+    # Persist REGARDLESS of validator outcome (architecture §8.2). A
+    # validator-failed generation still "completed" — the model produced
+    # output — so it lands in :drafting as a reviewable candidate carrying
+    # its violations; :approve is the gate that blocks sending it. Only
+    # provider failures (handled in perform/1) terminal-fail to :rejected.
+    case Ash.update(draft, attrs,
+           action: :complete_generation,
+           authorize?: false,
+           context: %{from_generation_worker: true}
+         ) do
+      {:ok, _} -> :ok
+      {:error, %Ash.Error.Invalid{}} -> maybe_idempotent_noop(draft.id)
+      other -> other
     end
   end
 
