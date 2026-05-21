@@ -44,7 +44,7 @@ defmodule AshyWalnutDesk.Knowledge.PersonaPolicyTest do
           system_prompt: String.duplicate("D", 64),
           disclosure_text: "Generated with AI.",
           guardrail_notes: "No guarantees.",
-          model_override: "claude-sonnet-4-5"
+          model_override: "claude-sonnet-4-6"
         },
         action: :create,
         actor: admin

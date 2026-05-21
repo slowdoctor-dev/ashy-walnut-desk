@@ -14,7 +14,7 @@ defmodule AshyWalnutDesk.Knowledge.Persona do
 
   @allowed_models Application.compile_env(
                     :ashy_walnut_desk,
-                    :ai_adapter_allowlist,
+                    :ai_model_allowlist,
                     []
                   )
 

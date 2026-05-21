@@ -192,8 +192,9 @@ lib/ashy_walnut_desk_web/live/
   `Phoenix.PubSub` topic `"draft:#{draft_id}"`.
 - `lib/ashy_walnut_desk_web/router.ex` — add `/personas` LV scope
   under the existing admin pipeline.
-- `config/config.exs` — extend with `:ai_adapter_allowlist` (parallels
-  channel allowlist) and `:default_model`.
+- `config/config.exs` — extend with `:ai_model_allowlist` (model
+  strings, story 4.1), `:ai_adapter_allowlist` (adapter modules,
+  parallels channel allowlist — story 4.3), and `:default_model`.
 - `config/runtime.exs` — `ANTHROPIC_API_KEY` from env; raise on boot
   if missing in prod.
 - `priv/gettext/*.po` — disclosure footer default, validator-violation
@@ -248,7 +249,7 @@ persona (e.g. "front-desk operator default", "after-hours triage",
 | `system_prompt` | string | yes | The base system instruction. Cached. Max 8K chars. |
 | `disclosure_text` | string | yes | The AI-assistance disclosure appended to every approved draft. Max 500 chars. Gettext-backed default exists; Persona row overrides per-deployment. |
 | `guardrail_notes` | string | yes | Free-form deployer notes appended into the prompt's guardrail block. Max 4K chars. Cached. |
-| `model_override` | string | — | Nullable. Overrides `:default_model` for drafts generated under this Persona. Must be in allowlist or `:generate` fails. |
+| `model_override` | string | — | Nullable. Overrides `:default_model` for drafts generated under this Persona. Must be in `:ai_model_allowlist` (or nil) — validated at `:create`/`:update`. |
 | `status` | atom | — | `:active \| :archived`. Default `:active`. |
 | `created_at / updated_at` | utc_datetime_usec | — | |
 | `deleted_at` | utc_datetime_usec | — | Soft-delete (ADR-019). |
@@ -261,7 +262,7 @@ Actions:
 - `read_with_archived`: admin only.
 - `create`: admin only. Accept all attrs except `id`,
   `created_at/updated_at`, `deleted_at`. Validates `slug`
-  uniqueness, `model_override ∈ allowlist OR is nil`,
+  uniqueness, `model_override ∈ :ai_model_allowlist OR is nil`,
   `system_prompt` length ≥ 64 chars (basic sanity).
 - `update`: admin only. Accept all except `id`, timestamps, `slug`
   (slug is immutable post-create; archive + recreate if you need to
@@ -941,12 +942,25 @@ event_type strings via the existing `payload` JSONB column.
   missing); optional in dev/test (Fixture adapter used instead).
 - `:ai_adapter` — atom, default `AshyWalnutDesk.AI.Adapters.Anthropic`
   in prod, `AshyWalnutDesk.AI.Adapters.Fixture` in test.
-- `:ai_adapter_allowlist` — list of atoms; both adapters listed.
+- `:ai_adapter_allowlist` — list of adapter **module** atoms (e.g.
+  `AshyWalnutDesk.AI.Adapters.Anthropic`, `…Fixture`); the AI analog
+  of `:channel_adapters`. Introduced by story 4.3 (the adapter story),
+  not 4.1.
+- `:ai_model_allowlist` — list of model **strings** a Persona may
+  select via `model_override` (default
+  `["claude-sonnet-4-6", "claude-opus-4-7"]`). Distinct from
+  `:ai_adapter_allowlist`: one gates which provider module runs, the
+  other gates which model string a deployer-authored Persona may name.
+  Story 4.1 ships this (Persona validates `model_override` against it);
+  `Persona.model_override` is rejected at `:create`/`:update` if the
+  value is non-nil and absent from this list.
 - `:default_model` — string, default `"claude-sonnet-4-6"`.
 - `:default_max_tokens` — integer, default 1024.
 - `:deployment_validators` — list of modules, default `[]`.
 
-All read via `Application.fetch_env/2`; no compile-time wiring.
+Most read via `Application.fetch_env/2`; the two allowlists are read
+via `Application.compile_env/2` where they back compile-time
+attributes (e.g. `Persona`'s `@allowed_models`).
 
 ### 10.3 Data backfill
 

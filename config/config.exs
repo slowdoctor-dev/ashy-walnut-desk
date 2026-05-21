@@ -42,9 +42,12 @@ config :ashy_walnut_desk, :channel_adapters, [
   AshyWalnutDesk.Interaction.Adapters.Twilio
 ]
 
-config :ashy_walnut_desk, :ai_adapter_allowlist, [
-  "claude-sonnet-4-5",
-  "claude-opus-4-1"
+# Model strings a Persona may select via `model_override`. Distinct from
+# `:ai_adapter_allowlist` (adapter MODULES), which story 4.3 introduces
+# mirroring `:channel_adapters` above.
+config :ashy_walnut_desk, :ai_model_allowlist, [
+  "claude-sonnet-4-6",
+  "claude-opus-4-7"
 ]
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling
