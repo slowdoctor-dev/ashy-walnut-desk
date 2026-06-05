@@ -12,7 +12,12 @@ awd-domain = { path = "../awd-domain" }
 awd-db = { path = "../awd-db" }
 awd-safety = { path = "../awd-safety" }
 awd-auth = { path = "../awd-auth" }
+awd-jobs = { path = "../awd-jobs" }
 serde_json = { workspace = true }
-# The transactional orchestration functions (draft::approve, action::execute, …)
-# compose repos + jobs + audit appends and need SQLx, deferred. The authorize
-# layer + role-aware field redaction below are pure and tested.
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+# The functional CORE of every Ash action is implemented here as pure plan
+# functions (decide → produce effects, incl. chained audit hashes). The thin
+# imperative shell (load rows, lock, persist effects, enqueue) needs SQLx and
+# is deferred — but the decision logic is fully unit-tested with no database.

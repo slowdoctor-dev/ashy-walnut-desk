@@ -13,6 +13,7 @@
 //!   four-stage chain, identity axis, knowledge, accounts), ported 1:1.
 
 pub mod draft;
+pub mod orchestrate;
 pub mod policy;
 pub mod resources;
 
