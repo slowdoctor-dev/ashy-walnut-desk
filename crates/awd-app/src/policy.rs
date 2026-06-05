@@ -13,28 +13,50 @@ use awd_auth::Role;
 /// How an action is gated (mirrors the `authorize_if(..)` patterns).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
+    /// anyone, including unauthenticated (`authorize_if(always())` on a public
+    /// action — e.g. request/consume magic link).
+    Public,
     /// admin + operator + viewer (the read trio).
     ReadTrio,
     /// admin + operator (`AdminOrOperator`).
     AdminOrOperator,
     /// admin only (`actor_attribute_equals(:role, :admin)`).
     AdminOnly,
+    /// admin OR the record's owner (`… or expr(recorded_by_id == ^actor(:id))`,
+    /// and user self-read). Record-scoped — evaluate with [`authorize_record`].
+    AdminOrOwner,
     /// background worker only (`FromActionWorker` / `FromGenerationWorker`).
     Worker,
     /// internal caller only (`FromDraftApprove` / `FromActionExecute`).
     Internal,
+    /// inbound-webhook system actor only (`FromInboundWebhook`).
+    Webhook,
     /// never allowed (`forbid_if always()`).
     Forbidden,
 }
 
-/// Does `role` (a signed-in human actor) satisfy `access`? Worker/Internal are
-/// never satisfied by a human role; they're driven by the system.
+/// Does `role` (a signed-in human actor) satisfy `access`? Worker/Internal/
+/// Webhook are never satisfied by a human role; they're driven by the system.
+/// For [`Access::AdminOrOwner`] this returns the record-independent grant
+/// (admins always pass); non-admins must be checked with [`authorize_record`].
 pub fn authorize(access: Access, role: Role) -> bool {
     match access {
+        Access::Public => true,
         Access::ReadTrio => role.can_read(),
         Access::AdminOrOperator => role.can_write(),
         Access::AdminOnly => role.is_admin(),
-        Access::Worker | Access::Internal | Access::Forbidden => false,
+        Access::AdminOrOwner => role.is_admin(),
+        Access::Worker | Access::Internal | Access::Webhook | Access::Forbidden => false,
+    }
+}
+
+/// Record-scoped authorization. Identical to [`authorize`] except
+/// [`Access::AdminOrOwner`] also admits the actor when they own the record
+/// (`actor_id == owner_id`, e.g. `recorded_by_id`, or the row id for self-read).
+pub fn authorize_record(access: Access, role: Role, actor_id: &str, owner_id: &str) -> bool {
+    match access {
+        Access::AdminOrOwner => role.is_admin() || actor_id == owner_id,
+        other => authorize(other, role),
     }
 }
 
@@ -68,12 +90,53 @@ mod tests {
         assert!(authorize(Access::AdminOrOperator, Role::Operator));
         assert!(!authorize(Access::AdminOnly, Role::Operator));
         assert!(authorize(Access::AdminOnly, Role::Admin));
-        // worker/internal/forbidden: no human role.
+        // worker/internal/webhook/forbidden: no human role.
         for r in [Role::Admin, Role::Operator, Role::Viewer] {
             assert!(!authorize(Access::Worker, r));
             assert!(!authorize(Access::Internal, r));
+            assert!(!authorize(Access::Webhook, r));
             assert!(!authorize(Access::Forbidden, r));
+            assert!(authorize(Access::Public, r)); // public: anyone
         }
+        // AdminOrOwner without a record: only admins pass.
+        assert!(authorize(Access::AdminOrOwner, Role::Admin));
+        assert!(!authorize(Access::AdminOrOwner, Role::Operator));
+    }
+
+    #[test]
+    fn record_scoped_owner_access() {
+        // admin always; owner matches; non-owner non-admin denied.
+        assert!(authorize_record(
+            Access::AdminOrOwner,
+            Role::Admin,
+            "op1",
+            "op2"
+        ));
+        assert!(authorize_record(
+            Access::AdminOrOwner,
+            Role::Operator,
+            "op1",
+            "op1"
+        ));
+        assert!(!authorize_record(
+            Access::AdminOrOwner,
+            Role::Operator,
+            "op1",
+            "op2"
+        ));
+        // non-owner classes ignore the ids and defer to `authorize`.
+        assert!(authorize_record(
+            Access::AdminOrOperator,
+            Role::Operator,
+            "x",
+            "y"
+        ));
+        assert!(!authorize_record(
+            Access::AdminOnly,
+            Role::Operator,
+            "x",
+            "x"
+        ));
     }
 
     #[test]
