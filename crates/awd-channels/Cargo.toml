@@ -1,0 +1,20 @@
+[package]
+name = "awd-channels"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Channel adapters: Twilio/echo/stub, inbound HMAC signature verification, idempotency keys."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+hmac = { workspace = true }
+sha1 = { workspace = true }
+subtle = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# reqwest outbound POST is added in the network phase; signature verification,
+# inbound parsing, and send classification below are pure.

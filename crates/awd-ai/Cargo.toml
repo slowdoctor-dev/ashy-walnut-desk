@@ -1,0 +1,17 @@
+[package]
+name = "awd-ai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Anthropic adapter (reqwest), prompt assembler, response parsing, error classification, fixture adapter."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+# reqwest HTTP transport is added in the network phase; the assembler,
+# request/response shaping, and error classification below are pure.

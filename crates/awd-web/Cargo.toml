@@ -1,0 +1,12 @@
+[package]
+name = "awd-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Axum server + Dioxus fullstack UI, server functions, webhook controllers, Tower layers (rate-limit, CSP, signature)."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+awd-app = { path = "../awd-app" }

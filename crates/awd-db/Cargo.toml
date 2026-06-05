@@ -1,0 +1,15 @@
+[package]
+name = "awd-db"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Persistence layer: SQLx repositories, transactions, FOR UPDATE locks, migrations, paper-trail version writes."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+# NOTE: SQLx (pool, repositories, runtime query execution) is added in the
+# DB-equipped phase — see lib.rs. The pure logic below needs no database.
