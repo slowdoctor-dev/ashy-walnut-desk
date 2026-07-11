@@ -185,6 +185,77 @@ from the CLI any time with `mix audit.verify`.
 
 Architecture details: [`specs/phase-3/architecture.md`](specs/phase-3/architecture.md).
 
+## Phase 4 deployer runbook — AI drafts
+
+Phase 4 ships AI draft generation (Anthropic direct via Req, ADR-025).
+Drafts are generated on operator request, validated by the safety
+stack, and still require explicit human approval + the 5-second
+countdown before any send (ADR-005/ADR-013 — generation never sends).
+Activating it requires four steps:
+
+1. **Provider key in the environment.** Set on the host (or in the
+   deployer's private repo's `.env`):
+
+   ```bash
+   export ANTHROPIC_API_KEY=sk-ant-…
+   ```
+
+   `config/runtime.exs` refuses to boot in `:prod` without it. The
+   key is never logged and never persisted into `Draft.ai_*` fields
+   or `AuditEvent` rows.
+
+2. **Check the model allowlist.** `config/config.exs` ships
+   `:ai_model_allowlist` (`claude-sonnet-4-6`, `claude-opus-4-7`)
+   and `:default_model` (`claude-sonnet-4-6`). A deployment that
+   wants a different model set overrides both in its release config;
+   `:default_model` and every Persona `model_override` must stay
+   inside the allowlist.
+
+3. **Create at least one Persona.** Personas carry the deployment's
+   system prompt, guardrail notes, disclosure footer, and optional
+   model override — tone is configuration, not code (AGENTS.md §6).
+   Once an admin is signed in:
+
+   ```elixir
+   Ash.create!(
+     AshyWalnutDesk.Knowledge.Persona,
+     %{
+       name: "Front-desk default",
+       slug: "front-desk-default",
+       system_prompt: "…deployment-reviewed base instruction…",
+       disclosure_text: "AI-assisted draft; reviewed by a human operator.",
+       guardrail_notes: "…deployment guardrails…",
+       model_override: nil
+     },
+     action: :create,
+     actor: admin
+   )
+   ```
+
+4. **Run the preflight check.**
+
+   ```bash
+   mix phase4.ai.preflight                 # full check, incl. one low-token Anthropic call
+   mix phase4.ai.preflight --skip-network  # offline/CI variant
+   ```
+
+   The task exits non-zero when `ANTHROPIC_API_KEY` is missing, when
+   `:default_model` or `:ai_adapter` falls outside its allowlist,
+   when an active Persona's `model_override` was stranded by an
+   allowlist change, or (network mode) when Anthropic rejects the
+   key. Wire it into the deploy script next to
+   `mix phase3.webhook.preflight`.
+
+Phase-close verification runs from a clean environment with:
+
+```bash
+just verify                              # format + credo + test + spec-check
+mix phase4.ai.preflight --skip-network   # AI config gate (offline)
+mix audit.verify                         # hash-chain integrity
+```
+
+Architecture details: [`specs/phase-4/architecture.md`](specs/phase-4/architecture.md).
+
 ## AI tool compatibility
 
 This project is **LLM-agnostic**. Any AGENTS.md-compatible AI coding tool

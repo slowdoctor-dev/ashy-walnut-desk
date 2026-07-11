@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual runs let agent sandboxes without hex.pm egress verify a
+  # feature branch before opening a PR.
+  workflow_dispatch:
 
 jobs:
   verify:
