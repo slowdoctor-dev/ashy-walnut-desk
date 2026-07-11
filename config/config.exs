@@ -13,6 +13,11 @@ config :ashy_walnut_desk, Oban,
   plugins: [Oban.Plugins.Pruner, {Oban.Plugins.Cron, crontab: []}],
   queues: []
 
+# pgvector: Postgrex needs the custom types module (defined in
+# lib/ashy_walnut_desk/postgrex_types.ex) to encode/decode the `vector`
+# columns on manual_chunks. Merged into every env's Repo config.
+config :ashy_walnut_desk, AshyWalnutDesk.Repo, types: AshyWalnutDesk.PostgrexTypes
+
 config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true],

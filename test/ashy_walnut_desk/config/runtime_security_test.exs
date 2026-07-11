@@ -13,7 +13,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
           "POOL_SIZE" => "10",
-          "ANTHROPIC_API_KEY" => "sk-ant-test"
+          "ANTHROPIC_API_KEY" => "sk-ant-test",
+          "EMBEDDING_ADAPTER" => "none"
         }),
         fn -> read_runtime_config(:prod) end
       )
@@ -37,7 +38,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
           "DATABASE_URL" => "ecto://user:pass@localhost/db",
           "SECRET_KEY_BASE" => String.duplicate("c", 64),
           "POOL_SIZE" => "10",
-          "ANTHROPIC_API_KEY" => "sk-ant-test"
+          "ANTHROPIC_API_KEY" => "sk-ant-test",
+          "EMBEDDING_ADAPTER" => "none"
         }),
         fn -> read_runtime_config(:prod) end
       )
@@ -88,6 +90,41 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
     end
   end
 
+  test "prod boot raises when EMBEDDING_ADAPTER is unset (ADR-026 explicit choice)" do
+    base = Map.delete(base_prod_env(), "EMBEDDING_ADAPTER")
+
+    assert_raise RuntimeError, ~r/EMBEDDING_ADAPTER/, fn ->
+      with_env(base, fn -> read_runtime_config(:prod) end)
+    end
+  end
+
+  test "prod EMBEDDING_ADAPTER=voyage requires VOYAGE_API_KEY, then stamps config" do
+    base = Map.put(base_prod_env(), "EMBEDDING_ADAPTER", "voyage")
+
+    assert_raise RuntimeError, ~r/VOYAGE_API_KEY/, fn ->
+      with_env(base, fn -> read_runtime_config(:prod) end)
+    end
+
+    config =
+      with_env(Map.put(base, "VOYAGE_API_KEY", "pa-test"), fn ->
+        read_runtime_config(:prod)
+      end)
+
+    app_cfg = Keyword.fetch!(config, :ashy_walnut_desk)
+    assert Keyword.fetch!(app_cfg, :voyage)[:api_key] == "pa-test"
+
+    assert Keyword.fetch!(app_cfg, :embedding_adapter) ==
+             AshyWalnutDesk.Knowledge.Embedders.Voyage
+  end
+
+  test "prod EMBEDDING_ADAPTER=none disables the external embedder" do
+    config = with_env(base_prod_env(), fn -> read_runtime_config(:prod) end)
+
+    app_cfg = Keyword.fetch!(config, :ashy_walnut_desk)
+    assert Keyword.has_key?(app_cfg, :embedding_adapter)
+    assert Keyword.fetch!(app_cfg, :embedding_adapter) == nil
+  end
+
   defp twilio_env do
     %{
       "TWILIO_ACCOUNT_SID" => "AC_prod_test",
@@ -104,7 +141,8 @@ defmodule AshyWalnutDesk.Config.RuntimeSecurityTest do
       "DATABASE_URL" => "ecto://user:pass@localhost/db",
       "SECRET_KEY_BASE" => String.duplicate("c", 64),
       "POOL_SIZE" => "10",
-      "ANTHROPIC_API_KEY" => "sk-ant-test"
+      "ANTHROPIC_API_KEY" => "sk-ant-test",
+      "EMBEDDING_ADAPTER" => "none"
     }
 
     if Keyword.get(opts, :no_twilio), do: base, else: Map.merge(base, twilio_env())

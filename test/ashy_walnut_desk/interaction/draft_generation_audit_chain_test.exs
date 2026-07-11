@@ -44,6 +44,20 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationAuditChainTest do
                    "cache_creation_tokens" => 0,
                    "baseline_version" => "base-v1",
                    "deployment_version" => "dep-v1"
+                 },
+                 ai_retrieval: %{
+                   "mode" => "vector",
+                   "excerpts" => [
+                     %{
+                       "manual_id" => Ecto.UUID.generate(),
+                       "manual_slug" => "front-desk",
+                       "revision" => 3,
+                       "position" => 1,
+                       "content_hash" => String.duplicate("ab", 32),
+                       "score" => 0.91,
+                       "embedder" => "fixture"
+                     }
+                   ]
                  }
                },
                action: :complete_generation,
@@ -84,6 +98,10 @@ defmodule AshyWalnutDesk.Interaction.DraftGenerationAuditChainTest do
     assert Map.has_key?(completed_event.payload, "violations_count")
     assert Map.has_key?(completed_event.payload, "baseline_version")
     assert Map.has_key?(completed_event.payload, "deployment_version")
+
+    # Story 5.5: retrieval provenance summary rides the completed event.
+    assert completed_event.payload["retrieval_mode"] == "vector"
+    assert completed_event.payload["retrieval_chunk_count"] == 1
 
     assert Map.has_key?(failed_event.payload, "error_class")
     assert Map.has_key?(failed_event.payload, "error_detail_redacted")
