@@ -15,6 +15,10 @@ on:
         description: "If set, run mix ash_postgres.generate_migrations --name <this> instead of verify"
         required: false
         default: ""
+      screenshots:
+        description: "If 'true', boot the dev server and capture the UI screenshot tour as an artifact"
+        required: false
+        default: ""
 
 jobs:
   codegen:
@@ -52,9 +56,83 @@ jobs:
           echo ""
           echo "===END-CODEGEN==="
 
+  screenshots:
+    name: Screenshots (dispatch-only)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.screenshots == 'true'
+    runs-on: ubuntu-24.04
+
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ashy_walnut_desk_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      MIX_ENV: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up BEAM (Elixir + Erlang/OTP per .tool-versions)
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.1.2"
+
+      - name: Install Mix dependencies
+        run: mix deps.get
+
+      - name: Prepare dev database
+        run: |
+          mix ecto.create
+          mix ecto.migrate
+
+      - name: Build assets (tailwind + esbuild)
+        run: |
+          mix assets.setup
+          mix assets.build
+
+      - name: Install Playwright + Chromium
+        run: |
+          python3 -m pip install --user playwright \
+            || python3 -m pip install --user --break-system-packages playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Boot dev server
+        run: |
+          nohup mix phx.server > server.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sSf -o /dev/null -m 2 http://localhost:4000 && break
+            sleep 2
+          done
+          curl -sSf -o /dev/null -m 5 http://localhost:4000 || (cat server.log; exit 1)
+
+      - name: Capture screenshot tours (phases 1-3 committed; 4/5 here)
+        run: bash scripts/screenshots-phase5.sh
+
+      - name: Server log tail (diagnostics)
+        if: always()
+        run: tail -80 server.log || true
+
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-screenshots
+          path: docs/phase-5-screenshots/
+          if-no-files-found: error
+
   verify:
     name: Verify
-    if: github.event_name != 'workflow_dispatch' || github.event.inputs.migration_name == ''
+    if: github.event_name != 'workflow_dispatch' || (github.event.inputs.migration_name == '' && github.event.inputs.screenshots != 'true')
     runs-on: ubuntu-24.04
 
     services:

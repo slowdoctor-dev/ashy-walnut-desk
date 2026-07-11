@@ -110,6 +110,10 @@ phase2-screenshots:
 phase3-screenshots:
     @./scripts/screenshots-phase3.sh
 
+# Capture Phase 4/5 manuals + grounded-generation screenshots (needs `just dev` running)
+phase5-screenshots:
+    @./scripts/screenshots-phase5.sh
+
 # === Story workflow ===
 
 # Print prompt to start a new story execution session
