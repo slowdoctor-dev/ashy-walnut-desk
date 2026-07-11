@@ -57,7 +57,16 @@ Safety implications in scope:
 
 | # | Story | Estimate | Depends on | Status |
 |---|---|---|---|---|
-| — | (PM persona slices after Architect design) | | | |
+| 5.1 | Manual resource foundation (Knowledge axis) | 3h | — | ready |
+| 5.2 | Embedder behaviour + Fixture + Voyage adapter + conformance | 3h | — | ready |
+| 5.3 | Chunker + ManualChunk resource + indexing worker | 3h | 5.1, 5.2 | ready |
+| 5.4 | Retriever ladder (vector → lexical → none) + telemetry | 3h | 5.3 | ready |
+| 5.5 | Generation integration — retrieval block + provenance + audit payload | 3h | 5.4 | ready |
+| 5.6 | Manual admin LiveView + generation-panel retrieval badge | 3h | 5.1, 5.5 | ready |
+| 5.7 | Phase 5 preflight + deployer docs + integration/regression gate | 3h | 5.1–5.6 | ready |
+
+Parallel tracks: 5.1 and 5.2 are independent starters; critical path is
+5.2 → 5.3 → 5.4 → 5.5 → 5.7.
 
 ## 5. Dependencies
 
