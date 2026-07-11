@@ -3,7 +3,7 @@
 **Phase**: 5
 **Estimate**: 3h
 **Depends on**: —
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -28,10 +28,10 @@ foundation) in shape.
 
 ## Acceptance criteria
 
-- [ ] AC1: `Knowledge.Manual` exists with attributes per architecture §3.1 (`title`, unique `slug`, sensitive `body` ≤ 64K, `revision` starting at 1, `status`, timestamps, `deleted_at`) and actions `:author`, `:revise` (bumps `revision`), `:archive`, `:restore`, `:soft_delete`, primary `read` filtering deleted rows. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_test.exs`
-- [ ] AC2: Policies enforce admin write / operator read / viewer nothing, across every action. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_policy_test.exs`
-- [ ] AC3: AshPaperTrail captures `:author`/`:revise`/`:archive` with sensitive redaction mode, and versions are admin-only. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_paper_trail_test.exs`
-- [ ] AC4: Generated migration applies cleanly and `mix ash_postgres.generate_migrations --check` stays green. — Verify: `mix ecto.migrate && mix ash_postgres.generate_migrations --check`
+- [x] AC1: `Knowledge.Manual` exists with attributes per architecture §3.1 (`title`, unique `slug`, sensitive `body` ≤ 64K, `revision` starting at 1, `status`, timestamps, `deleted_at`) and actions `:author`, `:revise` (bumps `revision`), `:archive`, `:restore`, `:soft_delete`, primary `read` filtering deleted rows. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_test.exs`
+- [x] AC2: Policies enforce admin write / operator read / viewer nothing, across every action. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_policy_test.exs`
+- [x] AC3: AshPaperTrail captures `:author`/`:revise`/`:archive` with sensitive redaction mode, and versions are admin-only. — Verify: `mix test test/ashy_walnut_desk/knowledge/manual_paper_trail_test.exs`
+- [x] AC4: Generated migration applies cleanly and `mix ash_postgres.generate_migrations --check` stays green. — Verify: `mix ecto.migrate && mix ash_postgres.generate_migrations --check`
 
 ## Files to create
 
@@ -76,8 +76,10 @@ mix test test/ashy_walnut_desk/knowledge/
 
 ## Notes during implementation
 
-(AI fills this in during execution.)
-
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: archive is a status flip only (retrieval
+  visibility), distinct from :soft_delete — unlike Persona where
+  archive conflates both; Manual body is deliberately operator-readable
+  (reference material), documented in the field policy.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none (migration produced via the
+  ci.yml dispatch-only codegen job — see the [chore] commit).

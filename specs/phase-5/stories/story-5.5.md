@@ -3,7 +3,7 @@
 **Phase**: 5
 **Estimate**: 3h
 **Depends on**: 5.4
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -28,10 +28,10 @@ compatibility are the two regression hazards.
 
 ## Acceptance criteria
 
-- [ ] AC1: `PromptAssembler.build/1` accepts `retrieval:`; excerpts render as one appended system block with `[manual-slug rN §pos]` headers, after cached blocks, without `cache_control`; cached framework/persona blocks stay byte-identical with and without retrieval. — Verify: `mix test test/ashy_walnut_desk/ai/prompt_assembler_retrieval_test.exs`
-- [ ] AC2: GenerationWorker calls `Retriever.retrieve/2` before assembly and persists `ai_retrieval` (mode + excerpt provenance, no excerpt text) via `:complete_generation`; worker-only accept, sensitive policy identical to `ai_prompt`. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_retrieval_test.exs`
-- [ ] AC3: `:draft_generation_completed` payload allowlist gains `retrieval_mode`/`retrieval_chunk_count`; chain hashing stays verifiable (`AuditChain.walk` + `mix audit.verify` green over a retrieval-active chain). — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_audit_chain_test.exs`
-- [ ] AC4: With `:retrieval enabled?: false`, generation output and audit payloads are byte-compatible with Phase 4 behavior (mode `:none`, zero count) — regression pin. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_test.exs`
+- [x] AC1: `PromptAssembler.build/1` accepts `retrieval:`; excerpts render as one appended system block with `[manual-slug rN §pos]` headers, after cached blocks, without `cache_control`; cached framework/persona blocks stay byte-identical with and without retrieval. — Verify: `mix test test/ashy_walnut_desk/ai/prompt_assembler_retrieval_test.exs`
+- [x] AC2: GenerationWorker calls `Retriever.retrieve/2` before assembly and persists `ai_retrieval` (mode + excerpt provenance, no excerpt text) via `:complete_generation`; worker-only accept, sensitive policy identical to `ai_prompt`. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_retrieval_test.exs`
+- [x] AC3: `:draft_generation_completed` payload allowlist gains `retrieval_mode`/`retrieval_chunk_count`; chain hashing stays verifiable (`AuditChain.walk` + `mix audit.verify` green over a retrieval-active chain). — Verify: `mix test test/ashy_walnut_desk/interaction/draft_generation_audit_chain_test.exs`
+- [x] AC4: With `:retrieval enabled?: false`, generation output and audit payloads are byte-compatible with Phase 4 behavior (mode `:none`, zero count) — regression pin. — Verify: `mix test test/ashy_walnut_desk/ai/jobs/generation_worker_test.exs`
 
 ## Files to create
 
@@ -80,8 +80,11 @@ mix audit.verify
 
 ## Notes during implementation
 
-(AI fills this in during execution.)
-
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: the knowledge block is appended as the LAST system
+  block (after conversation context) — cached prefix untouched either
+  way; retrieval provenance is also persisted on :fail_generation so
+  the fallback mode stays visible when the provider errors.
+- Spec drift noticed: prod EMBEDDING_ADAPTER contract broke the
+  runtime_security_test prod-env fixtures — fixed and pinned with
+  three new contract tests.
+- Gotchas to add to AGENTS.md §10: none.

@@ -3,7 +3,7 @@
 **Phase**: 5
 **Estimate**: 3h
 **Depends on**: 5.3
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -27,11 +27,11 @@ generation".
 
 ## Acceptance criteria
 
-- [ ] AC1: `Retriever.retrieve/2` returns `{:ok, %RetrievalResult{mode, excerpts}}` for every input — including embedder errors, missing adapter, empty index, and disabled config — never raising and never returning `{:error, _}`. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_test.exs`
-- [ ] AC2: Vector rung ranks by cosine similarity with `top_k`/`min_score`/`token_budget` from `:retrieval` config; deterministic under the Fixture embedder. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_vector_test.exs`
-- [ ] AC3: Lexical rung serves staged-unembedded chunks via pg_trgm similarity when the embedder fails or is absent; `mode: :lexical` recorded. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_fallback_test.exs`
-- [ ] AC4: Property test: no excerpt ever comes from an archived, soft-deleted, or stale-revision Manual/chunk, under randomized fixture populations. — Verify: `mix test test/ashy_walnut_desk/knowledge/properties/retrieval_scope_test.exs`
-- [ ] AC5: `[:awd, :knowledge, :retrieval, :stop]` telemetry fires with duration/chunk_count measurements and mode metadata. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_telemetry_test.exs`
+- [x] AC1: `Retriever.retrieve/2` returns `{:ok, %RetrievalResult{mode, excerpts}}` for every input — including embedder errors, missing adapter, empty index, and disabled config — never raising and never returning `{:error, _}`. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_test.exs`
+- [x] AC2: Vector rung ranks by cosine similarity with `top_k`/`min_score`/`token_budget` from `:retrieval` config; deterministic under the Fixture embedder. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_vector_test.exs`
+- [x] AC3: Lexical rung serves staged-unembedded chunks via pg_trgm similarity when the embedder fails or is absent; `mode: :lexical` recorded. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_fallback_test.exs`
+- [x] AC4: Property test: no excerpt ever comes from an archived, soft-deleted, or stale-revision Manual/chunk, under randomized fixture populations. — Verify: `mix test test/ashy_walnut_desk/knowledge/properties/retrieval_scope_test.exs`
+- [x] AC5: `[:awd, :knowledge, :retrieval, :stop]` telemetry fires with duration/chunk_count measurements and mode metadata. — Verify: `mix test test/ashy_walnut_desk/knowledge/retriever_telemetry_test.exs`
 
 ## Files to create
 
@@ -80,8 +80,9 @@ mix test test/ashy_walnut_desk/knowledge/
 
 ## Notes during implementation
 
-(AI fills this in during execution.)
-
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: an under-populated vector rung (zero rows past
+  min_score) also falls through to lexical — "unavailable or
+  under-populated" from requirements §2; lexical excerpts carry
+  score: nil (trigram similarity is not comparable to cosine).
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none.

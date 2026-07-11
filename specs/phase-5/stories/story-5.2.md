@@ -3,7 +3,7 @@
 **Phase**: 5
 **Estimate**: 3h
 **Depends on**: —
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -27,10 +27,10 @@ of 5.1 — pure embedding surface; 5.3 wires it to chunks.
 
 ## Acceptance criteria
 
-- [ ] AC1: `Knowledge.Embedder` behaviour defines `embed(texts, opts) :: {:ok, [[float()]]} | {:error, :transient | :permanent | :rate_limited | :timeout | term()}`; both impls implement it. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedder_conformance_test.exs`
-- [ ] AC2: Fixture embedder is deterministic, offline, L2-normalized at the configured dimension (1024), and gives higher cosine similarity to overlapping texts than to disjoint ones. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedders/fixture_test.exs`
-- [ ] AC3: Voyage adapter builds the documented request envelope (bearer key, model, `input_type`), classifies 429/5xx/400/401-403/timeout per the shared taxonomy, batches ≤ 128 inputs, and is stubbed via `:voyage_req_options` (no network in tests). — Verify: `mix test test/ashy_walnut_desk/knowledge/embedders/voyage_test.exs`
-- [ ] AC4: Config ships `:embedding_adapter` (Fixture default), `:embedding_adapter_allowlist`, `:embedding_model(_allowlist)`, `:embedding_dimension`; resolution rejects non-allowlisted modules. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedder_config_test.exs`
+- [x] AC1: `Knowledge.Embedder` behaviour defines `embed(texts, opts) :: {:ok, [[float()]]} | {:error, :transient | :permanent | :rate_limited | :timeout | term()}`; both impls implement it. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedder_conformance_test.exs`
+- [x] AC2: Fixture embedder is deterministic, offline, L2-normalized at the configured dimension (1024), and gives higher cosine similarity to overlapping texts than to disjoint ones. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedders/fixture_test.exs`
+- [x] AC3: Voyage adapter builds the documented request envelope (bearer key, model, `input_type`), classifies 429/5xx/400/401-403/timeout per the shared taxonomy, batches ≤ 128 inputs, and is stubbed via `:voyage_req_options` (no network in tests). — Verify: `mix test test/ashy_walnut_desk/knowledge/embedders/voyage_test.exs`
+- [x] AC4: Config ships `:embedding_adapter` (Fixture default), `:embedding_adapter_allowlist`, `:embedding_model(_allowlist)`, `:embedding_dimension`; resolution rejects non-allowlisted modules. — Verify: `mix test test/ashy_walnut_desk/knowledge/embedder_config_test.exs`
 
 ## Files to create
 
@@ -79,8 +79,9 @@ mix test test/ashy_walnut_desk/knowledge/
 
 ## Notes during implementation
 
-(AI fills this in during execution.)
-
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: EMBEDDING_ADAPTER=none maps to a nil adapter with
+  Embedder.resolve/0 returning {:error, :not_configured} so callers
+  skip the vector path instead of raising; Voyage adapter validates the
+  model against :embedding_model_allowlist before any network call.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none.
