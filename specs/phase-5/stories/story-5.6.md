@@ -3,7 +3,7 @@
 **Phase**: 5
 **Estimate**: 3h
 **Depends on**: 5.1, 5.5
-**Status**: ready
+**Status**: done
 
 ---
 
@@ -25,10 +25,10 @@ for 5.5 provenance (resolved question Q5: operators see count+mode).
 
 ## Acceptance criteria
 
-- [ ] AC1: `/manuals` (admin-only live_session) lists manuals with title/slug/status/revision + embedded-state, supports archive/restore; operators and viewers are denied at mount. — Verify: `mix test test/ashy_walnut_desk_web/live/manual_live/index_test.exs`
-- [ ] AC2: `/manuals/new` + `/manuals/:id/edit` drive `:author`/`:revise` via `AshPhoenix.Form` (distinct `as:` names), show validation errors, and display paper-trail version history read-only. — Verify: `mix test test/ashy_walnut_desk_web/live/manual_live/form_test.exs`
-- [ ] AC3: Generation panel candidates render `data-role="retrieval-badge"` with mode + excerpt count from `ai_retrieval` (`knowledge: 3 excerpts (vector)` / `knowledge: none`); badge absent for pre-Phase-5 drafts (nil `ai_retrieval`). — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/retrieval_badge_test.exs`
-- [ ] AC4: Every new user-facing string goes through gettext; `mix gettext.extract` produces no drift. — Verify: `mix gettext.extract && git diff --exit-code priv/gettext/`
+- [x] AC1: `/manuals` (admin-only live_session) lists manuals with title/slug/status/revision + embedded-state, supports archive/restore; operators and viewers are denied at mount. — Verify: `mix test test/ashy_walnut_desk_web/live/manual_live/index_test.exs`
+- [x] AC2: `/manuals/new` + `/manuals/:id/edit` drive `:author`/`:revise` via `AshPhoenix.Form` (distinct `as:` names), show validation errors, and display paper-trail version history read-only. — Verify: `mix test test/ashy_walnut_desk_web/live/manual_live/form_test.exs`
+- [x] AC3: Generation panel candidates render `data-role="retrieval-badge"` with mode + excerpt count from `ai_retrieval` (`knowledge: 3 excerpts (vector)` / `knowledge: none`); badge absent for pre-Phase-5 drafts (nil `ai_retrieval`). — Verify: `mix test test/ashy_walnut_desk_web/live/inbox_live/retrieval_badge_test.exs`
+- [x] AC4: Every new user-facing string goes through gettext; `mix gettext.extract` produces no drift. — Verify: `mix gettext.extract && git diff --exit-code priv/gettext/`
 
 ## Files to create
 
@@ -76,8 +76,10 @@ mix test test/ashy_walnut_desk_web/
 
 ## Notes during implementation
 
-(AI fills this in during execution.)
-
-- Decisions made:
-- Spec drift noticed:
-- Gotchas to add to AGENTS.md §10:
+- Decisions made: archive/restore live inline on the index rows (no
+  separate confirm step — both are reversible status flips); the badge
+  helper treats a missing/blank mode as "none" so legacy drafts can
+  never crash the panel.
+- Spec drift noticed: none.
+- Gotchas to add to AGENTS.md §10: none (gettext .pot produced via the
+  ci.yml codegen job's gettext.extract step).

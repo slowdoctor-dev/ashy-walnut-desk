@@ -256,6 +256,60 @@ mix audit.verify                         # hash-chain integrity
 
 Architecture details: [`specs/phase-4/architecture.md`](specs/phase-4/architecture.md).
 
+## Phase 5 deployer runbook — Knowledge / RAG
+
+Phase 5 grounds AI drafts in deployment-authored Manual content
+(pgvector retrieval with a pg_trgm lexical fallback, ADR-026).
+Retrieval is context-in only — approval + countdown + audit invariants
+are untouched. Activating it requires three steps:
+
+1. **Choose the embedding posture — explicitly.** The Anthropic
+   Messages API has no embeddings endpoint, so vector retrieval needs
+   a second provider. `config/runtime.exs` refuses to boot in `:prod`
+   until you set:
+
+   ```bash
+   export EMBEDDING_ADAPTER=voyage   # external embeddings via Voyage AI
+   export VOYAGE_API_KEY=pa-…        # required with voyage
+   # — or —
+   export EMBEDDING_ADAPTER=none     # no external embeddings; lexical-only retrieval
+   ```
+
+   **`voyage` sends Manual content to the external embedding
+   provider.** Review your data-processing agreement and
+   `specs/compliance/` posture first; `none` keeps all knowledge
+   in-instance and retrieval degrades to pg_trgm lexical matching.
+
+2. **Author Manuals.** Admins manage them at `/manuals` (list, edit,
+   version history, archive/restore). Every authoring write enqueues
+   background chunk+embed indexing (`:knowledge_indexing` queue);
+   nothing blocks the operator request path. Generation candidates
+   show a `knowledge: …` badge with the retrieval mode and excerpt
+   count; full provenance persists on `Draft.ai_retrieval`.
+
+3. **Run the preflight check.**
+
+   ```bash
+   mix phase5.knowledge.preflight                 # incl. one low-cost embed call
+   mix phase5.knowledge.preflight --skip-network  # offline/CI variant
+   ```
+
+   The task exits non-zero on a non-allowlisted embedder, an
+   `:embedding_dimension` that disagrees with the `manual_chunks`
+   vector column or the configured model, or a missing
+   `VOYAGE_API_KEY` when the Voyage adapter is configured. Wire it in
+   next to the Phase 3/4 preflights.
+
+Phase-close verification runs from a clean environment with:
+
+```bash
+just verify                                     # format + credo + test + spec-check
+mix phase5.knowledge.preflight --skip-network   # knowledge config gate (offline)
+mix audit.verify                                # hash-chain integrity
+```
+
+Architecture details: [`specs/phase-5/architecture.md`](specs/phase-5/architecture.md).
+
 ## AI tool compatibility
 
 This project is **LLM-agnostic**. Any AGENTS.md-compatible AI coding tool
