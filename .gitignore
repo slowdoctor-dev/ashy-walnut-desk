@@ -121,3 +121,4 @@ coverage/
 .playwright-mcp/
 demo-*.png
 status-*.png
+__pycache__/
