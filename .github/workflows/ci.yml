@@ -123,6 +123,15 @@ jobs:
         if: always()
         run: tail -80 server.log || true
 
+      # Sandboxed agents can't reach the artifact blob store — mirror
+      # the codegen job and emit the PNGs base64-encoded in the log.
+      - name: Emit screenshots (base64 tarball in log)
+        run: |
+          echo "===SCREENSHOTS-TARBALL-BASE64==="
+          tar czf - docs/phase-5-screenshots | base64 -w0
+          echo ""
+          echo "===END-SCREENSHOTS==="
+
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
         with:

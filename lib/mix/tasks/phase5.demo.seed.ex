@@ -152,7 +152,10 @@ defmodule Mix.Tasks.Phase5.Demo.Seed do
         manual
 
       nil ->
-        Ash.create!(Manual, %{title: title, slug: slug, body: body}, action: :author, actor: admin)
+        Ash.create!(Manual, %{title: title, slug: slug, body: body},
+          action: :author,
+          actor: admin
+        )
     end
   end
 
