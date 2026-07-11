@@ -8,7 +8,8 @@ defmodule AshyWalnutDesk.Knowledge.ManualChunkTest do
   use AshyWalnutDesk.DataCase, async: false
 
   alias AshyWalnutDesk.AccountsFixtures
-  alias AshyWalnutDesk.Knowledge.{Manual, ManualChunk}
+  alias AshyWalnutDesk.Knowledge.{Chunker, Manual, ManualChunk}
+  alias AshyWalnutDesk.Knowledge.Embedders.Fixture
 
   @worker_context %{from_indexing_worker: true}
 
@@ -33,7 +34,7 @@ defmodule AshyWalnutDesk.Knowledge.ManualChunkTest do
         revision: manual.revision,
         position: position,
         content: content,
-        content_hash: AshyWalnutDesk.Knowledge.Chunker.content_hash(content)
+        content_hash: Chunker.content_hash(content)
       },
       action: :stage,
       authorize?: false,
@@ -78,7 +79,7 @@ defmodule AshyWalnutDesk.Knowledge.ManualChunkTest do
     assert is_nil(chunk.embedding)
     assert is_nil(chunk.embedded_at)
 
-    {:ok, [vector]} = AshyWalnutDesk.Knowledge.Embedders.Fixture.embed(["embed me"])
+    {:ok, [vector]} = Fixture.embed(["embed me"])
 
     stamped =
       Ash.update!(

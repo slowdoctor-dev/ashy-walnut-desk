@@ -19,10 +19,12 @@ defmodule AshyWalnutDesk.Knowledge.Jobs.ChunkAndEmbedWorkerTest do
     @moduledoc false
     @behaviour AshyWalnutDesk.Knowledge.Embedder
 
+    alias AshyWalnutDesk.Knowledge.Embedders.Fixture
+
     @impl true
     def embed(texts, opts) do
       Process.put(:embed_calls, Process.get(:embed_calls, []) ++ [length(texts)])
-      AshyWalnutDesk.Knowledge.Embedders.Fixture.embed(texts, opts)
+      Fixture.embed(texts, opts)
     end
   end
 

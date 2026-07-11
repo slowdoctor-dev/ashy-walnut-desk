@@ -83,6 +83,14 @@ config :ashy_walnut_desk, :embedding_model_allowlist, ["voyage-3.5-lite", "voyag
 # changing it is a migration + full re-embed event.
 config :ashy_walnut_desk, :embedding_dimension, 1024
 
+# Retrieval ladder tuning (story 5.4). `enabled?: false` is the
+# kill-switch that restores exact Phase 4 generation behavior.
+config :ashy_walnut_desk, :retrieval,
+  enabled?: true,
+  top_k: 4,
+  min_score: 0.5,
+  token_budget: 1_200
+
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that
 # `script-src 'self'` blocks — Chromium silently aborts the
