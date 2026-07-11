@@ -40,6 +40,9 @@ jobs:
       - name: Generate migrations + snapshots
         run: mix ash_postgres.generate_migrations --name "${{ github.event.inputs.migration_name }}"
 
+      - name: Extract gettext (picked up by the same tarball)
+        run: mix gettext.extract
+
       - name: Emit generated files (base64 tarball in log)
         run: |
           echo "===CODEGEN-FILES==="
