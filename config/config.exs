@@ -13,6 +13,11 @@ config :ashy_walnut_desk, Oban,
   plugins: [Oban.Plugins.Pruner, {Oban.Plugins.Cron, crontab: []}],
   queues: []
 
+# pgvector: Postgrex needs the custom types module (defined in
+# lib/ashy_walnut_desk/postgrex_types.ex) to encode/decode the `vector`
+# columns on manual_chunks. Merged into every env's Repo config.
+config :ashy_walnut_desk, AshyWalnutDesk.Repo, types: AshyWalnutDesk.PostgrexTypes
+
 config :ashy_walnut_desk,
   ecto_repos: [AshyWalnutDesk.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true],
@@ -64,6 +69,32 @@ config :ashy_walnut_desk, :deployment_validators, []
 # member of `:ai_model_allowlist` above. `config/runtime.exs` flips
 # `:ai_adapter` to the real Anthropic impl in `:prod`.
 config :ashy_walnut_desk, :default_model, "claude-sonnet-4-6"
+
+# Knowledge-axis embedding boundary (ADR-026, story 5.2). Fixture is
+# the offline dev/test default; `config/runtime.exs` requires an
+# explicit EMBEDDING_ADAPTER choice (voyage | none) in :prod so
+# external data egress is always a deliberate deployer decision.
+config :ashy_walnut_desk, :embedding_adapter, AshyWalnutDesk.Knowledge.Embedders.Fixture
+
+config :ashy_walnut_desk, :embedding_adapter_allowlist, [
+  AshyWalnutDesk.Knowledge.Embedders.Fixture,
+  AshyWalnutDesk.Knowledge.Embedders.Voyage
+]
+
+config :ashy_walnut_desk, :embedding_model, "voyage-3.5-lite"
+config :ashy_walnut_desk, :embedding_model_allowlist, ["voyage-3.5-lite", "voyage-3.5"]
+
+# Must match the pgvector column dimension on manual_chunks (story 5.3);
+# changing it is a migration + full re-embed event.
+config :ashy_walnut_desk, :embedding_dimension, 1024
+
+# Retrieval ladder tuning (story 5.4). `enabled?: false` is the
+# kill-switch that restores exact Phase 4 generation behavior.
+config :ashy_walnut_desk, :retrieval,
+  enabled?: true,
+  top_k: 4,
+  min_score: 0.5,
+  token_budget: 1_200
 
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that

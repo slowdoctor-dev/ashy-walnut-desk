@@ -29,7 +29,11 @@ defmodule AshyWalnutDesk.Interaction.AuditChain do
       :validator_passed?,
       :violations_count,
       :baseline_version,
-      :deployment_version
+      :deployment_version,
+      # Story 5.5: retrieval provenance summary (chunk-level detail
+      # lives on Draft.ai_retrieval; chain payloads stay small).
+      :retrieval_mode,
+      :retrieval_chunk_count
     ],
     draft_generation_failed: [:draft_id, :inbox_id, :model, :error_class, :error_detail_redacted],
     draft_superseded: [:draft_id, :inbox_id],

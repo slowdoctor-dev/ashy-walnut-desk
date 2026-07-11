@@ -94,6 +94,10 @@ defmodule AshyWalnutDeskWeb.Router do
       live "/personas", PersonaLive.Index, :index
       live "/personas/new", PersonaLive.Form, :new
       live "/personas/:id/edit", PersonaLive.Form, :edit
+      # Story 5.6: admin-only Manual authoring (Knowledge axis).
+      live "/manuals", ManualLive.Index, :index
+      live "/manuals/new", ManualLive.Form, :new
+      live "/manuals/:id/edit", ManualLive.Form, :edit
     end
   end
 

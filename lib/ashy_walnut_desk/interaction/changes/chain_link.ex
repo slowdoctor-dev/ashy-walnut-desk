@@ -128,6 +128,7 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
 
   defp event_specs(_changeset, %Draft{} = draft, :draft_generation_completed) do
     validator_output = draft.ai_validator_output || %{}
+    retrieval = draft.ai_retrieval || %{}
 
     {:ok,
      [
@@ -147,7 +148,9 @@ defmodule AshyWalnutDesk.Interaction.Changes.ChainLink do
            validator_passed?: validator_passed?(validator_output),
            violations_count: violations_count(validator_output),
            baseline_version: get_map_value(validator_output, "baseline_version"),
-           deployment_version: get_map_value(validator_output, "deployment_version")
+           deployment_version: get_map_value(validator_output, "deployment_version"),
+           retrieval_mode: get_map_value(retrieval, "mode") || "none",
+           retrieval_chunk_count: length(get_map_value(retrieval, "excerpts") || [])
          }
        }
      ]}

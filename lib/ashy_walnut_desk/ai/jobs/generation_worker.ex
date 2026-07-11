@@ -10,6 +10,7 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
 
   alias AshyWalnutDesk.AI.PromptAssembler
   alias AshyWalnutDesk.Interaction.{Draft, Message}
+  alias AshyWalnutDesk.Knowledge.{RetrievalResult, Retriever}
   alias AshyWalnutDesk.Safety.Validators.Composite
 
   @pubsub AshyWalnutDesk.PubSub
@@ -23,12 +24,12 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
   def perform(%Oban.Job{args: %{"draft_id" => draft_id}}) do
     with {:ok, draft} <- load_draft(draft_id),
          :ok <- ensure_generating(draft),
-         {:ok, prompt, model} <- build_prompt(draft),
-         {:ok, response} <- run_adapter(prompt, model, draft.id, draft.persona_id),
-         validator <- run_validator(response.text, draft.id, model, draft.persona_id),
-         :ok <- persist_success(draft, prompt, response, validator) do
-      broadcast(draft.id, :generation_complete)
-      :ok
+         {:ok, messages} <- load_messages(draft),
+         # Story 5.5: retrieval runs BEFORE the provider call so its
+         # mode (vector/lexical/none) is recorded even when generation
+         # later fails. Retriever never errors (ladder degrades).
+         {:ok, retrieval} <- Retriever.retrieve(query_text(messages), draft_id: draft.id) do
+      generate(draft, messages, retrieval)
     else
       :already_done ->
         :ok
@@ -36,21 +37,6 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
       {:error, :not_found} ->
         Logger.warning("GenerationWorker: draft #{draft_id} not found; treating as success")
         :ok
-
-      {:error, :transient} ->
-        raise "generation transient failure"
-
-      {:error, :rate_limited} ->
-        raise "generation rate limited"
-
-      {:error, :timeout} ->
-        raise "generation timeout"
-
-      {:error, :permanent} ->
-        terminal_fail(draft_id, "provider_permanent")
-
-      {:error, :content_blocked} ->
-        terminal_fail(draft_id, "provider_blocked")
 
       {:error, reason} ->
         Logger.warning("GenerationWorker: unexpected error #{inspect(reason)}")
@@ -62,6 +48,44 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
     arg_keys = if is_map(args), do: Map.keys(args), else: []
     Logger.error("GenerationWorker: unrecognized job args keys=#{inspect(arg_keys)}")
     {:error, :unrecognized_job_args}
+  end
+
+  defp generate(draft, messages, retrieval) do
+    with {:ok, prompt, model} <- build_prompt(draft, messages, retrieval),
+         {:ok, response} <- run_adapter(prompt, model, draft.id, draft.persona_id),
+         validator <- run_validator(response.text, draft.id, model, draft.persona_id),
+         :ok <- persist_success(draft, prompt, response, validator, retrieval) do
+      broadcast(draft.id, :generation_complete)
+      :ok
+    else
+      {:error, :transient} ->
+        raise "generation transient failure"
+
+      {:error, :rate_limited} ->
+        raise "generation rate limited"
+
+      {:error, :timeout} ->
+        raise "generation timeout"
+
+      {:error, :permanent} ->
+        terminal_fail(draft.id, "provider_permanent", %{}, retrieval)
+
+      {:error, :content_blocked} ->
+        terminal_fail(draft.id, "provider_blocked", %{}, retrieval)
+
+      {:error, reason} ->
+        Logger.warning("GenerationWorker: unexpected error #{inspect(reason)}")
+        raise "generation unexpected failure"
+    end
+  end
+
+  defp query_text(messages) do
+    messages
+    |> Enum.reverse()
+    |> Enum.find_value("", fn message ->
+      if message.direction == :inbound, do: message.body
+    end)
+    |> Kernel.||("")
   end
 
   defp load_draft(draft_id) do
@@ -79,7 +103,7 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
   defp ensure_generating(%Draft{status: :generating}), do: :ok
   defp ensure_generating(%Draft{}), do: :already_done
 
-  defp build_prompt(draft) do
+  defp build_prompt(draft, messages, retrieval) do
     model = draft.ai_model || default_model()
 
     persona =
@@ -92,12 +116,12 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
           disclosure_text: ""
         }
 
-    with {:ok, messages} <- load_messages(draft),
-         {:ok, prompt} <-
+    with {:ok, prompt} <-
            PromptAssembler.build(%{
              persona: persona,
              messages: messages,
              model: model,
+             retrieval: retrieval,
              metadata: %{draft_id: draft.id, persona_id: draft.persona_id}
            }) do
       {:ok, prompt, model}
@@ -173,7 +197,7 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
     result
   end
 
-  defp persist_success(draft, prompt, response, validator) do
+  defp persist_success(draft, prompt, response, validator, retrieval) do
     validator_output =
       validator
       |> Map.from_struct()
@@ -192,7 +216,8 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
       ai_prompt: Jason.encode!(prompt_to_map(prompt)),
       ai_model: draft.ai_model,
       ai_response: response.text,
-      ai_validator_output: validator_output
+      ai_validator_output: validator_output,
+      ai_retrieval: retrieval_output(retrieval)
     }
 
     # Persist REGARDLESS of validator outcome (architecture §8.2). A
@@ -211,14 +236,14 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
     end
   end
 
-  defp terminal_fail(draft_id, error_class, validator_output \\ %{}) do
+  defp terminal_fail(draft_id, error_class, validator_output \\ %{}, retrieval \\ nil) do
     with {:ok, draft} <- load_draft(draft_id),
          :ok <- ensure_generating(draft),
          output <- terminal_output(error_class, validator_output),
          {:ok, _} <-
            Ash.update(
              draft,
-             %{ai_validator_output: output},
+             %{ai_validator_output: output, ai_retrieval: retrieval_output(retrieval)},
              action: :fail_generation,
              authorize?: false,
              context: %{from_generation_worker: true}
@@ -232,6 +257,27 @@ defmodule AshyWalnutDesk.AI.Jobs.GenerationWorker do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # Provenance only — excerpt text lives in ai_prompt, not here.
+  defp retrieval_output(%RetrievalResult{} = retrieval) do
+    %{
+      "mode" => Atom.to_string(retrieval.mode),
+      "excerpts" =>
+        Enum.map(retrieval.excerpts, fn excerpt ->
+          %{
+            "manual_id" => excerpt.manual_id,
+            "manual_slug" => excerpt.manual_slug,
+            "revision" => excerpt.revision,
+            "position" => excerpt.position,
+            "content_hash" => excerpt.content_hash,
+            "score" => excerpt.score,
+            "embedder" => excerpt.embedder
+          }
+        end)
+    }
+  end
+
+  defp retrieval_output(_none), do: nil
 
   defp terminal_output(error_class, validator_output) do
     validator_output

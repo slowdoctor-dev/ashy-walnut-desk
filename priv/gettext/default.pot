@@ -95,6 +95,7 @@ msgid "Appointment scheduled."
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:296
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:111
 #: lib/ashy_walnut_desk_web/live/persona_live/form.ex:150
 #, elixir-autogen, elixir-format
 msgid "Archive"
@@ -107,6 +108,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:99
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:269
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:100
 #: lib/ashy_walnut_desk_web/live/persona_live/index.ex:74
 #, elixir-autogen, elixir-format
 msgid "Archived"
@@ -120,12 +122,14 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:338
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:393
 #: lib/ashy_walnut_desk_web/live/inbox_live/show.ex:462
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:103
 #, elixir-autogen, elixir-format
 msgid "Body"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:73
 #: lib/ashy_walnut_desk_web/live/identity_live/new.ex:67
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:108
 #: lib/ashy_walnut_desk_web/live/persona_live/form.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -153,6 +157,7 @@ msgid "Display name"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/show.ex:286
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:130
 #: lib/ashy_walnut_desk_web/live/persona_live/index.ex:81
 #, elixir-autogen, elixir-format
 msgid "Edit"
@@ -181,6 +186,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:68
 #: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:78
 #: lib/ashy_walnut_desk_web/live/persona_live/index.ex:54
 #, elixir-autogen, elixir-format
 msgid "Hide archived"
@@ -294,6 +300,7 @@ msgid "Register identity"
 msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/edit.ex:68
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:106
 #: lib/ashy_walnut_desk_web/live/persona_live/form.ex:135
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -316,6 +323,7 @@ msgstr ""
 
 #: lib/ashy_walnut_desk_web/live/identity_live/index.ex:70
 #: lib/ashy_walnut_desk_web/live/inbox_live/index.ex:93
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:80
 #: lib/ashy_walnut_desk_web/live/persona_live/index.ex:56
 #, elixir-autogen, elixir-format
 msgid "Show archived"
@@ -668,6 +676,7 @@ msgstr ""
 msgid "Personas"
 msgstr ""
 
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:100
 #: lib/ashy_walnut_desk_web/live/persona_live/form.ex:108
 #, elixir-autogen, elixir-format
 msgid "Slug"
@@ -715,7 +724,7 @@ msgstr ""
 msgid "validator.violations.prohibited_phrase"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:80
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:90
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr ""
@@ -740,17 +749,17 @@ msgstr ""
 msgid "Could not reject draft."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:119
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:129
 #, elixir-autogen, elixir-format
 msgid "Draft body is empty."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:124
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:134
 #, elixir-autogen, elixir-format
 msgid "Draft body is unavailable."
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:113
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:123
 #, elixir-autogen, elixir-format
 msgid "Draft is generating."
 msgstr ""
@@ -785,12 +794,12 @@ msgstr ""
 msgid "Persona"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:99
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:109
 #, elixir-autogen, elixir-format
 msgid "Regenerate"
 msgstr ""
 
-#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:89
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:99
 #, elixir-autogen, elixir-format
 msgid "Reject"
 msgstr ""
@@ -815,4 +824,101 @@ msgstr ""
 #: lib/ashy_walnut_desk_web/live/inbox_live/components/validator_badge.ex:45
 #, elixir-autogen, elixir-format
 msgid "Validation restricted"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:39
+#, elixir-autogen, elixir-format
+msgid "Could not update manual."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:57
+#, elixir-autogen, elixir-format
+msgid "Deployment knowledge that grounds AI draft generation."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:87
+#, elixir-autogen, elixir-format
+msgid "Edit manual"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:23
+#, elixir-autogen, elixir-format
+msgid "Manual archived."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:64
+#, elixir-autogen, elixir-format
+msgid "Manual created; indexing queued."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:34
+#, elixir-autogen, elixir-format
+msgid "Manual not found."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:28
+#, elixir-autogen, elixir-format
+msgid "Manual restored."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:65
+#, elixir-autogen, elixir-format
+msgid "Manual revised; re-indexing queued."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:55
+#, elixir-autogen, elixir-format
+msgid "Manuals"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:85
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:65
+#, elixir-autogen, elixir-format
+msgid "New manual"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:138
+#, elixir-autogen, elixir-format
+msgid "No manuals yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:117
+#, elixir-autogen, elixir-format
+msgid "No recorded versions yet."
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:122
+#, elixir-autogen, elixir-format
+msgid "Restore"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:90
+#, elixir-autogen, elixir-format
+msgid "Revision"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:95
+#, elixir-autogen, elixir-format
+msgid "Title"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/form.ex:114
+#, elixir-autogen, elixir-format
+msgid "Version history"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:143
+#, elixir-autogen, elixir-format
+msgid "knowledge: %{count} excerpts (%{mode})"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:139
+#: lib/ashy_walnut_desk_web/live/inbox_live/components/generation_panel.ex:146
+#, elixir-autogen, elixir-format
+msgid "knowledge: none"
+msgstr ""
+
+#: lib/ashy_walnut_desk_web/live/manual_live/index.ex:91
+#, elixir-autogen, elixir-format
+msgid "revision"
 msgstr ""

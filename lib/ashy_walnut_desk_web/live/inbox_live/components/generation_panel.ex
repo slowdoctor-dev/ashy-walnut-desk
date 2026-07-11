@@ -58,11 +58,21 @@ defmodule AshyWalnutDeskWeb.InboxLive.Components.GenerationPanel do
               {gettext("Status")}: {to_string(candidate.status)}
             </p>
 
-            <.live_component
-              module={ValidatorBadge}
-              id={"validator-badge-#{candidate.id}"}
-              validator_output={candidate.ai_validator_output}
-            />
+            <div class="flex items-center gap-2">
+              <span
+                :if={candidate.ai_retrieval != nil}
+                data-role="retrieval-badge"
+                class="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700"
+              >
+                {retrieval_badge_text(candidate.ai_retrieval)}
+              </span>
+
+              <.live_component
+                module={ValidatorBadge}
+                id={"validator-badge-#{candidate.id}"}
+                validator_output={candidate.ai_validator_output}
+              />
+            </div>
           </div>
 
           <p class="mt-3 whitespace-pre-wrap text-sm text-zinc-800" data-role="candidate-body-preview">
@@ -122,4 +132,16 @@ defmodule AshyWalnutDeskWeb.InboxLive.Components.GenerationPanel do
   end
 
   defp candidate_preview(_), do: gettext("Draft body is unavailable.")
+
+  # Story 5.6: operators see THAT and HOW knowledge grounded a draft
+  # (count + retrieval mode); excerpt inspection stays admin-side via
+  # ai_prompt provenance (resolved question Q5).
+  defp retrieval_badge_text(%{"mode" => "none"}), do: gettext("knowledge: none")
+
+  defp retrieval_badge_text(%{"mode" => mode} = retrieval) when is_binary(mode) do
+    count = length(retrieval["excerpts"] || [])
+    gettext("knowledge: %{count} excerpts (%{mode})", count: count, mode: mode)
+  end
+
+  defp retrieval_badge_text(_), do: gettext("knowledge: none")
 end

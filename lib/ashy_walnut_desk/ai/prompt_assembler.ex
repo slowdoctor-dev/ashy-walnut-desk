@@ -3,6 +3,7 @@ defmodule AshyWalnutDesk.AI.PromptAssembler do
 
   alias AshyWalnutDesk.AI.Prompt
   alias AshyWalnutDesk.Knowledge.Persona
+  alias AshyWalnutDesk.Knowledge.RetrievalResult
 
   @framework_text """
   You are assisting a front-desk operator by drafting a message.
@@ -14,6 +15,7 @@ defmodule AshyWalnutDesk.AI.PromptAssembler do
   @framework_header "[Framework Rules]"
   @persona_header "[Persona Instructions]"
   @conversation_header "[Conversation Context]"
+  @knowledge_header "[Deployment Knowledge]"
   @cache_control %{type: "ephemeral"}
   @persona_max_chars 12_000
   @conversation_token_ceiling 4_000
@@ -26,7 +28,8 @@ defmodule AshyWalnutDesk.AI.PromptAssembler do
           optional(:model) => String.t(),
           optional(:max_tokens) => pos_integer(),
           optional(:metadata) => map(),
-          optional(:user_message) => String.t()
+          optional(:user_message) => String.t(),
+          optional(:retrieval) => RetrievalResult.t() | nil
         }
 
   @spec build(build_input()) :: {:ok, Prompt.t()} | {:error, term()}
@@ -43,11 +46,12 @@ defmodule AshyWalnutDesk.AI.PromptAssembler do
        %Prompt{
          model: attrs[:model],
          max_tokens: attrs[:max_tokens],
-         system_blocks: [
-           %{type: "text", text: framework_text(), cache_control: @cache_control},
-           %{type: "text", text: persona_text, cache_control: @cache_control},
-           %{type: "text", text: conversation_text}
-         ],
+         system_blocks:
+           [
+             %{type: "text", text: framework_text(), cache_control: @cache_control},
+             %{type: "text", text: persona_text, cache_control: @cache_control},
+             %{type: "text", text: conversation_text}
+           ] ++ retrieval_blocks(attrs[:retrieval]),
          messages: [%{role: "user", content: user_message}],
          metadata: Map.get(attrs, :metadata, %{})
        }}
@@ -60,6 +64,33 @@ defmodule AshyWalnutDesk.AI.PromptAssembler do
     [@framework_header, String.trim(@framework_text)]
     |> Enum.join("\n\n")
   end
+
+  # Story 5.5: retrieved Manual excerpts as ONE appended system block,
+  # after the cached blocks (their bytes and cache markers stay
+  # untouched) and deliberately WITHOUT cache_control — the block
+  # changes per query, so caching it would thrash the prefix cache.
+  # One `[slug rN §pos]` header per excerpt keeps provenance
+  # human-legible inside the persisted ai_prompt.
+  defp retrieval_blocks(%RetrievalResult{excerpts: [_ | _] = excerpts}) do
+    lines =
+      Enum.map(excerpts, fn excerpt ->
+        "[#{excerpt.manual_slug} r#{excerpt.revision} §#{excerpt.position}] #{excerpt.content}"
+      end)
+
+    text =
+      Enum.join(
+        [
+          @knowledge_header,
+          "Retrieved excerpts from deployment manuals — ground drafts in these when relevant:"
+          | lines
+        ],
+        "\n\n"
+      )
+
+    [%{type: "text", text: text}]
+  end
+
+  defp retrieval_blocks(_none_or_empty), do: []
 
   defp build_persona_text(persona) do
     system_prompt = read_persona_field(persona, :system_prompt)

@@ -66,7 +66,7 @@ See `specs/architecture.md` for full structural details.
 | Container | Docker for local development |
 | CI | GitHub Actions |
 
-## 6. Key ADRs (20 total)
+## 6. Key ADRs (27 total)
 
 | ADR | Title | Status |
 |---|---|---|
@@ -90,6 +90,13 @@ See `specs/architecture.md` for full structural details.
 | ADR-019 | Soft-delete is the default for axis records | Accepted |
 | ADR-020 | LiveView user loaded from cookie session (resolves TO-1) | Accepted |
 | ADR-021 | Prod TLS + secure-cookie hardening keyed on `PHX_HOST` (resolves TO-2) | Accepted |
+| ADR-022 | Twilio SMS as the first real channel adapter | Accepted |
+| ADR-023 | Oban for outbound retry envelope | Accepted |
+| ADR-024 | Inbound intake policy (system actor + provisional Identity + dedupe) | Accepted |
+| ADR-025 | Req-direct Anthropic via internal `AI.Adapter` behaviour (not ash_ai) | Accepted |
+| ADR-026 | Embeddings via pluggable `Knowledge.Embedder` behaviour (Voyage reference impl) | Accepted |
+| ADR-027 | Stay single-tenant (per-deployment instance) through Season 2 | Proposed |
+| ADR-028 | Persona versioning stays paper-trail diffs; provenance on Draft | Proposed |
 
 Full text in `specs/decisions/`.
 
@@ -107,15 +114,12 @@ Phase 4  AI Drafts      — AI-generated drafts with countdown + guardrails
 Phase 5  Knowledge      — pgvector RAG over Manual/Persona content
 ```
 
-Phases 0 and 1 are shipped — see `specs/phase-{0,1}/` for their
-detailed requirements, architecture, and stories. Subsequent phases
-are described in one line above; their detailed requirements are
-written by the BMAD Analyst persona at the start of each phase
-(just-in-time spec per AGENTS.md §3 and the SDD methodology in
-`docs/methodology.md`).
+Phases 0 through 5 are shipped — see `specs/phase-{0,1,2,3,4,5}/`
+for their detailed requirements, architecture, and stories.
 
-Phase 0-5 together form **Season 1** (single deployment, single domain).
-Later seasons exist as possibilities, not commitments (ADR-018).
+Phase 0-5 together form **Season 1** (single deployment, single domain),
+whose planned scope is now complete. Later seasons exist as
+possibilities, not commitments (ADR-018).
 
 ## 8. Methodology
 
@@ -184,6 +188,8 @@ These rules cannot be overridden without explicit ADR supersession:
 A real deployment requires the deployer to obtain:
 
 - LLM provider account (Anthropic by default, see ADR-004)
+- Embedding provider account for vector retrieval (Voyage AI reference
+  impl) or the explicit `EMBEDDING_ADAPTER=none` posture (ADR-026)
 - Channel provider account(s) for the chosen channel(s)
 - Domain + TLS (Cloudflare Tunnel is the easy path)
 - Hosting infrastructure
@@ -194,7 +200,7 @@ The framework points to these needs but does not provide them.
 
 ## 13. Where to start
 
-**Phase 0, Phase 1, and Phase 2 are all shipped.**
+**Phases 0 through 5 are all shipped — Season 1 scope complete.**
 
 - *Phase 0 (Foundation)*: all twelve ACs in `specs/phase-0/requirements.md §2`
   checked; stories 0.1–0.11 done; hardened via `[0.fix]`.
@@ -213,22 +219,49 @@ The framework points to these needs but does not provide them.
   (`PHX_HOST`-keyed prod TLS + secure-cookie hardening). Cooperative
   implementation: Claude (architect/redraft), Codex (analyst/PM/story
   driver).
+- *Phase 3 (Channel — Twilio SMS)*: stories 3.1–3.8 done. First real
+  channel adapter behind the `Interaction.Adapter` behaviour
+  (ADR-022): signature-verified inbound webhook intake (ADR-024),
+  Oban-backed outbound retry envelope (ADR-023), adapter-contract
+  conformance suite, `mix phase3.webhook.preflight` entry gate, and
+  reproducible UX screenshots.
+- *Phase 4 (AI Drafts)*: stories 4.1–4.8 done. Persona resource
+  (Knowledge axis), Req-direct Anthropic adapter with prompt-caching
+  markers and model allowlist (ADR-025), safety validator stack
+  (baseline + honest-framing + deployment extensions), Oban
+  `GenerationWorker` with telemetry, generation UX in `InboxLive`,
+  `mix phase4.ai.preflight` entry gate, and an end-to-end
+  generate→validate→approve→countdown→send integration gate. AI
+  drafts never send autonomously — approval + countdown invariants
+  hold (ADR-005/ADR-013).
 
-The next phase boundary is Phase 3 (first real channel adapter
-integration), which begins with the BMAD Analyst persona drafting
-`specs/phase-3/requirements.md`.
+- *Phase 5 (Knowledge — RAG)*: stories 5.1–5.7 done. Manual resource
+  (authoring lifecycle + paper-trail + admin LiveView at `/manuals`),
+  chunk→embed Oban pipeline with a pluggable `Knowledge.Embedder`
+  boundary (deterministic Fixture; Req-direct Voyage AI reference
+  impl; explicit `EMBEDDING_ADAPTER=voyage|none` prod gate — ADR-026),
+  never-raising retrieval ladder (pgvector cosine → pg_trgm lexical →
+  none), grounded generation with `Draft.ai_retrieval` provenance +
+  audit-payload extension, operator-facing retrieval badge, and
+  `mix phase5.knowledge.preflight`. Retrieval is context-in only:
+  approval/countdown/audit invariants regression-tested end to end.
+
+Season 1's planned phase scope (0–5) is complete. The next boundary is
+a Season 1 retrospective (architecture §13 deferred decisions:
+multi-tenancy, Persona versioning) before any Season 2 commitment
+(ADR-018).
 
 To get oriented before contributing:
 
 1. Read `AGENTS.md` (how AI agents work in this repo)
 2. Read `specs/architecture.md` (the three-axis structure)
-3. Read `specs/phase-2/architecture.md` (the most recent shipped phase)
+3. Read `specs/phase-5/architecture.md` (the most recent shipped phase)
 4. Read `specs/security/known-trade-offs.md` (decisions to revisit)
 5. Run `./scripts/status.sh` for current state
-6. Read a recent story (`specs/phase-2/stories/story-2.10.md`) for the
+6. Read a recent story (`specs/phase-5/stories/story-5.7.md`) for the
    exemplar of what "done" looks like under SDD
 
-Phase 2 onward continues with BMAD personas; see `prompts/`.
+Future phases continue with BMAD personas; see `prompts/`.
 
 ## 14. Heritage
 

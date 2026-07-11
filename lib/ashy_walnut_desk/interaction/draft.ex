@@ -133,7 +133,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     # why it failed and revise/regenerate/reject. Only provider failures
     # (:permanent/:content_blocked) route to :fail_generation → :rejected.
     update :complete_generation do
-      accept([:body, :ai_prompt, :ai_model, :ai_response, :ai_validator_output])
+      accept([:body, :ai_prompt, :ai_model, :ai_response, :ai_validator_output, :ai_retrieval])
       require_atomic?(false)
       validate({StatusTransition, from: [:generating]})
       change(AppendDisclosureFooter)
@@ -142,7 +142,7 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     update :fail_generation do
-      accept([:ai_validator_output])
+      accept([:ai_validator_output, :ai_retrieval])
       require_atomic?(false)
       validate({StatusTransition, from: [:generating]})
       change(set_attribute(:status, :rejected))
@@ -263,6 +263,10 @@ defmodule AshyWalnutDesk.Interaction.Draft do
       authorize_if(AdminOrOperator)
     end
 
+    field_policy :ai_retrieval do
+      authorize_if(AdminOrOperator)
+    end
+
     field_policy :* do
       authorize_if(always())
     end
@@ -317,6 +321,16 @@ defmodule AshyWalnutDesk.Interaction.Draft do
     end
 
     attribute :ai_validator_output, :map do
+      allow_nil?(true)
+      sensitive?(true)
+      public?(true)
+    end
+
+    # Story 5.5: retrieval provenance — which Manual chunks (id/slug,
+    # revision, position, content_hash, score, embedder) grounded the
+    # generation, plus the retrieval mode. Excerpt TEXT is not
+    # duplicated here; it persists verbatim inside ai_prompt.
+    attribute :ai_retrieval, :map do
       allow_nil?(true)
       sensitive?(true)
       public?(true)
