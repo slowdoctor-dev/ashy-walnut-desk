@@ -65,6 +65,24 @@ config :ashy_walnut_desk, :deployment_validators, []
 # `:ai_adapter` to the real Anthropic impl in `:prod`.
 config :ashy_walnut_desk, :default_model, "claude-sonnet-4-6"
 
+# Knowledge-axis embedding boundary (ADR-026, story 5.2). Fixture is
+# the offline dev/test default; `config/runtime.exs` requires an
+# explicit EMBEDDING_ADAPTER choice (voyage | none) in :prod so
+# external data egress is always a deliberate deployer decision.
+config :ashy_walnut_desk, :embedding_adapter, AshyWalnutDesk.Knowledge.Embedders.Fixture
+
+config :ashy_walnut_desk, :embedding_adapter_allowlist, [
+  AshyWalnutDesk.Knowledge.Embedders.Fixture,
+  AshyWalnutDesk.Knowledge.Embedders.Voyage
+]
+
+config :ashy_walnut_desk, :embedding_model, "voyage-3.5-lite"
+config :ashy_walnut_desk, :embedding_model_allowlist, ["voyage-3.5-lite", "voyage-3.5"]
+
+# Must match the pgvector column dimension on manual_chunks (story 5.3);
+# changing it is a migration + full re-embed event.
+config :ashy_walnut_desk, :embedding_dimension, 1024
+
 # F6: strict CSP is prod-only because Phoenix's dev tooling
 # (LiveReloader + LiveDashboard) injects inline scripts that
 # `script-src 'self'` blocks — Chromium silently aborts the

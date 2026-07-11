@@ -125,6 +125,36 @@ if config_env() == :prod do
   config :ashy_walnut_desk, :anthropic, api_key: anthropic_api_key
   config :ashy_walnut_desk, :ai_adapter, AshyWalnutDesk.AI.Adapters.Anthropic
 
+  # Knowledge embeddings (ADR-026, story 5.2). The adapter choice is an
+  # explicit deployer decision — "voyage" sends Manual content to the
+  # external embedding provider; "none" keeps all knowledge in-instance
+  # (retrieval degrades to the pg_trgm lexical rung). No silent default.
+  case System.get_env("EMBEDDING_ADAPTER") do
+    "voyage" ->
+      voyage_api_key =
+        System.get_env("VOYAGE_API_KEY") ||
+          raise """
+          EMBEDDING_ADAPTER=voyage requires VOYAGE_API_KEY.
+          Get it from https://dash.voyageai.com (API keys).
+          Treat this as a secret — it is never logged or persisted
+          (AGENTS.md §7.4).
+          """
+
+      config :ashy_walnut_desk, :voyage, api_key: voyage_api_key
+      config :ashy_walnut_desk, :embedding_adapter, AshyWalnutDesk.Knowledge.Embedders.Voyage
+
+    "none" ->
+      config :ashy_walnut_desk, :embedding_adapter, nil
+
+    other ->
+      raise """
+      environment variable EMBEDDING_ADAPTER is #{inspect(other)}; set it
+      to "voyage" (external embeddings via Voyage AI — Manual content
+      leaves this instance) or "none" (no external embeddings; retrieval
+      uses lexical matching only). See ADR-026 and the Phase 5 runbook.
+      """
+  end
+
   identifier_hash_salt =
     System.get_env("IDENTIFIER_HASH_SALT") ||
       raise """
