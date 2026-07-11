@@ -66,7 +66,7 @@ See `specs/architecture.md` for full structural details.
 | Container | Docker for local development |
 | CI | GitHub Actions |
 
-## 6. Key ADRs (25 total)
+## 6. Key ADRs (27 total)
 
 | ADR | Title | Status |
 |---|---|---|
@@ -95,6 +95,8 @@ See `specs/architecture.md` for full structural details.
 | ADR-024 | Inbound intake policy (system actor + provisional Identity + dedupe) | Accepted |
 | ADR-025 | Req-direct Anthropic via internal `AI.Adapter` behaviour (not ash_ai) | Accepted |
 | ADR-026 | Embeddings via pluggable `Knowledge.Embedder` behaviour (Voyage reference impl) | Accepted |
+| ADR-027 | Stay single-tenant (per-deployment instance) through Season 2 | Proposed |
+| ADR-028 | Persona versioning stays paper-trail diffs; provenance on Draft | Proposed |
 
 Full text in `specs/decisions/`.
 

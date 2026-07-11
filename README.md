@@ -9,10 +9,14 @@
 
 ## Status
 
-**Phase 0 (foundation), Phase 1 (Identity-axis core domain), and
-Phase 2 (Interaction-axis messaging — four-stage record chain) are
-all shipped.** Next phase boundary: Phase 3 (first real channel
-adapter integration). Run `./scripts/status.sh` for the live picture.
+**Phases 0–5 are all shipped — Season 1's planned scope is
+complete**: foundation, Identity axis, Interaction axis (four-stage
+chain + hash-chained audit), Twilio SMS channel, AI drafts with
+validator + approval + countdown, and Knowledge/RAG-grounded
+generation. Next boundary: Season 1 retrospective review
+([`docs/retrospectives/season-1.md`](docs/retrospectives/season-1.md))
+and ADR-027/ADR-028 acceptance before any Season 2 commitment
+(ADR-018). Run `./scripts/status.sh` for the live picture.
 
 For the full picture, start with [`BASELINE.md`](BASELINE.md) — single
 entry point covering identity, architecture, methodology, and current state.

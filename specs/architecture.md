@@ -210,6 +210,11 @@ The framework ships zero channel adapters. Deployers add them per ADR-006.
 
 (Updated per phase retrospective.)
 
-- [ ] Multi-tenant: per-deployment schema or shared with tenant_id? (decide Phase 5 end)
-- [ ] Real-time AI streaming via LiveView: technical feasibility study needed (Phase 4)
-- [ ] Persona versioning: full snapshots or diffs? (Phase 5)
+- [x] Multi-tenant: stay single-tenant (one deployment = one instance)
+      through Season 2 — ADR-027 (Proposed, Season 1 retrospective)
+- [ ] Real-time AI streaming via LiveView: technical feasibility study
+      needed (carried to Season 2 candidates — see
+      `docs/retrospectives/season-1.md §5`)
+- [x] Persona versioning: keep paper-trail `:changes_only` diffs;
+      generation provenance owned by `Draft.ai_prompt` — ADR-028
+      (Proposed, Season 1 retrospective)

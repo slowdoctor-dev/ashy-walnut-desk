@@ -590,7 +590,10 @@ sign-in failures during the first-user window.
 
 ## TO-14 — `AuditLive.Chain` admin viewer deferred to Phase 3
 
-**Status**: active, accepted as scope reduction at Phase 2 closeout.
+**Status**: ✅ resolved by story 3.7 — `AuditLive.Chain` ships at
+`/audit/chain` (admin-only), renders per-topic chain rows with
+continuity status badges, and is exercised by the Phase 3/4/5 e2e
+gates.
 
 **Decision**: `specs/phase-2/architecture.md §4` originally specced
 an admin-only LiveView (`AuditLive.Chain`) that would render a
