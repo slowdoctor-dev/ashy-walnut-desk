@@ -5,6 +5,8 @@ defmodule AshyWalnutDesk.Knowledge do
     otp_app: :ashy_walnut_desk
 
   resources do
+    resource(AshyWalnutDesk.Knowledge.Manual)
+    resource(AshyWalnutDesk.Knowledge.Manual.Version)
     resource(AshyWalnutDesk.Knowledge.Persona)
     resource(AshyWalnutDesk.Knowledge.Persona.Version)
   end

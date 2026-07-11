@@ -1,0 +1,48 @@
+name: Codegen
+
+# Manual-only helper for agent sandboxes without hex.pm egress: runs
+# Ash codegen (migrations + resource snapshots) on a feature branch and
+# emits the generated files as a base64 tarball in the job log, so a
+# sandboxed agent can commit byte-exact generator output. Never runs
+# automatically; produces no repository writes.
+on:
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: "Name passed to mix ash_postgres.generate_migrations"
+        required: true
+        default: "codegen"
+
+jobs:
+  codegen:
+    name: Generate migrations + snapshots
+    runs-on: ubuntu-24.04
+
+    env:
+      MIX_ENV: test
+      IDENTIFIER_HASH_SALT: ci-dummy-identifier-hash-salt-not-for-production
+      SECRET_KEY_BASE: ci-dummy-secret-key-base-not-for-production-padded-to-meet-minimum-length-aaaaaa
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up BEAM (Elixir + Erlang/OTP per .tool-versions)
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.1.2"
+
+      - name: Install Mix dependencies
+        run: mix deps.get
+
+      - name: Generate migrations + snapshots
+        run: mix ash_postgres.generate_migrations --name "${{ github.event.inputs.migration_name }}"
+
+      - name: Emit generated files (base64 tarball in log)
+        run: |
+          echo "===CODEGEN-FILES==="
+          git status --porcelain priv/
+          echo "===CODEGEN-TARBALL-BASE64==="
+          git status --porcelain priv/ | awk '{print $NF}' | tar czf - -T - | base64 -w0
+          echo ""
+          echo "===END-CODEGEN==="
