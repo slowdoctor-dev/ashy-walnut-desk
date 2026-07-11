@@ -41,13 +41,17 @@ defmodule AshyWalnutDesk.Knowledge.Embedders.Voyage do
     with :ok <- validate_model(model) do
       texts
       |> Enum.chunk_every(@max_batch)
-      |> Enum.reduce_while({:ok, []}, fn batch, {:ok, acc} ->
-        case embed_batch(batch, model, opts) do
-          {:ok, vectors} -> {:cont, {:ok, acc ++ vectors}}
-          {:error, _} = error -> {:halt, error}
-        end
-      end)
+      |> embed_batches(model, opts)
     end
+  end
+
+  defp embed_batches(batches, model, opts) do
+    Enum.reduce_while(batches, {:ok, []}, fn batch, {:ok, acc} ->
+      case embed_batch(batch, model, opts) do
+        {:ok, vectors} -> {:cont, {:ok, acc ++ vectors}}
+        {:error, _} = error -> {:halt, error}
+      end
+    end)
   end
 
   defp embed_batch([], _model, _opts), do: {:ok, []}

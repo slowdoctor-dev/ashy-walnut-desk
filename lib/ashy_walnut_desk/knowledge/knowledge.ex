@@ -7,6 +7,7 @@ defmodule AshyWalnutDesk.Knowledge do
   resources do
     resource(AshyWalnutDesk.Knowledge.Manual)
     resource(AshyWalnutDesk.Knowledge.Manual.Version)
+    resource(AshyWalnutDesk.Knowledge.ManualChunk)
     resource(AshyWalnutDesk.Knowledge.Persona)
     resource(AshyWalnutDesk.Knowledge.Persona.Version)
   end

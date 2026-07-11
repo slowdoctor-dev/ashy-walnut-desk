@@ -11,6 +11,7 @@ defmodule AshyWalnutDesk.Knowledge.Manual do
 
   alias AshyWalnutDesk.Accounts.Checks.AdminOrOperator
   alias AshyWalnutDesk.Identity.Changes.SoftDelete
+  alias AshyWalnutDesk.Knowledge.Changes.EnqueueIndexing
 
   postgres do
     table("manuals")
@@ -43,6 +44,7 @@ defmodule AshyWalnutDesk.Knowledge.Manual do
       accept([:title, :slug, :body])
       validate(string_length(:title, min: 1, max: 200))
       validate(string_length(:body, min: 1, max: 64_000))
+      change(EnqueueIndexing)
     end
 
     # Content revision. Bumps `revision` so derived ManualChunk rows
@@ -54,6 +56,7 @@ defmodule AshyWalnutDesk.Knowledge.Manual do
       validate(string_length(:title, min: 1, max: 200))
       validate(string_length(:body, min: 1, max: 64_000))
       change(&bump_revision/2)
+      change(EnqueueIndexing)
     end
 
     # Archive is a retrieval-visibility flip, not a delete: archived

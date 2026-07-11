@@ -34,7 +34,8 @@ config :ashy_walnut_desk, Oban,
     reindex: 5,
     tokens: 5,
     outbound: 5,
-    ai_generation: 5
+    ai_generation: 5,
+    knowledge_indexing: 5
   ]
 
 if config_env() == :prod do
