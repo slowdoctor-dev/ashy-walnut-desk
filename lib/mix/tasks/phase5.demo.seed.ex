@@ -14,9 +14,10 @@ defmodule Mix.Tasks.Phase5.Demo.Seed do
     executed, so `/audit/chain?topic=<B>` shows the 7-event chain
     including `draft_generation_*` with retrieval payload fields.
 
-  Generation and indexing workers run synchronously in-process (the
-  deterministic Fixture adapters — no network). Prints `KEY=value`
-  lines consumed by `scripts/screenshots-phase5.sh`.
+  Indexing/generation jobs are awaited from the live dev Oban queues
+  (with a synchronous fallback for manual-testing envs); adapters are
+  the deterministic Fixtures — no network. Prints `KEY=value` lines
+  consumed by `scripts/screenshots-phase5.sh`.
 
   ## Examples
 
@@ -41,7 +42,7 @@ defmodule Mix.Tasks.Phase5.Demo.Seed do
   }
 
   alias AshyWalnutDesk.Knowledge.Jobs.ChunkAndEmbedWorker
-  alias AshyWalnutDesk.Knowledge.{Manual, Persona}
+  alias AshyWalnutDesk.Knowledge.{Manual, ManualChunk, Persona}
 
   require Ash.Query
 
@@ -181,17 +182,38 @@ defmodule Mix.Tasks.Phase5.Demo.Seed do
     end
   end
 
+  # Manual :author/:revise already enqueued indexing jobs; in dev the
+  # live Oban queues execute them, so poll instead of double-running
+  # the worker (a direct perform would race the queued job). Falls
+  # back to a synchronous perform if the queue hasn't picked it up.
   defp index_all_manuals!(admin) do
     Manual
     |> Ash.read!(action: :read_with_archived, actor: admin)
-    |> Enum.each(fn manual ->
-      :ok =
-        ChunkAndEmbedWorker.perform(%Oban.Job{
-          args: %{"manual_id" => manual.id, "revision" => manual.revision},
-          attempt: 1,
-          max_attempts: 3
-        })
-    end)
+    |> Enum.each(fn manual -> await_indexing(manual, 100) end)
+  end
+
+  defp await_indexing(manual, retries_left) do
+    chunk_count =
+      ManualChunk
+      |> Ash.Query.filter(manual_id == ^manual.id and revision == ^manual.revision)
+      |> Ash.count!(authorize?: false)
+
+    cond do
+      chunk_count > 0 ->
+        :ok
+
+      retries_left > 0 ->
+        Process.sleep(100)
+        await_indexing(manual, retries_left - 1)
+
+      true ->
+        :ok =
+          ChunkAndEmbedWorker.perform(%Oban.Job{
+            args: %{"manual_id" => manual.id, "revision" => manual.revision},
+            attempt: 1,
+            max_attempts: 3
+          })
+    end
   end
 
   defp seed_grounded_candidate(admin, channel, persona, label) do
@@ -284,14 +306,33 @@ defmodule Mix.Tasks.Phase5.Demo.Seed do
         actor: admin
       )
 
-    :ok =
-      GenerationWorker.perform(%Oban.Job{
-        args: %{"draft_id" => draft.id},
-        attempt: 1,
-        max_attempts: 3
-      })
+    await_generation(draft.id, 100)
+  end
 
-    Ash.get!(Draft, draft.id, authorize?: false)
+  # :generate enqueued the worker; dev Oban executes it. Polling avoids
+  # the double-execution race that briefly wrote a duplicate
+  # :draft_generation_completed chain event in the first capture run.
+  defp await_generation(draft_id, retries_left) do
+    draft = Ash.get!(Draft, draft_id, authorize?: false)
+
+    cond do
+      draft.status != :generating ->
+        draft
+
+      retries_left > 0 ->
+        Process.sleep(100)
+        await_generation(draft_id, retries_left - 1)
+
+      true ->
+        :ok =
+          GenerationWorker.perform(%Oban.Job{
+            args: %{"draft_id" => draft_id},
+            attempt: 1,
+            max_attempts: 3
+          })
+
+        Ash.get!(Draft, draft_id, authorize?: false)
+    end
   end
 
   # Same countdown backdate escape hatch as phase3.demo.seed.

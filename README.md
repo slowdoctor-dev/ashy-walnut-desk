@@ -312,6 +312,18 @@ mix phase5.knowledge.preflight --skip-network   # knowledge config gate (offline
 mix audit.verify                                # hash-chain integrity
 ```
 
+Phase 4/5 UX evidence lives in
+[`docs/phase-5-screenshots/`](docs/phase-5-screenshots/) and is
+regenerable from `just`:
+
+```bash
+just dev                      # in one terminal
+just phase5-screenshots       # in another — seeds demo data + captures PNGs
+```
+
+(Also reproducible headlessly: dispatch the CI workflow with
+`screenshots=true`.)
+
 Architecture details: [`specs/phase-5/architecture.md`](specs/phase-5/architecture.md).
 
 ## AI tool compatibility
