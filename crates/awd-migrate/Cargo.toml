@@ -1,0 +1,16 @@
+[package]
+name = "awd-migrate"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "One-shot data-migration CLI from the legacy Postgres schema + permanent `audit verify` subcommand."
+
+[[bin]]
+name = "awd-migrate"
+path = "src/main.rs"
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+awd-db = { path = "../awd-db" }

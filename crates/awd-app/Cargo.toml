@@ -1,0 +1,23 @@
+[package]
+name = "awd-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Application/orchestration layer: every Ash action as a transactional function; authorize layer; role-aware DTOs."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+awd-db = { path = "../awd-db" }
+awd-safety = { path = "../awd-safety" }
+awd-auth = { path = "../awd-auth" }
+awd-jobs = { path = "../awd-jobs" }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+# The functional CORE of every Ash action is implemented here as pure plan
+# functions (decide → produce effects, incl. chained audit hashes). The thin
+# imperative shell (load rows, lock, persist effects, enqueue) needs SQLx and
+# is deferred — but the decision logic is fully unit-tested with no database.

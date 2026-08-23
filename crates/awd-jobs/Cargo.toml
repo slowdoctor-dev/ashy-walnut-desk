@@ -1,0 +1,14 @@
+[package]
+name = "awd-jobs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Postgres-backed durable job queue (Oban replacement) + workers: outbound send, AI generation, expunge cron."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+# The queue table + claiming (SELECT … FOR UPDATE SKIP LOCKED) needs SQLx +
+# Postgres, deferred. The retry envelope (backoff schedules, attempt/exhaust
+# decisions, job state) below is pure and tested.

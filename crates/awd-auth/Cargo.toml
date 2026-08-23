@@ -1,0 +1,23 @@
+[package]
+name = "awd-auth"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Auth: magic-link, JWT+jti, DB token-presence, first-user-admin, roles, system actor."
+
+[dependencies]
+awd-domain = { path = "../awd-domain" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+# The DB token store + per-request presence check need SQLx, deferred. Roles,
+# the first-admin decision, HS256 JWT mint/verify, and magic-link token
+# generation below are pure and tested.

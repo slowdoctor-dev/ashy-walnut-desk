@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 4ba9cbfe31f19cc6eee1482a884b1498fbf9a1c21084f3326bcd54cf84e0fbb7 # shrinks to seeds = ["nmv1q5", "4pc1i5", "0", "0"], type_idx = [5, 7, 0, 0], tamper_at = 9
